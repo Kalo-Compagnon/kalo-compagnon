@@ -145,7 +145,7 @@ export function DataScreen() {
   );
 }
 export function Account() {
-  const { repo, notify } = useApp(),
+  const { repo, notify, modal } = useApp(),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
@@ -168,9 +168,9 @@ export function Account() {
             Synchroniser maintenant
           </Button>
           <Button
-            onClick={() =>
-              void repo.mergeGuest().catch((e) => notify((e as Error).message))
-            }
+            onClick={() => modal(<Confirm title="Transférer l’historique de cet appareil ?" action={() => repo.mergeGuest()}>
+              Les données locales seront ajoutées à ton compte. Les réglages et les enregistrements de même identifiant seront remplacés par ceux de cet appareil ; les autres données du compte seront conservées.
+            </Confirm>)}
           >
             Importer les données locales de cet appareil
           </Button>
@@ -214,7 +214,7 @@ export function Account() {
                 ? await supabase!.auth.signUp({
                     email,
                     password,
-                    options: { emailRedirectTo: location.origin },
+                    options: { emailRedirectTo: new URL('.', location.href).href },
                   })
                 : await supabase!.auth.signInWithPassword({ email, password });
               if (result.error) throw result.error;

@@ -1,5 +1,7 @@
 import { openDB } from "idb";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { cloud } from './cloud';
+import { mergeImport } from './transfer';
 import { initialState, type State, type Settings, seedFoods } from "./domain";
 export type Payload = unknown;
 export interface Doc {
@@ -14,9 +16,9 @@ const db = openDB("logger-web-v2", 1, {
     db.createObjectStore("documents");
   },
 });
-const url = import.meta.env?.VITE_SUPABASE_URL,
-  key = import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY;
-export const supabase = url && key ? createClient(url, key) : null;
+const url = import.meta.env?.VITE_SUPABASE_URL || cloud.url,
+  key = import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || cloud.publishableKey;
+export const supabase = typeof window !== 'undefined' && url && key ? createClient(url, key) : null;
 export const docsToState = (docs: Doc[]): State => {
   const s = initialState();
   const prefs: Record<string, unknown> = {};
@@ -242,23 +244,11 @@ export class Repository {
     await this.sync();
   }
   async mergeGuest() {
+    if (this.scope === 'guest') throw new Error('Connecte-toi pour transférer les données');
     const guest: Doc[] = (await (await db).get("documents", "guest")) ?? [];
-    await this.run(async () => {
-      const next = structuredClone(this.docs);
-      for (const d of guest) {
-        if (d.value === null) continue;
-        const old = next.find((x) => x.key === d.key);
-        if (!old)
-          next.push({ ...d, revision: 0, pending: true, conflict: undefined });
-        else if (JSON.stringify(old.value) !== JSON.stringify(d.value))
-          throw new Error(
-            "Données communes différentes : exporte les données locales puis importe-les avec vérification.",
-          );
-      }
-      await (await db).put("documents", next, this.scope);
-      this.docs = next;
-      this.notify();
-    });
+    if (!guest.some(d => d.value !== null)) return;
+    // The account dialog explicitly confirms this merge; keep unrelated cloud records.
+    await this.update(s => mergeImport(s, docsToState(structuredClone(guest))));
     await this.sync();
   }
 }

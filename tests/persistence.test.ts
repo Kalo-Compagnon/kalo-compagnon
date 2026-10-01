@@ -2,6 +2,26 @@ import "fake-indexeddb/auto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Repository } from "../src/persistence";
+test("Transfert local confirmé : conserve les données du compte et évite les doublons", async () => {
+  const local = new Repository(null);
+  await local.load('guest');
+  await local.update(s => {
+    s.settings.basal=1850;
+    s.entries.push({id:'import-local',timestamp:1,type:'food',foodName:'Local',calories:100});
+  });
+  const account=new Repository(null);
+  await account.load('migration-account');
+  await account.update(s => {
+    s.settings.basal=0;
+    s.entries.push({id:'existing-cloud',timestamp:2,type:'food',foodName:'Compte',calories:200});
+  });
+  await account.mergeGuest();
+  await account.mergeGuest();
+  assert.equal(account.state.settings.basal,1850);
+  assert.equal(account.state.entries.length,2);
+  await local.load('guest');
+  assert.equal(local.state.entries.length,1);
+});
 test("Un aliment de base personnalisé par import conserve ses taux après redémarrage", async () => {
   const r = new Repository();
   await r.load("custom-seed-import");
