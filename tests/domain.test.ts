@@ -176,6 +176,14 @@ test("CSV Android : calories null, zéro, pas et dépense préservés", () => {
   assert.equal(expense(state, "2026-10-01"), 2258.5);
   assert.ok(warnings.length);
 });
+test("CSV Android : accepte DAILY_SUMMARY et conserve la date initiale", () => {
+  const {state,warnings}=importCSV('record_type;date;basal_kcal;target_kcal;steps;fit_activity_kcal;fit_covered_steps\nDAILY_SUMMARY;2026-01-02;1700;2000;1300;100;1000');
+  assert.equal(state.settings.first,'2026-01-02');
+  assert.equal(state.settings.basal,1700);
+  assert.equal(steps(state.days['2026-01-02']),1300);
+  assert.equal(expense(state,'2026-01-02'),1813.5);
+  assert.ok(!warnings.some(w=>w.includes('Type non pris en charge')));
+});
 test("Import invalide rejeté avant mutation", () => {
   assert.throws(() =>
     importJSON('{"format":"logger-web","version":2,"state":{}}'),

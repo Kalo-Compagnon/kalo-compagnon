@@ -443,6 +443,7 @@ export function importCSV(text: string): { state: State; warnings: string[] } {
         case "WEB_SETTINGS":
           s.settings = payload;
           break;
+        case "DAILY_SUMMARY":
         case "DAY_SUMMARY":
           s.days[r.date] = payload;
           break;
@@ -468,6 +469,7 @@ export function importCSV(text: string): { state: State; warnings: string[] } {
     if (web) continue;
     const id = `android-${r.id || crypto.randomUUID()}`;
     switch (r.record_type) {
+      case "DAILY_SUMMARY":
       case "DAY_SUMMARY":
         s.days[r.date] = {
           basal: n(r.basal_kcal),
