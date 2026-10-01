@@ -1,5 +1,7 @@
 # Logger Web — installation et architecture
 
+**GitHub Pages :** le site compilé est inclus à la racine. Conserver **Deploy from a branch → main → / (root)**. Après une modification : `npm.cmd run build`, puis committer les sources et les fichiers générés (`index.html`, `assets/`, `manifest.webmanifest`, `.nojekyll`). L'entrée React de développement est `app.html`.
+
 Conversion React/TypeScript séparée du projet Android. Référence : [ANDROID_ANALYSIS.md](ANDROID_ANALYSIS.md). Couverture et limites : [CONVERSION_STATUS.md](CONVERSION_STATUS.md).
 
 ## Démarrage

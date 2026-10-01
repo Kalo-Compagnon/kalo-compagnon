@@ -8,7 +8,7 @@ try {
   await page.route('http://localhost:8787/**', async route=>{
     const path=new URL(route.request().url()).pathname;
     if(!path.startsWith('/logger/')) {failed.push(path);return route.abort();}
-    await route.fulfill({path:resolve('dist',path.slice('/logger/'.length)||'index.html')});
+    await route.fulfill({path:resolve('.',path.slice('/logger/'.length)||'index.html')});
   });
   await page.goto('http://localhost:8787/logger/');
   await expect(page.getByRole('heading',{name:'Aujourd’hui',exact:true})).toBeVisible();
