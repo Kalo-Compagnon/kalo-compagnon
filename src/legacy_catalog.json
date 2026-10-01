@@ -1,0 +1,1610 @@
+{
+  "families": [
+    {
+      "id": "SANDWICHES",
+      "name": "Sandwichs",
+      "shortName": "SANDWICH"
+    },
+    {
+      "id": "PASTA",
+      "name": "Pâtes",
+      "shortName": "PÂTES"
+    },
+    {
+      "id": "CREPES",
+      "name": "Crêpes",
+      "shortName": "CRÊPES"
+    },
+    {
+      "id": "TOMATO_MOZZARELLA",
+      "name": "Tomate–mozzarella",
+      "shortName": "TOMATE–MOZZA"
+    },
+    {
+      "id": "CHARCUTERIE",
+      "name": "Charcuterie / plaisir",
+      "shortName": "PLAISIR"
+    },
+    {
+      "id": "POTATOES",
+      "name": "Pommes de terre",
+      "shortName": "POMMES DE TERRE"
+    },
+    {
+      "id": "ULTRA_FAST",
+      "name": "Repas ultra-rapides",
+      "shortName": "ULTRA-RAPIDE"
+    },
+    {
+      "id": "SNACKS",
+      "name": "Collations",
+      "shortName": "COLLATION"
+    },
+    {
+      "id": "EXTRAS",
+      "name": "Extras / non planifiés",
+      "shortName": "EXTRA"
+    }
+  ],
+  "dishes": [
+    {
+      "id": "sand_ham_emmental",
+      "family": "SANDWICHES",
+      "name": "Jambon + emmental",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "sand_ham_mozza",
+      "family": "SANDWICHES",
+      "name": "Jambon + mozzarella",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "sand_chicken_emmental",
+      "family": "SANDWICHES",
+      "name": "Poulet + emmental",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "sand_chicken_mozza",
+      "family": "SANDWICHES",
+      "name": "Poulet + mozzarella",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "sand_rosette_emmental",
+      "family": "SANDWICHES",
+      "name": "Rosette + emmental",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "rosette",
+          "name": "Rosette",
+          "caloriesPer100": 410,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "sand_apple",
+      "family": "SANDWICHES",
+      "name": "Sandwich + pomme",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "apple",
+          "name": "Pomme",
+          "caloriesPer100": 52,
+          "defaultQuantity": 150,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_parmesan",
+      "family": "PASTA",
+      "name": "Nature + parmesan",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "parmesan",
+          "name": "Parmesan",
+          "caloriesPer100": 431,
+          "defaultQuantity": 20,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_chicken_cream",
+      "family": "PASTA",
+      "name": "Poulet + crème 15 %",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cream15",
+          "name": "Crème 15 %",
+          "caloriesPer100": 170,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_chicken_cream_parmesan",
+      "family": "PASTA",
+      "name": "Poulet + crème + parmesan",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cream15",
+          "name": "Crème 15 %",
+          "caloriesPer100": 170,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "parmesan",
+          "name": "Parmesan",
+          "caloriesPer100": 431,
+          "defaultQuantity": 20,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_carbonara",
+      "family": "PASTA",
+      "name": "Carbonara",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bacon",
+          "name": "Lardons",
+          "caloriesPer100": 300,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cream15",
+          "name": "Crème 15 %",
+          "caloriesPer100": 170,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "parmesan",
+          "name": "Parmesan",
+          "caloriesPer100": 431,
+          "defaultQuantity": 20,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_chorizo_cream",
+      "family": "PASTA",
+      "name": "Chorizo + crème",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chorizo",
+          "name": "Chorizo",
+          "caloriesPer100": 455,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cream15",
+          "name": "Crème 15 %",
+          "caloriesPer100": 170,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_merguez",
+      "family": "PASTA",
+      "name": "Merguez",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "merguez",
+          "name": "Merguez",
+          "caloriesPer100": 300,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_merguez_cream",
+      "family": "PASTA",
+      "name": "Merguez + crème",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "merguez",
+          "name": "Merguez",
+          "caloriesPer100": 300,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cream15",
+          "name": "Crème 15 %",
+          "caloriesPer100": 170,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "pasta_mozza",
+      "family": "PASTA",
+      "name": "Mozzarella",
+      "ingredients": [
+        {
+          "key": "pasta",
+          "name": "Pâtes sèches",
+          "caloriesPer100": 350,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_ham_emmental",
+      "family": "CREPES",
+      "name": "Jambon + emmental",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 1,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_rosette_emmental",
+      "family": "CREPES",
+      "name": "Rosette + emmental",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 1,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "rosette",
+          "name": "Rosette",
+          "caloriesPer100": 410,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_chicken_cheese",
+      "family": "CREPES",
+      "name": "Poulet + fromage",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 1,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cheese",
+          "name": "Fromage",
+          "caloriesPer100": 350,
+          "defaultQuantity": 40,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_mozza",
+      "family": "CREPES",
+      "name": "Mozzarella",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 1,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_nutella",
+      "family": "CREPES",
+      "name": "Nutella",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 1,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "nutella",
+          "name": "Nutella",
+          "caloriesPer100": 539,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_meal_2_1",
+      "family": "CREPES",
+      "name": "Repas 2 salées + 1 Nutella",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 3,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "nutella",
+          "name": "Nutella",
+          "caloriesPer100": 539,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_meal_3",
+      "family": "CREPES",
+      "name": "Repas 3 salées",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 3,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_meal_4",
+      "family": "CREPES",
+      "name": "Repas 4 crêpes",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 4,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 180,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "crepe_meal_5",
+      "family": "CREPES",
+      "name": "Repas 5 crêpes",
+      "ingredients": [
+        {
+          "key": "crepe",
+          "name": "Crêpe nature",
+          "caloriesPer100": 154,
+          "defaultQuantity": 5,
+          "unit": "pièce",
+          "perUnit": true
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_basic",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Tomate + mozzarella",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_bread",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Tomate + mozzarella + pain",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_ham",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Tomate + mozzarella + jambon",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_rosette",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Tomate + mozzarella + rosette",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "rosette",
+          "name": "Rosette",
+          "caloriesPer100": 410,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_sausage",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Tomate + mozzarella + saucisson",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "sausage",
+          "name": "Saucisson",
+          "caloriesPer100": 478,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_small",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Petite portion accompagnement",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "tm_large",
+      "family": "TOMATO_MOZZARELLA",
+      "name": "Grande portion repas",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 300,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 150,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "char_sausage",
+      "family": "CHARCUTERIE",
+      "name": "Saucisson",
+      "ingredients": [
+        {
+          "key": "sausage",
+          "name": "Saucisson",
+          "caloriesPer100": 478,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "char_sausage_tm",
+      "family": "CHARCUTERIE",
+      "name": "Saucisson + tomate-mozza",
+      "ingredients": [
+        {
+          "key": "sausage",
+          "name": "Saucisson",
+          "caloriesPer100": 478,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "char_rosette_bread",
+      "family": "CHARCUTERIE",
+      "name": "Rosette + pain + fromage",
+      "ingredients": [
+        {
+          "key": "rosette",
+          "name": "Rosette",
+          "caloriesPer100": 410,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cheese",
+          "name": "Fromage",
+          "caloriesPer100": 350,
+          "defaultQuantity": 40,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "char_ham_bread",
+      "family": "CHARCUTERIE",
+      "name": "Jambon + pain + fromage",
+      "ingredients": [
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cheese",
+          "name": "Fromage",
+          "caloriesPer100": 350,
+          "defaultQuantity": 40,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "potato_chicken",
+      "family": "POTATOES",
+      "name": "Pommes de terre + poulet",
+      "ingredients": [
+        {
+          "key": "potato",
+          "name": "Pommes de terre",
+          "caloriesPer100": 80,
+          "defaultQuantity": 300,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "potato_merguez",
+      "family": "POTATOES",
+      "name": "Pommes de terre + merguez",
+      "ingredients": [
+        {
+          "key": "potato",
+          "name": "Pommes de terre",
+          "caloriesPer100": 80,
+          "defaultQuantity": 300,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "merguez",
+          "name": "Merguez",
+          "caloriesPer100": 300,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "potato_cheese",
+      "family": "POTATOES",
+      "name": "Pommes de terre + fromage",
+      "ingredients": [
+        {
+          "key": "potato",
+          "name": "Pommes de terre",
+          "caloriesPer100": 80,
+          "defaultQuantity": 300,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cheese",
+          "name": "Fromage",
+          "caloriesPer100": 350,
+          "defaultQuantity": 40,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "potato_chicken_cream",
+      "family": "POTATOES",
+      "name": "Pommes de terre + poulet + crème",
+      "ingredients": [
+        {
+          "key": "potato",
+          "name": "Pommes de terre",
+          "caloriesPer100": 80,
+          "defaultQuantity": 300,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cream15",
+          "name": "Crème 15 %",
+          "caloriesPer100": 170,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "potato_oven",
+      "family": "POTATOES",
+      "name": "Pommes de terre au four + accompagnement",
+      "ingredients": [
+        {
+          "key": "potato",
+          "name": "Pommes de terre",
+          "caloriesPer100": 80,
+          "defaultQuantity": 350,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "chicken",
+          "name": "Poulet",
+          "caloriesPer100": 165,
+          "defaultQuantity": 80,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "fast_ham_cheese_bread",
+      "family": "ULTRA_FAST",
+      "name": "Jambon + fromage + pain",
+      "ingredients": [
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cheese",
+          "name": "Fromage",
+          "caloriesPer100": 350,
+          "defaultQuantity": 40,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "fast_tm",
+      "family": "ULTRA_FAST",
+      "name": "Tomate-mozza",
+      "ingredients": [
+        {
+          "key": "tomato",
+          "name": "Tomate",
+          "caloriesPer100": 18,
+          "defaultQuantity": 200,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "fast_sandwich",
+      "family": "ULTRA_FAST",
+      "name": "Sandwich préparé",
+      "ingredients": [
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 140,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "emmental",
+          "name": "Emmental",
+          "caloriesPer100": 380,
+          "defaultQuantity": 30,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "fast_fruit_dairy",
+      "family": "ULTRA_FAST",
+      "name": "Fruit + produit laitier",
+      "ingredients": [
+        {
+          "key": "fruit",
+          "name": "Fruit",
+          "caloriesPer100": 55,
+          "defaultQuantity": 150,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "dairy",
+          "name": "Produit laitier",
+          "caloriesPer100": 65,
+          "defaultQuantity": 125,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "fast_mozza_bread_ham",
+      "family": "ULTRA_FAST",
+      "name": "Mozzarella + pain + jambon",
+      "ingredients": [
+        {
+          "key": "mozzarella",
+          "name": "Mozzarella",
+          "caloriesPer100": 250,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "bread",
+          "name": "Pain",
+          "caloriesPer100": 248,
+          "defaultQuantity": 100,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "ham",
+          "name": "Jambon",
+          "caloriesPer100": 120,
+          "defaultQuantity": 60,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "fast_char_cheese_fruit",
+      "family": "ULTRA_FAST",
+      "name": "Charcuterie + fromage + fruit",
+      "ingredients": [
+        {
+          "key": "rosette",
+          "name": "Rosette",
+          "caloriesPer100": 410,
+          "defaultQuantity": 50,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "cheese",
+          "name": "Fromage",
+          "caloriesPer100": 350,
+          "defaultQuantity": 40,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "fruit",
+          "name": "Fruit",
+          "caloriesPer100": 55,
+          "defaultQuantity": 150,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "snack_banana",
+      "family": "SNACKS",
+      "name": "Banane",
+      "ingredients": [
+        {
+          "key": "banana",
+          "name": "Banane",
+          "caloriesPer100": 89,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "snack_apple",
+      "family": "SNACKS",
+      "name": "Pomme",
+      "ingredients": [
+        {
+          "key": "apple",
+          "name": "Pomme",
+          "caloriesPer100": 52,
+          "defaultQuantity": 150,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "snack_shake",
+      "family": "SNACKS",
+      "name": "Milkshake banane + lait",
+      "ingredients": [
+        {
+          "key": "banana",
+          "name": "Banane",
+          "caloriesPer100": 89,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "milk",
+          "name": "Lait",
+          "caloriesPer100": 46,
+          "defaultQuantity": 250,
+          "unit": "ml",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "snack_shake_cocoa",
+      "family": "SNACKS",
+      "name": "Milkshake banane + lait + cacao",
+      "ingredients": [
+        {
+          "key": "banana",
+          "name": "Banane",
+          "caloriesPer100": 89,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "milk",
+          "name": "Lait",
+          "caloriesPer100": 46,
+          "defaultQuantity": 250,
+          "unit": "ml",
+          "perUnit": false
+        },
+        {
+          "key": "cocoa",
+          "name": "Cacao",
+          "caloriesPer100": 380,
+          "defaultQuantity": 10,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "snack_shake_vanilla",
+      "family": "SNACKS",
+      "name": "Milkshake banane + lait + vanille",
+      "ingredients": [
+        {
+          "key": "banana",
+          "name": "Banane",
+          "caloriesPer100": 89,
+          "defaultQuantity": 120,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "milk",
+          "name": "Lait",
+          "caloriesPer100": 46,
+          "defaultQuantity": 250,
+          "unit": "ml",
+          "perUnit": false
+        },
+        {
+          "key": "vanilla",
+          "name": "Vanille",
+          "caloriesPer100": 288,
+          "defaultQuantity": 8,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "snack_fruit_dairy",
+      "family": "SNACKS",
+      "name": "Fruit + produit laitier",
+      "ingredients": [
+        {
+          "key": "fruit",
+          "name": "Fruit",
+          "caloriesPer100": 55,
+          "defaultQuantity": 150,
+          "unit": "g",
+          "perUnit": false
+        },
+        {
+          "key": "dairy",
+          "name": "Produit laitier",
+          "caloriesPer100": 65,
+          "defaultQuantity": 125,
+          "unit": "g",
+          "perUnit": false
+        }
+      ],
+      "isExtra": false
+    },
+    {
+      "id": "extra_restaurant",
+      "family": "EXTRAS",
+      "name": "Restaurant",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_fastfood",
+      "family": "EXTRAS",
+      "name": "Fast-food",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_someone",
+      "family": "EXTRAS",
+      "name": "Repas chez quelqu’un",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_snacking",
+      "family": "EXTRAS",
+      "name": "Grignotage",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_dessert",
+      "family": "EXTRAS",
+      "name": "Dessert",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_charcuterie",
+      "family": "EXTRAS",
+      "name": "Extra charcuterie",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_cheese",
+      "family": "EXTRAS",
+      "name": "Extra fromage",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_sweet",
+      "family": "EXTRAS",
+      "name": "Extra sucré",
+      "ingredients": [],
+      "isExtra": true
+    },
+    {
+      "id": "extra_photo",
+      "family": "EXTRAS",
+      "name": "Photo uniquement",
+      "ingredients": [],
+      "isExtra": true
+    }
+  ]
+}
