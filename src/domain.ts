@@ -100,6 +100,7 @@ export interface Meal {
   imagePath?: string;
 }
 export interface Day {
+  weightKg?: number;
   basal?: number;
   target?: number;
   steps?: number;

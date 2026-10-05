@@ -1,5 +1,5 @@
 import { chromium, expect } from "@playwright/test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import assert from "node:assert/strict";
 mkdirSync("qa", { recursive: true });
 const browser = await chromium.launch({
@@ -126,13 +126,11 @@ try {
   await button("Confirmer").click();
   await expect(page.locator(".entry")).toHaveCount(2);
   await data();
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(backup),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(backup),
+  });
   await button("Importer après vérification").click();
   await button("Confirmer").click();
   await expect(page.locator("dialog")).not.toBeVisible();
@@ -189,13 +187,11 @@ try {
     timestamp: yesterday.getTime(),
     foodName: "Historique QA",
   });
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "history.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(saved)),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "history.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(saved)),
+  });
   await button("Importer après vérification").click();
   await button("Confirmer").click();
   await expect(page.locator("dialog")).not.toBeVisible();
@@ -246,12 +242,17 @@ try {
         animations: "disabled",
       });
       if (name === "Repas" && width === 844) {
-        const add = await p.locator('.add-meal').boundingBox();
-        const nav = await p.locator('.liquid-nav').boundingBox();
-        assert.ok(add.y + add.height <= nav.y, 'Le bouton Ajouter doit rester au-dessus de la navigation en paysage');
-        await p.getByRole('button', { name: '＋ Ajouter', exact: true }).click();
-        await expect(p.getByRole('dialog')).toBeVisible();
-        await p.getByRole('button', { name: 'Fermer', exact: true }).click();
+        const add = await p.locator(".add-meal").boundingBox();
+        const nav = await p.locator(".liquid-nav").boundingBox();
+        assert.ok(
+          add.y + add.height <= nav.y,
+          "Le bouton Ajouter doit rester au-dessus de la navigation en paysage",
+        );
+        await p
+          .getByRole("button", { name: "＋ Ajouter", exact: true })
+          .click();
+        await expect(p.getByRole("dialog")).toBeVisible();
+        await p.getByRole("button", { name: "Fermer", exact: true }).click();
       }
       assert.equal(
         await p.evaluate(
@@ -289,20 +290,26 @@ try {
     ),
   );
   // Put the available source and rendered implementation together without altering either image.
-  const comparison = await browser.newPage({
-    viewport: { width: 800, height: 1450 },
-  });
-  await comparison.setContent(
-    `<style>body{margin:0;background:#333;color:white;font:14px sans-serif}main{display:flex;gap:20px}figure{margin:0;width:390px}img{width:390px;display:block}figcaption{height:48px}</style><main><figure><figcaption>Android : capture ancienne (13 septembre), assombrie</figcaption><img src="data:image/png;base64,${readFileSync("../screen-global.png").toString("base64")}"></figure><figure><figcaption>Web : code actuel, données QA (états différents)</figcaption><img src="data:image/png;base64,${readFileSync("qa/verified-Global-390x844.png").toString("base64")}"></figure></main>`,
-  );
-  await comparison
-    .locator("img")
-    .evaluateAll((imgs) => Promise.all(imgs.map((i) => i.decode())));
-  await comparison.screenshot({
-    path: "qa/comparison-global.png",
-    fullPage: true,
-    animations: "disabled",
-  });
+  if (existsSync("../screen-global.png")) {
+    const comparison = await browser.newPage({
+      viewport: { width: 800, height: 1450 },
+    });
+    await comparison.setContent(
+      `<style>body{margin:0;background:#333;color:white;font:14px sans-serif}main{display:flex;gap:20px}figure{margin:0;width:390px}img{width:390px;display:block}figcaption{height:48px}</style><main><figure><figcaption>Android : capture ancienne (13 septembre), assombrie</figcaption><img src="data:image/png;base64,${readFileSync("../screen-global.png").toString("base64")}"></figure><figure><figcaption>Web : code actuel, données QA (états différents)</figcaption><img src="data:image/png;base64,${readFileSync("qa/verified-Global-390x844.png").toString("base64")}"></figure></main>`,
+    );
+    await comparison
+      .locator("img")
+      .evaluateAll((imgs) => Promise.all(imgs.map((i) => i.decode())));
+    await comparison.screenshot({
+      path: "qa/comparison-global.png",
+      fullPage: true,
+      animations: "disabled",
+    });
+  } else {
+    console.log(
+      "Comparaison visuelle ancienne ignorée : screen-global.png absent.",
+    );
+  }
   console.log(
     "Parcours étendus, photos, sauvegardes, historique et contextes PC/mobile : OK",
   );

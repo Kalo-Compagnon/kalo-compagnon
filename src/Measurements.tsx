@@ -10,6 +10,45 @@ import {
   num,
 } from "./ui";
 import { groups, zones, fmt, timestamp, type Physical } from "./domain";
+
+function MeasurementInput({
+  value,
+  label,
+  onChange,
+}: {
+  value: number;
+  label: string;
+  onChange: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(value ? String(value) : "");
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current) setDraft(value ? String(value) : "");
+  }, [value]);
+  return (
+    <input
+      aria-label={label}
+      inputMode="decimal"
+      type="text"
+      value={draft}
+      placeholder="0"
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onBlur={() => {
+        focused.current = false;
+      }}
+      onChange={(e) => {
+        const text = e.target.value;
+        if (!/^\d*(?:[.,]\d*)?$/.test(text)) return;
+        setDraft(text);
+        const number = Number(text.replace(",", "."));
+        if (Number.isFinite(number)) onChange(number);
+      }}
+    />
+  );
+}
+
 const positions = [0.215, 0.255, 0.315, 0.39, 0.42, 0.452, 0.55, 0.755];
 const labelsOverview = [0.17, 0.22, 0.29, 0.36, 0.44, 0.51, 0.65, 0.72],
   labelsDetail = [0.195, 0.255, 0.325, 0.335, 0.425, 0.515, 0.59, 0.755];
@@ -403,15 +442,12 @@ export function Measurements() {
           >
             −
           </button>
-          <input
+          <MeasurementInput
+            key={selected}
             aria-label={`${selected} en centimètres`}
-            inputMode="decimal"
-            type="number"
-            min="0"
-            step="any"
-            value={values[selected] || ""}
-            placeholder="0"
-            onChange={(e) => void measure(num(e.target.value))}
+            label={`${selected} en centimètres`}
+            value={values[selected] || 0}
+            onChange={(value) => void measure(value)}
           />
           <span>cm</span>
           <button

@@ -21,6 +21,19 @@ export interface AppContext {
 }
 export const Context = createContext<AppContext>(null!);
 export const useApp = () => useContext(Context);
+export function HistoryList({ children }: { children: ReactNode[] }) {
+  return (
+    <>
+      {children.slice(0, 5)}
+      {children.length > 5 && (
+        <details className="history-older">
+          <summary>Voir les {children.length - 5} relevés plus anciens</summary>
+          <div className="history-older-list">{children.slice(5)}</div>
+        </details>
+      )}
+    </>
+  );
+}
 export function Button({
   children,
   onClick,

@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { useApp, Sheet, NumberField, Button, ValueDialog, num } from "./ui";
+import {
+  useApp,
+  Sheet,
+  NumberField,
+  Button,
+  ValueDialog,
+  HistoryList,
+  num,
+} from "./ui";
 import {
   balance,
   fmt,
@@ -14,6 +22,7 @@ import {
   sub,
 } from "./domain";
 import { CalorieChart } from "./Charts";
+import { WeightTracking } from "./WeightTracking";
 export function BasalDialog() {
   const { state, day, update, close, notify } = useApp();
   const [sex, setSex] = useState(state.settings.sex),
@@ -197,12 +206,15 @@ export function Global({ onExport }: { onExport: () => void }) {
           </p>
         </div>
       </div>
+      <WeightTracking key={day} />
       <p className="section-label history-heading">Journées terminées</p>
       <p className="note">Appui long sur une journée pour la modifier</p>
       <section className="card history-card">
-        {allDays(state).filter((d) => d < dayKey()).length === 0
-          ? "La journée apparaîtra ici une fois terminée."
-          : allDays(state)
+        {allDays(state).filter((d) => d < dayKey()).length === 0 ? (
+          "La journée apparaîtra ici une fois terminée."
+        ) : (
+          <HistoryList>
+            {allDays(state)
               .filter((d) => d < dayKey())
               .map((d) => {
                 const es = entriesOn(state, d),
@@ -234,6 +246,8 @@ export function Global({ onExport }: { onExport: () => void }) {
                   </button>
                 );
               })}
+          </HistoryList>
+        )}
       </section>
       <Button className="export-btn" onClick={onExport}>
         Exporter toutes mes données (.csv)

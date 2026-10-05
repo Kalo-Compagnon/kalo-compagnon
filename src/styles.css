@@ -105,6 +105,37 @@ select {
 .padded p + p {
   margin-top: 18px;
 }
+.weight-tracking {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+.weight-tracking h2 {
+  color: #f7f8fa;
+}
+.weight-tracking .primary {
+  background: var(--yellow);
+  color: #14161b;
+}
+.weight-history > div,
+.weight-history .history-older-list > div {
+  display: grid;
+  gap: 8px;
+  padding-top: 14px;
+}
+.weight-tracking summary {
+  cursor: pointer;
+}
+.history-older summary {
+  cursor: pointer;
+  padding: 14px 0;
+  min-height: 44px;
+  font-size: 14px;
+}
+.history-older-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
 .section-label {
   font-size: 15px;
   color: var(--muted);
@@ -293,8 +324,18 @@ select {
   padding: 8px;
   border-radius: 34px;
   background:
-    radial-gradient(circle at 20% 12%, #ffffff2f 0%, #ffffff0f 48%, #ffffff00 100%),
-    linear-gradient(to bottom right, #171a22dc 0%, #11141bb6 52%, #20242fd0 100%),
+    radial-gradient(
+      circle at 20% 12%,
+      #ffffff2f 0%,
+      #ffffff0f 48%,
+      #ffffff00 100%
+    ),
+    linear-gradient(
+      to bottom right,
+      #171a22dc 0%,
+      #11141bb6 52%,
+      #20242fd0 100%
+    ),
     #0b0d12;
   border: 1px solid #ffffff25;
   box-shadow:

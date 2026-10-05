@@ -98,6 +98,49 @@ await page.screenshot({
   animations: "disabled",
 });
 await page.getByRole("button", { name: "Page suivante", exact: true }).click();
+const chest = page.getByLabel("Poitrine en centimètres", { exact: true });
+await chest.fill("");
+await chest.pressSequentially("95,");
+await expect(chest).toHaveValue("95,");
+await chest.pressSequentially("50");
+await expect(chest).toHaveValue("95,50");
+await chest.blur();
+await expect
+  .poll(() =>
+    page.evaluate(
+      () =>
+        new Promise((resolve, reject) => {
+          const request = indexedDB.open("logger-web-v2");
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            const db = request.result;
+            const read = db
+              .transaction("documents")
+              .objectStore("documents")
+              .get("guest");
+            read.onsuccess = () => {
+              resolve(
+                read.result.find(
+                  (doc) =>
+                    doc.key.startsWith("day/") &&
+                    doc.value?.measurements?.Poitrine !== undefined,
+                )?.value.measurements.Poitrine,
+              );
+              db.close();
+            };
+            read.onerror = () => {
+              db.close();
+              reject(read.error);
+            };
+          };
+        }),
+    ),
+  )
+  .toBe(95.5);
+await page.reload();
+await page.getByRole("button", { name: "Mensuration", exact: true }).click();
+await page.getByRole("button", { name: "Page suivante", exact: true }).click();
+await expect(chest).toHaveValue("95.5");
 await page.getByLabel("Poitrine en centimètres", { exact: true }).fill("95.5");
 await page.getByRole("button", { name: "Augmenter de 0,5 centimètre" }).click();
 await expect(
@@ -108,6 +151,55 @@ await page.screenshot({
   fullPage: true,
   animations: "disabled",
 });
+await page
+  .getByRole("button", { name: "Page précédente", exact: true })
+  .click();
+await expect(page.getByRole("region", { name: "Suivi du poids" })).toHaveCount(
+  0,
+);
+await page.getByRole("button", { name: "Global", exact: true }).click();
+const weight = page.getByLabel("Poids sur la balance (kg)", { exact: true });
+await page.getByLabel("Date de la pesée").fill("2026-10-01");
+await weight.fill("80,5");
+await page
+  .getByRole("button", { name: "Enregistrer la pesée", exact: true })
+  .click();
+await expect(
+  page.getByRole("region", { name: "Suivi du poids" }),
+).toContainText("80,5 kg");
+await page.getByLabel("Date de la pesée").fill("2026-10-02");
+await weight.fill("79.8");
+await page
+  .getByRole("button", { name: "Enregistrer la pesée", exact: true })
+  .click();
+await expect(
+  page.getByRole("region", { name: "Suivi du poids" }),
+).toContainText("-0,7 kg");
+await page.reload();
+await page.getByRole("button", { name: "Global", exact: true }).click();
+await expect(
+  page.getByText("Historique des pesées (2)", { exact: true }),
+).toBeVisible();
+await page
+  .getByRole("button", { name: "Modifier la pesée du 02/10/2026", exact: true })
+  .click();
+await expect(weight).toHaveValue("79.8");
+await weight.fill("79,5");
+await page
+  .getByRole("button", { name: "Enregistrer la pesée", exact: true })
+  .click();
+await expect(
+  page.getByRole("region", { name: "Suivi du poids" }),
+).toContainText("-1 kg");
+await page
+  .getByRole("button", {
+    name: "Supprimer la pesée du 01/10/2026",
+    exact: true,
+  })
+  .click();
+await expect(
+  page.getByText("Historique des pesées (1)", { exact: true }),
+).toBeVisible();
 await page.getByRole("button", { name: "Global", exact: true }).click();
 assert.ok(
   await page.getByText("Déficit quotidien moyen", { exact: true }).isVisible(),

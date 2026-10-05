@@ -118,6 +118,7 @@ export function validateState(value: unknown): State {
       "fitSteps",
       "fitCalories",
       "fitCoveredSteps",
+      "weightKg",
     ] as const)
       assert(
         v[k] === undefined || (finite(v[k]) && v[k]! >= 0),
