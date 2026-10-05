@@ -208,7 +208,9 @@ export function Global({ onExport }: { onExport: () => void }) {
       </div>
       <WeightTracking key={day} />
       <p className="section-label history-heading">Journées terminées</p>
-      <p className="note">Appui long sur une journée pour la modifier</p>
+      <p className="note">
+        Sélectionne une journée pour consulter ou modifier ses données.
+      </p>
       <section className="card history-card">
         {allDays(state).filter((d) => d < dayKey()).length === 0 ? (
           "La journée apparaîtra ici une fois terminée."
@@ -236,10 +238,23 @@ export function Global({ onExport }: { onExport: () => void }) {
                       editDay(d);
                     }}
                   >
-                    {labelDay(d)} ·{" "}
-                    {basal(state, d) <= 0 || !es.length
-                      ? "Bilan indisponible"
-                      : `${delta >= 0 ? "Déficit" : "Surplus"} estimé : ${fmt(Math.abs(delta))} kcal`}
+                    <time className="history-date" dateTime={d}>
+                      {labelDay(d)}
+                    </time>
+                    <span className="history-result">
+                      <span className="history-result-label">
+                        {basal(state, d) <= 0 || !es.length
+                          ? "Bilan indisponible"
+                          : `${delta >= 0 ? "Déficit" : "Surplus"} estimé`}
+                      </span>
+                      {basal(state, d) > 0 && es.length > 0 && (
+                        <strong
+                          className={`history-result-value ${why.length ? "yellow" : delta >= 0 ? "green" : "pink"}`}
+                        >
+                          {fmt(Math.abs(delta))} <span>kcal</span>
+                        </strong>
+                      )}
+                    </span>
                     {why.length > 0 && (
                       <small>À compléter : {why.join(", ")}</small>
                     )}

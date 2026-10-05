@@ -41,6 +41,7 @@ try {
     assert.ok(dimensions.values.every(h=>h<70),'Les chiffres doivent rester lisibles');
     await page.locator('.chart-scroll').evaluate(e=>{e.scrollLeft=0});
     await page.screenshot({path:`qa/global-history-${width}.png`,animations:'disabled'});
+    await page.locator('.history-card').screenshot({path:`qa/history-readability-${width}.png`,animations:'disabled'});
   }
   assert.deepEqual(errors,[]);
   console.log('Global : 30 journées, colonnes équilibrées et défilement du graphique vérifiés aux 5 largeurs.');
