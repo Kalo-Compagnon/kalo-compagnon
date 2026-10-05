@@ -21,14 +21,24 @@ export interface AppContext {
 }
 export const Context = createContext<AppContext>(null!);
 export const useApp = () => useContext(Context);
-export function HistoryList({ children }: { children: ReactNode[] }) {
+export function HistoryList({
+  children,
+  visibleCount = 5,
+}: {
+  children: ReactNode[];
+  visibleCount?: number;
+}) {
   return (
     <>
-      {children.slice(0, 5)}
-      {children.length > 5 && (
+      {children.slice(0, visibleCount)}
+      {children.length > visibleCount && (
         <details className="history-older">
-          <summary>Voir les {children.length - 5} relevés plus anciens</summary>
-          <div className="history-older-list">{children.slice(5)}</div>
+          <summary>
+            Voir les relevés précédents ({children.length - visibleCount})
+          </summary>
+          <div className="history-older-list">
+            {children.slice(visibleCount)}
+          </div>
         </details>
       )}
     </>

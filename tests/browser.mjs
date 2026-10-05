@@ -181,21 +181,27 @@ await expect(
   page.getByText("Historique des pesées (2)", { exact: true }),
 ).toBeVisible();
 await page
-  .getByRole("button", { name: "Modifier la pesée du 02/10/2026", exact: true })
+  .getByRole("button", { name: "Pesée du 02/10/2026 : 79,8 kg", exact: true })
   .click();
-await expect(weight).toHaveValue("79.8");
-await weight.fill("79,5");
+await expect(page.getByLabel("Poids de la pesée (kg)")).toHaveValue("79.8");
+await page.getByLabel("Poids de la pesée (kg)").fill("79,5");
 await page
-  .getByRole("button", { name: "Enregistrer la pesée", exact: true })
+  .getByRole("button", { name: "Enregistrer la modification", exact: true })
   .click();
 await expect(
   page.getByRole("region", { name: "Suivi du poids" }),
 ).toContainText("-1 kg");
+await expect(page.locator(".weight-record:visible")).toHaveCount(1);
+await page.locator(".weight-history summary").click();
+await expect(page.locator(".weight-record:visible")).toHaveCount(2);
 await page
   .getByRole("button", {
-    name: "Supprimer la pesée du 01/10/2026",
+    name: "Pesée du 01/10/2026 : 80,5 kg",
     exact: true,
   })
+  .click();
+await page
+  .getByRole("button", { name: "Supprimer cette pesée", exact: true })
   .click();
 await expect(
   page.getByText("Historique des pesées (1)", { exact: true }),

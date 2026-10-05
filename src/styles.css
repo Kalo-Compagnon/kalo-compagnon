@@ -109,19 +109,63 @@ select {
   display: grid;
   gap: 14px;
   margin-top: 16px;
+  min-width: 0;
 }
 .weight-tracking h2 {
   color: #f7f8fa;
 }
-.weight-tracking .primary {
-  background: var(--yellow);
-  color: #14161b;
+.weight-tracking .primary,
+.weight-record-form .primary {
+  background: linear-gradient(115deg, #2563eb, #7c3aed);
+  color: white;
 }
-.weight-history > div,
-.weight-history .history-older-list > div {
+.weight-tracking form,
+.weight-tracking .field {
+  min-width: 0;
+}
+.weight-tracking .field input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+.weight-tracking input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: left;
+}
+.weight-tracking input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+.weight-record {
   display: grid;
-  gap: 8px;
-  padding-top: 14px;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  text-align: left;
+  color: #d8dce5;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.weight-record strong {
+  color: #c4b5fd;
+  font-size: 19px;
+}
+.weight-record strong span {
+  font-size: 13px;
+  font-weight: 400;
+}
+.weight-record:hover {
+  background: #ffffff08;
 }
 .weight-tracking summary {
   cursor: pointer;

@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { useApp, Button, HistoryList } from "./ui";
+import { useId, useState } from "react";
+import { useApp, Button, HistoryList, Sheet } from "./ui";
 import { fmt, labelDay, dayKey } from "./domain";
 
 export function WeightTracking() {
-  const { state, day, update, notify } = useApp();
+  const { state, day, update, notify, modal } = useApp();
+  const gradientId = useId();
   const [draft, setDraft] = useState(String(state.days[day]?.weightKg ?? ""));
   const [date, setDate] = useState(day);
   const records = Object.entries(state.days)
@@ -109,6 +110,12 @@ export function WeightTracking() {
             aria-label="Courbe d’évolution du poids"
             style={{ width: "100%", maxHeight: 180 }}
           >
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#38bdf8" />
+                <stop offset="100%" stopColor="#a78bfa" />
+              </linearGradient>
+            </defs>
             <text x="4" y="22" fill="currentColor" fontSize="10">
               {fmt(high)} kg
             </text>
@@ -132,11 +139,11 @@ export function WeightTracking() {
             <polyline
               points={points.map((p) => `${p.x},${p.y}`).join(" ")}
               fill="none"
-              stroke="#FFD54F"
+              stroke={`url(#${gradientId})`}
               strokeWidth="2"
             />
             {points.map((p) => (
-              <circle key={p.date} cx={p.x} cy={p.y} r="3" fill="#FFD54F">
+              <circle key={p.date} cx={p.x} cy={p.y} r="3" fill="#a78bfa">
                 <title>
                   {labelDay(p.date)} : {fmt(p.weight)} kg
                 </title>
@@ -145,37 +152,36 @@ export function WeightTracking() {
           </svg>
           <h3>Historique des pesées ({records.length})</h3>
           <div className="weight-history">
-            <HistoryList>
+            <HistoryList visibleCount={1}>
               {records
                 .slice()
                 .reverse()
                 .map((r) => (
-                  <div key={r.date}>
-                    <p>
-                      {labelDay(r.date)} · {fmt(r.weight)} kg
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setDate(r.date);
-                        setDraft(String(r.weight));
-                      }}
-                    >
-                      Modifier la pesée du {labelDay(r.date)}
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        void update((s) => {
-                          delete s.days[r.date].weightKg;
-                        })
-                          .then(() => {
-                            if (r.date === date) setDraft("");
-                          })
-                          .catch((error) => notify(String(error)))
-                      }
-                    >
-                      Supprimer la pesée du {labelDay(r.date)}
-                    </Button>
-                  </div>
+                  <button
+                    key={r.date}
+                    className="weight-record"
+                    aria-label={`Pesée du ${labelDay(r.date)} : ${fmt(r.weight)} kg`}
+                    onClick={() =>
+                      modal(
+                        <WeightRecord
+                          date={r.date}
+                          weight={r.weight}
+                          onSaved={(weight) => {
+                            if (r.date === date)
+                              setDraft(
+                                weight === undefined ? "" : String(weight),
+                              );
+                          }}
+                        />,
+                      )
+                    }
+                  >
+                    <time dateTime={r.date}>{labelDay(r.date)}</time>
+                    <strong>
+                      {fmt(r.weight)} <span>kg</span>
+                    </strong>
+                    <span aria-hidden="true">›</span>
+                  </button>
                 ))}
             </HistoryList>
           </div>
@@ -184,5 +190,75 @@ export function WeightTracking() {
         <p>Aucune pesée enregistrée.</p>
       )}
     </section>
+  );
+}
+
+function WeightRecord({
+  date,
+  weight,
+  onSaved,
+}: {
+  date: string;
+  weight: number;
+  onSaved: (weight?: number) => void;
+}) {
+  const { update, close, notify } = useApp();
+  const [draft, setDraft] = useState(String(weight));
+  const [busy, setBusy] = useState(false);
+  async function save(remove = false) {
+    const value = Number(draft.replace(",", "."));
+    if (!remove && (!Number.isFinite(value) || value <= 0)) {
+      notify("Saisis un poids supérieur à zéro");
+      return;
+    }
+    setBusy(true);
+    try {
+      await update((s) => {
+        if (remove) delete s.days[date].weightKg;
+        else s.days[date] = { ...s.days[date], weightKg: value };
+      });
+      onSaved(remove ? undefined : value);
+      close();
+      notify(remove ? "Pesée supprimée" : "Pesée enregistrée");
+    } catch (error) {
+      notify(String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Sheet title={`Pesée du ${labelDay(date)}`}>
+      <form
+        className="weight-record-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        <label className="field">
+          Poids de la pesée (kg)
+          <input
+            type="text"
+            inputMode="decimal"
+            required
+            value={draft}
+            onChange={(e) => {
+              if (/^\d*(?:[.,]\d*)?$/.test(e.target.value))
+                setDraft(e.target.value);
+            }}
+          />
+        </label>
+        <Button primary type="submit" disabled={busy}>
+          Enregistrer la modification
+        </Button>
+        <Button
+          disabled={busy}
+          className="danger"
+          onClick={() => void save(true)}
+        >
+          Supprimer cette pesée
+        </Button>
+      </form>
+    </Sheet>
   );
 }
