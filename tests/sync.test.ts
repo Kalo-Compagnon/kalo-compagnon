@@ -3,6 +3,23 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Repository,type Doc} from '../src/persistence';
+import {currentMeasurements} from '../src/measurement-history';
+
+test('Mensurations : deux appareils, zones simultanées, autres données de la journée et reconnexion',async()=>{
+ const cloud=backend(),a=new Repository(cloud.client),b=new Repository(cloud.client);
+ await a.load('measure-a');await b.load('measure-b');
+ await a.update(s=>{s.days['2026-10-01']={steps:1000,measurements:{Poitrine:95,Taille:80}}});
+ await a.sync();await b.sync();
+ await a.update(s=>{s.days['2026-10-01'].measurements!.Poitrine=96});
+ await b.update(s=>{s.days['2026-10-01'].measurements!.Taille=79.5;s.days['2026-10-01'].steps=2000});
+ await a.sync();await b.sync();await a.sync();
+ assert.deepEqual(currentMeasurements(a.state,'2026-10-02'),{Poitrine:96,Taille:79.5});
+ assert.equal(a.state.days['2026-10-01'].steps,2000);
+ assert.ok(!a.docs.some(d=>d.conflict));assert.ok(!b.docs.some(d=>d.conflict));
+ cloud.setOffline(true);await b.update(s=>{s.days['2026-10-01'].measurements!.Poitrine=97});await b.sync();
+ cloud.setOffline(false);await b.sync();await a.sync();
+ assert.equal(currentMeasurements(a.state,'2026-10-03').Poitrine,97);
+});
 
 function backend(){
  const remote=new Map<string,{key:string;value:unknown;revision:number}>();

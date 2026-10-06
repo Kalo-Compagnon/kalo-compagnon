@@ -1,7 +1,7 @@
 import { openDB } from "idb";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { cloud } from './cloud';
-import { mergeImport } from './transfer';
+import { cloud } from "./cloud";
+import { mergeImport } from "./transfer";
 import { initialState, type State, type Settings, seedFoods } from "./domain";
 export type Payload = unknown;
 export interface Doc {
@@ -18,7 +18,8 @@ const db = openDB("logger-web-v2", 1, {
 });
 const url = import.meta.env?.VITE_SUPABASE_URL || cloud.url,
   key = import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || cloud.publishableKey;
-export const supabase = typeof window !== 'undefined' && url && key ? createClient(url, key) : null;
+export const supabase =
+  typeof window !== "undefined" && url && key ? createClient(url, key) : null;
 export const docsToState = (docs: Doc[]): State => {
   const s = initialState();
   const prefs: Record<string, unknown> = {};
@@ -51,12 +52,27 @@ export const docsToState = (docs: Doc[]): State => {
     }
   }
   s.settings = { ...s.settings, ...prefs };
+  // New per-zone records override legacy values embedded in a day document.
+  for (const d of docs) {
+    const [kind, day, ...parts] = d.key.split("/");
+    if (kind !== "measurement") continue;
+    const zone = parts.join("/");
+    s.days[day] ??= {};
+    s.days[day].measurements ??= {};
+    if (d.value === null) delete s.days[day].measurements![zone];
+    else s.days[day].measurements![zone] = d.value as number;
+  }
   return s;
 };
 export function stateToValues(s: State): Map<string, Payload> {
   const map = new Map<string, Payload>();
   for (const [k, v] of Object.entries(s.settings)) map.set(`settings/${k}`, v);
-  for (const [k, v] of Object.entries(s.days)) map.set(`day/${k}`, v);
+  for (const [k, v] of Object.entries(s.days)) {
+    const { measurements, ...day } = v;
+    map.set(`day/${k}`, day);
+    for (const [zone, value] of Object.entries(measurements ?? {}))
+      map.set(`measurement/${k}/${zone}`, value);
+  }
   for (const [kind, values] of [
     ["entry", s.entries],
     ["meal", s.meals],
@@ -244,11 +260,14 @@ export class Repository {
     await this.sync();
   }
   async mergeGuest() {
-    if (this.scope === 'guest') throw new Error('Connecte-toi pour transférer les données');
+    if (this.scope === "guest")
+      throw new Error("Connecte-toi pour transférer les données");
     const guest: Doc[] = (await (await db).get("documents", "guest")) ?? [];
-    if (!guest.some(d => d.value !== null)) return;
+    if (!guest.some((d) => d.value !== null)) return;
     // The account dialog explicitly confirms this merge; keep unrelated cloud records.
-    await this.update(s => mergeImport(s, docsToState(structuredClone(guest))));
+    await this.update((s) =>
+      mergeImport(s, docsToState(structuredClone(guest))),
+    );
     await this.sync();
   }
 }

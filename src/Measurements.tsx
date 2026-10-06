@@ -10,6 +10,48 @@ import {
   num,
 } from "./ui";
 import { groups, zones, fmt, timestamp, type Physical } from "./domain";
+import {
+  currentMeasurements,
+  measurementRecords,
+  previousMeasurement,
+  measurementDelta,
+  type MeasurementRecord,
+} from "./measurement-history";
+import { Account } from "./Settings";
+
+function MeasurementComparison({
+  records,
+  index,
+  allowed = zones,
+}: {
+  records: MeasurementRecord[];
+  index: number;
+  allowed?: string[];
+}) {
+  const record = records[index];
+  return (
+    <div className="measurement-comparison">
+      {allowed
+        .filter((z) => (record.values[z] ?? 0) > 0)
+        .map((z) => {
+          const previous = previousMeasurement(records, index, z),
+            value = record.values[z];
+          return (
+            <div className="measurement-comparison-row" key={z}>
+              <span>{z}</span>
+              <strong>{fmt(value)} cm</strong>
+              <span className="measurement-delta" aria-label={`Évolution ${z}`}>
+                {measurementDelta(value, previous)}
+              </span>
+              {previous !== undefined && (
+                <small>Précédent : {fmt(previous)} cm</small>
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+}
 
 function MeasurementInput({
   value,
@@ -308,11 +350,12 @@ function Body({
   );
 }
 export function Measurements() {
-  const { state, day, update, modal, notify } = useApp();
+  const { state, day, update, modal, notify, repo } = useApp();
   const [slide, setSlide] = useState(0),
     [selected, setSelected] = useState("Poitrine");
-  const values = state.days[day]?.measurements ?? {},
-    history = state.days[day]?.measurementHistory ?? [];
+  const values = currentMeasurements(state, day),
+    records = measurementRecords(state, day);
+  const [saving, setSaving] = useState(0);
   function changeSlide(n: number) {
     const v = Math.max(0, Math.min(3, n));
     setSlide(v);
@@ -324,58 +367,69 @@ export function Measurements() {
       setSlide(groups.findIndex((g, i) => i > 0 && g.includes(z)));
   }
   async function measure(v: number | ((current: number) => number)) {
-    await update((s) => {
-      s.days[day] = {
-        ...s.days[day],
-        measurements: {
-          ...s.days[day]?.measurements,
-          [selected]: Math.max(
-            0,
-            typeof v === "function"
-              ? v(s.days[day]?.measurements?.[selected] ?? 0)
-              : v,
-          ),
-        },
-      };
-    });
-  }
-  async function showHistory() {
-    let next = history;
-    if (!zones.every((z) => (values[z] ?? 0) > 0))
-      notify("Complète toutes les mesures avant d'ajouter un relevé");
-    else if (
-      history.length &&
-      zones.every((z) => history.at(-1)!.values[z] === values[z])
-    )
-      notify("Aucun changement : aucun nouveau relevé ajouté");
-    else {
-      next = [
-        ...history,
-        {
-          timestamp: timestamp(day),
-          values: Object.fromEntries(zones.map((z) => [z, values[z]])),
-        },
-      ].slice(-30);
+    setSaving((n) => n + 1);
+    try {
       await update((s) => {
-        s.days[day] = { ...s.days[day], measurementHistory: next };
+        const latest = currentMeasurements(s, day);
+        s.days[day] = {
+          ...s.days[day],
+          measurements: {
+            ...s.days[day]?.measurements,
+            [selected]: Math.max(
+              0,
+              typeof v === "function" ? v(latest[selected] ?? 0) : v,
+            ),
+          },
+        };
       });
+    } catch {
+      /* update reports the saving error without losing the stored values */
+    } finally {
+      setSaving((n) => n - 1);
     }
+  }
+  async function saveRecord() {
+    if (!Object.values(values).some((v) => v > 0)) {
+      notify("Renseigne au moins une mesure");
+      return;
+    }
+    try {
+      await update((s) => {
+        const data = s.days[day] ?? {},
+          history = data.measurementHistory ?? [];
+        const snapshot = currentMeasurements(s, day);
+        const last = history.at(-1);
+        if (last && JSON.stringify(last.values) === JSON.stringify(snapshot))
+          return;
+        s.days[day] = {
+          ...data,
+          measurementHistory: [
+            ...history,
+            {
+              timestamp: Math.max(timestamp(day), (last?.timestamp ?? 0) + 1),
+              values: snapshot,
+            },
+          ].slice(-30),
+        };
+      });
+      notify("Relevé enregistré");
+    } catch {
+      /* Error already shown by update. */
+    }
+  }
+  function showHistory() {
     modal(
       <Sheet title="Évolution des mensurations">
-        {next.length ? (
-          next
+        {records.length ? (
+          records
             .map((h, i) => (
-              <p className="card padded" key={i}>
-                {new Date(h.timestamp).toLocaleString("fr-FR")}
-                <br />
-                {zones
-                  .map((z) => {
-                    const delta =
-                      i > 0 ? h.values[z] - next[i - 1].values[z] : 0;
-                    return `${z} ${fmt(h.values[z])} cm${delta ? ` (${delta > 0 ? "+" : ""}${fmt(delta)})` : ""}`;
-                  })
-                  .join(" · ")}
-              </p>
+              <section
+                className="card padded measurement-record"
+                key={`${h.day}-${h.timestamp}`}
+              >
+                <h3>{new Date(h.timestamp).toLocaleString("fr-FR")}</h3>
+                <MeasurementComparison records={records} index={i} />
+              </section>
             ))
             .reverse()
         ) : (
@@ -386,6 +440,16 @@ export function Measurements() {
   }
   return (
     <>
+      <button
+        className="measurement-sync text-button"
+        onClick={() => modal(<Account />)}
+      >
+        {saving
+          ? "Enregistrement…"
+          : repo.scope === "guest"
+            ? "Enregistré sur cet appareil · Se connecter pour synchroniser"
+            : repo.status}
+      </button>
       <div className="slide-controls">
         <button
           disabled={slide === 0}
@@ -435,30 +499,57 @@ export function Measurements() {
         />
       </div>
       {slide > 0 ? (
-        <div className="card measure-editor">
-          <button
-            aria-label="Diminuer de 0,5 centimètre"
-            onClick={() => void measure((v) => v - 0.5)}
+        <>
+          <div className="card measure-editor">
+            <button
+              aria-label="Diminuer de 0,5 centimètre"
+              onClick={() => void measure((v) => v - 0.5)}
+            >
+              −
+            </button>
+            <MeasurementInput
+              key={selected}
+              aria-label={`${selected} en centimètres`}
+              label={`${selected} en centimètres`}
+              value={values[selected] || 0}
+              onChange={(value) => void measure(value)}
+            />
+            <span>cm</span>
+            <button
+              aria-label="Augmenter de 0,5 centimètre"
+              onClick={() => void measure((v) => v + 0.5)}
+            >
+              +
+            </button>
+          </div>
+          <div className="measurement-current-delta">
+            <strong>{selected}</strong> ·{" "}
+            {measurementDelta(
+              values[selected] ?? 0,
+              previousMeasurement(
+                records,
+                records
+                  .map((r) => (r.values[selected] ?? 0) > 0)
+                  .lastIndexOf(true),
+                selected,
+              ),
+            )}
+          </div>
+          <Button
+            className="measurement-history"
+            onClick={() => void saveRecord()}
           >
-            −
-          </button>
-          <MeasurementInput
-            key={selected}
-            aria-label={`${selected} en centimètres`}
-            label={`${selected} en centimètres`}
-            value={values[selected] || 0}
-            onChange={(value) => void measure(value)}
-          />
-          <span>cm</span>
-          <button
-            aria-label="Augmenter de 0,5 centimètre"
-            onClick={() => void measure((v) => v + 0.5)}
-          >
-            +
-          </button>
-        </div>
+            Enregistrer un relevé
+          </Button>
+        </>
       ) : (
         <>
+          <Button
+            className="measurement-history"
+            onClick={() => void saveRecord()}
+          >
+            Enregistrer un relevé
+          </Button>
           <Button
             primary
             className="measurement-history"
@@ -467,18 +558,21 @@ export function Measurements() {
             Historique et évolution
           </Button>
           <div className="card padded measurement-preview">
-            {history.length
-              ? history
+            {records.length
+              ? records
+                  .map((h, i) => ({ h, i }))
                   .slice(-5)
                   .reverse()
-                  .map((h, i) => (
-                    <p key={i}>
-                      {new Date(h.timestamp).toLocaleString("fr-FR")}
-                      <br />
-                      {zones
-                        .map((z) => `${z} · ${fmt(h.values[z])} cm`)
-                        .join(" • ")}
-                    </p>
+                  .map(({ h, i }) => (
+                    <section
+                      className="measurement-record"
+                      key={`${h.day}-${h.timestamp}`}
+                    >
+                      <h3>
+                        {new Date(h.timestamp).toLocaleDateString("fr-FR")}
+                      </h3>
+                      <MeasurementComparison records={records} index={i} />
+                    </section>
                   ))
               : "Aucun relevé enregistré"}
           </div>

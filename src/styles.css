@@ -901,6 +901,33 @@ form {
   margin-top: 8px;
   font-size: 12px;
 }
+.measurement-sync {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: left;
+  color: var(--muted);
+}
+.measurement-current-delta {
+  margin-top: 10px;
+  text-align: center;
+  color: var(--yellow);
+  font-size: 15px;
+}
+.measurement-record + .measurement-record { margin-top: 18px; }
+.measurement-record h3 { font-size: 14px; margin-bottom: 8px; }
+.measurement-comparison-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto;
+  gap: 4px 10px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.measurement-comparison-row strong { color: var(--text,#f7f8fa); }
+.measurement-delta { color: var(--yellow); white-space: nowrap; }
+.measurement-comparison-row small { grid-column: 1 / -1; color: var(--muted); }
 .sr-only {
   position: absolute;
   width: 1px;
