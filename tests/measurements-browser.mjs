@@ -93,10 +93,19 @@ try {
     .getByRole("button", { name: "Page précédente", exact: true })
     .click();
   await expect(page.locator(".measurement-preview")).toContainText("↑ +1 cm");
+  await expect(page.locator(".measurement-preview details[open]")).toHaveCount(0);
+  await page.locator(".measurement-preview summary").first().click();
+  await expect(page.locator(".measurement-preview .measurement-delta").first()).toBeVisible();
+  await page.locator(".measurement-preview summary").first().click();
+  await expect(page.locator(".measurement-preview details[open]")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Historique et évolution", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toContainText("Précédent : 96 cm");
+  await expect(page.getByRole("dialog").locator("details")).toHaveCount(3);
+  await expect(page.getByRole("dialog").locator("details[open]")).toHaveCount(0);
+  await page.getByRole("dialog").locator("summary").first().click();
+  await expect(page.getByRole("dialog").getByText("Précédent : 96 cm")).toBeVisible();
   mkdirSync("qa", { recursive: true });
   await page.screenshot({
     path: "qa/measurements-evolution-mobile.png",

@@ -53,6 +53,47 @@ function MeasurementComparison({
   );
 }
 
+function MeasurementDays({
+  records,
+  limit,
+}: {
+  records: MeasurementRecord[];
+  limit?: number;
+}) {
+  const days = [...new Set(records.map((r) => r.day))]
+    .reverse()
+    .slice(0, limit);
+  return (
+    <>
+      {days.map((day) => {
+        const entries = records
+          .map((record, index) => ({ record, index }))
+          .filter(({ record }) => record.day === day)
+          .reverse();
+        return (
+          <details className="measurement-day" key={day}>
+            <summary>
+              <span>{day.split("-").reverse().join("/")}</span>
+              <small>
+                {entries.length} relevé{entries.length > 1 ? "s" : ""}
+              </small>
+            </summary>
+            {entries.map(({ record, index }, i) => (
+              <section
+                className="measurement-record"
+                key={`${day}-${record.timestamp}`}
+              >
+                {entries.length > 1 && <h3>Relevé {entries.length - i}</h3>}
+                <MeasurementComparison records={records} index={index} />
+              </section>
+            ))}
+          </details>
+        );
+      })}
+    </>
+  );
+}
+
 function MeasurementInput({
   value,
   label,
@@ -421,17 +462,7 @@ export function Measurements() {
     modal(
       <Sheet title="Évolution des mensurations">
         {records.length ? (
-          records
-            .map((h, i) => (
-              <section
-                className="card padded measurement-record"
-                key={`${h.day}-${h.timestamp}`}
-              >
-                <h3>{new Date(h.timestamp).toLocaleString("fr-FR")}</h3>
-                <MeasurementComparison records={records} index={i} />
-              </section>
-            ))
-            .reverse()
+          <MeasurementDays records={records} />
         ) : (
           <p>Aucun relevé enregistré.</p>
         )}
@@ -558,23 +589,11 @@ export function Measurements() {
             Historique et évolution
           </Button>
           <div className="card padded measurement-preview">
-            {records.length
-              ? records
-                  .map((h, i) => ({ h, i }))
-                  .slice(-5)
-                  .reverse()
-                  .map(({ h, i }) => (
-                    <section
-                      className="measurement-record"
-                      key={`${h.day}-${h.timestamp}`}
-                    >
-                      <h3>
-                        {new Date(h.timestamp).toLocaleDateString("fr-FR")}
-                      </h3>
-                      <MeasurementComparison records={records} index={i} />
-                    </section>
-                  ))
-              : "Aucun relevé enregistré"}
+            {records.length ? (
+              <MeasurementDays records={records} limit={5} />
+            ) : (
+              "Aucun relevé enregistré"
+            )}
           </div>
         </>
       )}
