@@ -45,7 +45,7 @@ try {
     });
     for (let i = 0; i < 2; i++) {
       const expected = `rgb(${[1, 3, 5].map((offset) => parseInt(semantic[i].slice(offset, offset + 2), 16)).join(", ")})`;
-      await expect(page.locator(".daily-stats .value").nth(i)).toHaveCSS(
+      await expect(page.locator(".daily-band .daily-value").nth(i)).toHaveCSS(
         "color",
         expected,
       );

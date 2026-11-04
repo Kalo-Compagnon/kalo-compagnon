@@ -9,7 +9,7 @@ try {
     reducedMotion: "reduce",
   });
   await page.goto("http://localhost:8787");
-  await page.locator(".daily-stats").waitFor();
+  await page.locator(".daily-band").first().waitFor();
   const age = await page.evaluate(async () => {
     const today = new Date();
     const key = (offset) => {
@@ -44,7 +44,7 @@ try {
   const expense = (weight) =>
     `${(10 * weight + 6.25 * 180 - 5 * age + 5 + 13.5).toLocaleString("fr-FR", { useGrouping: false, maximumFractionDigits: 1 })} kcal`;
   await page.reload();
-  await expect(page.locator(".daily-stats .value").nth(1)).toHaveText(
+  await expect(page.locator(".daily-band .daily-value").nth(1)).toHaveText(
     expense(66),
   );
   await page
@@ -66,7 +66,7 @@ try {
   await page.getByRole("button", { name: "Fermer", exact: true }).click();
   await page.locator(".weight-tracking input[type=text]").fill("78");
   await page.locator(".weight-tracking button[type=submit]").click();
-  await expect(page.locator(".daily-stats .value").nth(1)).toHaveText(
+  await expect(page.locator(".daily-band .daily-value").nth(1)).toHaveText(
     expense(68),
   );
   await page.locator(".weight-record").first().click();
@@ -74,11 +74,11 @@ try {
     .getByRole("button", { name: "Supprimer cette pesée", exact: true })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await expect(page.locator(".daily-stats .value").nth(1)).toHaveText(
+  await expect(page.locator(".daily-band .daily-value").nth(1)).toHaveText(
     expense(63),
   );
   await page.reload();
-  await expect(page.locator(".daily-stats .value").nth(1)).toHaveText(
+  await expect(page.locator(".daily-band .daily-value").nth(1)).toHaveText(
     expense(63),
   );
   console.log(

@@ -147,8 +147,23 @@ export function Global({ onExport }: { onExport: () => void }) {
           </section>
           <div className="stat-row">
             <section className="card stat-card">
-              <p className="label">Apport moyen</p>
-              <p className="value pink">{b ? `${fmt(b.food)} kcal` : "—"}</p>
+              <div className="average-stat">
+                <p className="label">Apport moyen</p>
+                <p className="value pink">{b ? `${fmt(b.food)} kcal` : "—"}</p>
+              </div>
+              <div className="daily-band" aria-label="Apport du jour">
+                <span>{day === dayKey() ? "Aujourd’hui" : labelDay(day)}</span>
+                <strong className="daily-value pink">
+                  {fmt(consumed(state, day))} kcal
+                </strong>
+                <small>
+                  {missing
+                    ? "Partiel · calories à compléter"
+                    : entriesOn(state, day).length
+                      ? "Repas renseignés"
+                      : "Aucun repas renseigné"}
+                </small>
+              </div>
             </section>
             <section className="card stat-card info-card">
               <button
@@ -158,52 +173,35 @@ export function Global({ onExport }: { onExport: () => void }) {
               >
                 ⓘ
               </button>
-              <p className="label">Dépense moyenne</p>
-              <p className="value green">
-                {b ? `${fmt(b.expense)} kcal` : "—"}
-              </p>
-            </section>
-          </div>
-          <section className="daily-stats" aria-label="Bilan de la journée">
-            <h2>Pour cette journée</h2>
-            <p className="note">
-              {day === dayKey() ? "Aujourd’hui" : labelDay(day)}
-            </p>
-            <div className="stat-row">
-              <section className="card stat-card">
-                <p className="label">Apport du jour</p>
-                <p className="value pink">{fmt(consumed(state, day))} kcal</p>
-                <p className="note">
-                  {missing
-                    ? "Partiel · calories à compléter"
-                    : entriesOn(state, day).length
-                      ? "Repas renseignés"
-                      : "Aucun repas renseigné"}
-                </p>
-              </section>
-              <section className="card stat-card">
-                <p className="label">Dépense du jour</p>
+              <div className="average-stat">
+                <p className="label">Dépense moyenne</p>
                 <p className="value green">
+                  {b ? `${fmt(b.expense)} kcal` : "—"}
+                </p>
+              </div>
+              <div className="daily-band" aria-label="Dépense du jour">
+                <span>{day === dayKey() ? "Aujourd’hui" : labelDay(day)}</span>
+                <strong className="daily-value green">
                   {basal(state, day) > 0
                     ? `${fmt(expense(state, day))} kcal`
                     : "—"}
-                </p>
-                <p className="note">
+                </strong>
+                <small>
                   {basal(state, day) > 0
                     ? "Métabolisme + activités"
                     : "Métabolisme à renseigner"}
-                </p>
-              </section>
-            </div>
-            {budget && (
-              <p className="note daily-budget">
-                {budget.possible
-                  ? `Budget alimentaire : ${fmt(budget.target)} kcal · ${budget.remaining >= 0 ? `reste ${fmt(budget.remaining)} kcal pour ton déficit` : `${fmt(-budget.remaining)} kcal au-dessus du budget`}`
-                  : "Le déficit choisi dépasse la dépense estimée de cette journée."}
-                {budget.partial ? " · Estimation partielle" : ""}
-              </p>
-            )}
-          </section>
+                </small>
+              </div>
+            </section>
+          </div>
+          {budget && (
+            <p className="note daily-budget">
+              {budget.possible
+                ? `Budget alimentaire : ${fmt(budget.target)} kcal · ${budget.remaining >= 0 ? `reste ${fmt(budget.remaining)} kcal pour ton déficit` : `${fmt(-budget.remaining)} kcal au-dessus du budget`}`
+                : "Le déficit choisi dépasse la dépense estimée de cette journée."}
+              {budget.partial ? " · Estimation partielle" : ""}
+            </p>
+          )}
         </div>
         <div>
           <h2 className="section-title">Apport et dépense</h2>

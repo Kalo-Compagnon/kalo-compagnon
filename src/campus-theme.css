@@ -201,8 +201,53 @@ input {
   margin-top: 14px;
 }
 .stat-card {
-  height: 116px;
+  height: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.average-stat {
   padding: 18px;
+  min-height: 105px;
+}
+.daily-band {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 10px 18px;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--card) 35%, transparent);
+  font-size: 11px;
+  color: var(--muted);
+}
+.daily-value {
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.daily-band small {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  line-height: 1.4;
+}
+@media (max-width: 420px) {
+  .average-stat {
+    padding: 16px 12px;
+  }
+  .daily-band {
+    padding: 10px 12px;
+  }
+}
+@media (max-width: 360px) {
+  .daily-band {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .daily-band small {
+    grid-column: auto;
+  }
 }
 .stat-card:first-child {
   background: var(--pastel-purple);
@@ -215,22 +260,6 @@ input {
 .value {
   font-size: 23px;
   font-weight: 750;
-}
-.daily-stats {
-  margin-top: 24px;
-}
-.daily-stats h2 {
-  font-size: 16px;
-}
-.daily-stats .stat-row {
-  margin-top: 12px;
-}
-.daily-stats .stat-card {
-  height: auto;
-  min-height: 116px;
-}
-.daily-stats .note {
-  font-size: 10px;
 }
 .global-grid > div:nth-child(2) {
   margin-top: 24px;
