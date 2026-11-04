@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { useApp, Button, Field, Sheet, Confirm } from "./ui";
 import { supabase } from "./persistence";
+import { useEffect } from "react";
 import { allDays, dayKey, type State } from "./domain";
 import {
   download,
@@ -12,6 +13,8 @@ import {
 } from "./transfer";
 import { PhysicalRecords } from "./Measurements";
 import { LegacyMenu } from "./LegacyMeals";
+import { Profile } from "./Profile";
+import { Appearance } from "./Appearance";
 export function DataScreen() {
   const { state, modal, update, notify } = useApp();
   const [preview, setPreview] = useState<{
@@ -46,7 +49,7 @@ export function DataScreen() {
         className="export-btn"
         onClick={() =>
           download(
-            `logger_export_${dayKey()}.csv`,
+            `kalo_export_${dayKey()}.csv`,
             exportCSV(state),
             "text/csv;charset=utf-8",
           )
@@ -58,7 +61,7 @@ export function DataScreen() {
         className="export-btn"
         onClick={() =>
           download(
-            `logger_backup_${dayKey()}.json`,
+            `kalo_backup_${dayKey()}.json`,
             exportJSON(state),
             "application/json",
           )
@@ -68,9 +71,9 @@ export function DataScreen() {
       </Button>
       <h2 className="section-title">Importer des données</h2>
       <p className="note">
-        JSON ou CSV Logger. Vérification avant import ; les données existantes
-        sont conservées, sauf les enregistrements de même identifiant remplacés
-        par l’import.
+        JSON ou CSV Kalo (anciens fichiers Logger compatibles). Vérification
+        avant import ; les données existantes sont conservées, sauf les
+        enregistrements de même identifiant remplacés par l’import.
       </p>
       <label className="outline file-button">
         Choisir un fichier JSON ou CSV
@@ -128,6 +131,12 @@ export function DataScreen() {
         </section>
       )}
       <h2 className="section-title">Compte et données</h2>
+      <Button className="export-btn" onClick={() => modal(<Appearance />)}>
+        Apparence
+      </Button>
+      <Button className="export-btn" onClick={() => modal(<Profile />)}>
+        Mon profil et mes objectifs
+      </Button>
       <Button className="export-btn" onClick={() => modal(<LegacyMenu />)}>
         Repas · outils historiques
       </Button>
@@ -149,10 +158,21 @@ export function Account() {
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
-    [signup, setSignup] = useState(false);
+    [signup, setSignup] = useState(false),
+    [accountEmail, setAccountEmail] = useState("");
   const connected = repo.scope !== "guest";
+  useEffect(() => {
+    let active = true;
+    void supabase?.auth.getSession().then(({ data }) => {
+      if (active) setAccountEmail(data.session?.user.email ?? "");
+    });
+    return () => {
+      active = false;
+    };
+  }, [repo.scope]);
   return (
-    <Sheet title="Synchronisation" subtitle={repo.status}>
+    <Sheet title="Mon compte" subtitle={repo.status}>
+      <Button onClick={() => modal(<Appearance />)}>Apparence</Button>
       {!supabase ? (
         <p>
           La synchronisation distante n’est pas configurée. Tes données sont
@@ -162,15 +182,29 @@ export function Account() {
       ) : connected ? (
         <>
           <p>
-            Compte connecté. Les changements sont synchronisés automatiquement.
+            Compte personnel connecté{accountEmail ? ` : ${accountEmail}` : ""}.
+            Les changements sont synchronisés automatiquement.
           </p>
+          <Button onClick={() => modal(<Profile />)}>
+            Mon profil et mes objectifs
+          </Button>
           <Button primary onClick={() => void repo.sync()}>
             Synchroniser maintenant
           </Button>
           <Button
-            onClick={() => modal(<Confirm title="Transférer l’historique de cet appareil ?" action={() => repo.mergeGuest()}>
-              Les données locales seront ajoutées à ton compte. Les réglages et les enregistrements de même identifiant seront remplacés par ceux de cet appareil ; les autres données du compte seront conservées.
-            </Confirm>)}
+            onClick={() =>
+              modal(
+                <Confirm
+                  title="Transférer l’historique de cet appareil ?"
+                  action={() => repo.mergeGuest()}
+                >
+                  Les données locales seront ajoutées à ton compte. Les réglages
+                  et les enregistrements de même identifiant seront remplacés
+                  par ceux de cet appareil ; les autres données du compte seront
+                  conservées.
+                </Confirm>,
+              )
+            }
           >
             Importer les données locales de cet appareil
           </Button>
@@ -205,55 +239,71 @@ export function Account() {
           </Button>
         </>
       ) : (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            try {
-              const result = signup
-                ? await supabase!.auth.signUp({
-                    email,
-                    password,
-                    options: { emailRedirectTo: new URL('.', location.href).href },
-                  })
-                : await supabase!.auth.signInWithPassword({ email, password });
-              if (result.error) throw result.error;
-              notify(
-                signup
-                  ? "Compte créé. Vérifie tes e-mails si une confirmation est demandée."
-                  : "Connexion réussie",
-              );
-            } catch (e) {
-              notify((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <Field
-            label="Adresse e-mail"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Field
-            label="Mot de passe"
-            type="password"
-            autoComplete={signup ? "new-password" : "current-password"}
-            minLength={8}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button primary type="submit" disabled={busy}>
-            {busy ? "Connexion…" : signup ? "Créer un compte" : "Se connecter"}
-          </Button>
-          <Button onClick={() => setSignup(!signup)}>
-            {signup ? "J’ai déjà un compte" : "Créer un compte"}
-          </Button>
-        </form>
+        <>
+          <p>
+            Un compte chacun pour garder vos journaux séparés. Utilise le même
+            compte sur tes propres appareils. Un nouveau compte démarre avec un
+            journal vide.
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              try {
+                const result = signup
+                  ? await supabase!.auth.signUp({
+                      email,
+                      password,
+                      options: {
+                        emailRedirectTo: new URL(".", location.href).href,
+                      },
+                    })
+                  : await supabase!.auth.signInWithPassword({
+                      email,
+                      password,
+                    });
+                if (result.error) throw result.error;
+                notify(
+                  signup
+                    ? "Compte créé. Vérifie tes e-mails si une confirmation est demandée."
+                    : "Connexion réussie",
+                );
+              } catch (e) {
+                notify((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <Field
+              label="Adresse e-mail"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Field
+              label="Mot de passe"
+              type="password"
+              autoComplete={signup ? "new-password" : "current-password"}
+              minLength={8}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <Button primary type="submit" disabled={busy}>
+              {busy
+                ? "Connexion…"
+                : signup
+                  ? "Créer un compte"
+                  : "Se connecter"}
+            </Button>
+            <Button onClick={() => setSignup(!signup)}>
+              {signup ? "J’ai déjà un compte" : "Créer un compte"}
+            </Button>
+          </form>
+        </>
       )}
       <p className="note">
         Les données de chaque compte et celles du mode local sont séparées. Les

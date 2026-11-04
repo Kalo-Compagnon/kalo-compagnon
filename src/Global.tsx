@@ -2,11 +2,11 @@ import { useState } from "react";
 import {
   useApp,
   Sheet,
-  NumberField,
   Button,
   ValueDialog,
   HistoryList,
   num,
+  HoldButton,
 } from "./ui";
 import {
   balance,
@@ -20,34 +20,40 @@ import {
   calculateBasal,
   dayKey,
   sub,
+  dailyBudget,
+  ageOn,
+  rollingWeight,
 } from "./domain";
+import { BasalFields } from "./BasalFields";
 import { CalorieChart } from "./Charts";
 import { WeightTracking } from "./WeightTracking";
 export function BasalDialog() {
   const { state, day, update, close, notify } = useApp();
   const [sex, setSex] = useState(state.settings.sex),
-    [age, setAge] = useState(String(state.settings.age || "")),
-    [height, setHeight] = useState(String(state.settings.height || "")),
-    [weight, setWeight] = useState(String(state.settings.weight || ""));
+    [birthDate, setBirthDate] = useState(state.settings.birthDate ?? ""),
+    [height, setHeight] = useState(String(state.settings.height || ""));
+  const weight = rollingWeight(state, day);
   return (
     <Sheet title="Calcul du métabolisme basal">
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           try {
-            const value = calculateBasal(
-              sex,
-              num(age),
-              num(height),
-              num(weight),
-            );
+            const age = ageOn(birthDate, day);
+            if (age === null) throw new Error("Vérifie la date de naissance");
+            if (!weight)
+              throw new Error(
+                "Enregistre une première pesée dans « Poids sur la balance »",
+              );
+            const value = calculateBasal(sex, age, num(height), weight.value);
             await update((s) => {
               s.settings = {
                 ...s.settings,
                 sex,
-                age: num(age),
+                birthDate,
+                age,
                 height: num(height),
-                weight: num(weight),
+                weight: weight.value,
                 basal: day === dayKey() ? value : s.settings.basal,
               };
               s.days[day] = { ...s.days[day], basal: value };
@@ -58,48 +64,15 @@ export function BasalDialog() {
           }
         }}
       >
-        <div className="radio-row">
-          <label>
-            <input
-              type="radio"
-              checked={sex === "male"}
-              onChange={() => setSex("male")}
-            />
-            Homme
-          </label>
-          <label>
-            <input
-              type="radio"
-              checked={sex === "female"}
-              onChange={() => setSex("female")}
-            />
-            Femme
-          </label>
-        </div>
-        <NumberField
-          label="Âge"
-          value={age}
-          onChange={setAge}
-          min={13}
-          max={120}
-          required
-          step={1}
-        />
-        <NumberField
-          label="Taille (cm)"
-          value={height}
-          onChange={setHeight}
-          min={100}
-          max={250}
-          required
-        />
-        <NumberField
-          label="Poids (kg)"
-          value={weight}
-          onChange={setWeight}
-          min={30}
-          max={350}
-          required
+        <BasalFields
+          birthDate={birthDate}
+          setBirthDate={setBirthDate}
+          sex={sex}
+          setSex={setSex}
+          height={height}
+          setHeight={setHeight}
+          weight={weight}
+          day={day}
         />
         <Button primary type="submit">
           Calculer
@@ -109,8 +82,9 @@ export function BasalDialog() {
   );
 }
 export function Global({ onExport }: { onExport: () => void }) {
-  const { state, day, modal, update, editDay } = useApp();
+  const { state, day, modal, update, editDay, close } = useApp();
   const b = balance(state, day),
+    budget = dailyBudget(state, day),
     goal = state.settings.deficitGoal,
     missing = entriesOn(state, day).filter((e) => e.calories === null).length;
   const goalText = !b
@@ -190,10 +164,50 @@ export function Global({ onExport }: { onExport: () => void }) {
               </p>
             </section>
           </div>
+          <section className="daily-stats" aria-label="Bilan de la journée">
+            <h2>Pour cette journée</h2>
+            <p className="note">
+              {day === dayKey() ? "Aujourd’hui" : labelDay(day)}
+            </p>
+            <div className="stat-row">
+              <section className="card stat-card">
+                <p className="label">Apport du jour</p>
+                <p className="value pink">{fmt(consumed(state, day))} kcal</p>
+                <p className="note">
+                  {missing
+                    ? "Partiel · calories à compléter"
+                    : entriesOn(state, day).length
+                      ? "Repas renseignés"
+                      : "Aucun repas renseigné"}
+                </p>
+              </section>
+              <section className="card stat-card">
+                <p className="label">Dépense du jour</p>
+                <p className="value green">
+                  {basal(state, day) > 0
+                    ? `${fmt(expense(state, day))} kcal`
+                    : "—"}
+                </p>
+                <p className="note">
+                  {basal(state, day) > 0
+                    ? "Métabolisme + activités"
+                    : "Métabolisme à renseigner"}
+                </p>
+              </section>
+            </div>
+            {budget && (
+              <p className="note daily-budget">
+                {budget.possible
+                  ? `Budget alimentaire : ${fmt(budget.target)} kcal · ${budget.remaining >= 0 ? `reste ${fmt(budget.remaining)} kcal pour ton déficit` : `${fmt(-budget.remaining)} kcal au-dessus du budget`}`
+                  : "Le déficit choisi dépasse la dépense estimée de cette journée."}
+                {budget.partial ? " · Estimation partielle" : ""}
+              </p>
+            )}
+          </section>
         </div>
         <div>
           <h2 className="section-title">Apport et dépense</h2>
-          <p className="legend">Apport (rose, base) · Dépense (vert, haut)</p>
+          <p className="legend">Apport (violet, base) · Dépense (vert, haut)</p>
           <CalorieChart state={state} />
           <p className="note">
             Glisser pour parcourir les jours · * Données incomplètes
@@ -209,7 +223,7 @@ export function Global({ onExport }: { onExport: () => void }) {
       <WeightTracking key={day} />
       <p className="section-label history-heading">Journées terminées</p>
       <p className="note">
-        Sélectionne une journée pour consulter ou modifier ses données.
+        Maintiens une journée appuyée pour afficher le bouton de modification.
       </p>
       <section className="card history-card">
         {allDays(state).filter((d) => d < dayKey()).length === 0 ? (
@@ -229,14 +243,28 @@ export function Global({ onExport }: { onExport: () => void }) {
                     basal(state, d) <= 0 ? "métabolisme absent" : "",
                   ].filter(Boolean);
                 return (
-                  <button
+                  <HoldButton
                     key={d}
-                    className="history-day"
-                    onClick={() => editDay(d)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      editDay(d);
-                    }}
+                    label={`Journée du ${labelDay(d)} · maintenir pour les options`}
+                    onHold={() =>
+                      modal(
+                        <Sheet title={`Journée du ${labelDay(d)}`}>
+                          <p>
+                            Ouvre cette journée pour consulter ou modifier ses
+                            données.
+                          </p>
+                          <Button
+                            primary
+                            onClick={() => {
+                              editDay(d);
+                              close();
+                            }}
+                          >
+                            Modifier cette journée
+                          </Button>
+                        </Sheet>,
+                      )
+                    }
                   >
                     <time className="history-date" dateTime={d}>
                       {labelDay(d)}
@@ -258,7 +286,7 @@ export function Global({ onExport }: { onExport: () => void }) {
                     {why.length > 0 && (
                       <small>À compléter : {why.join(", ")}</small>
                     )}
-                  </button>
+                  </HoldButton>
                 );
               })}
           </HistoryList>

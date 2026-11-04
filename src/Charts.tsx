@@ -16,6 +16,8 @@ export function CalorieChart({ state }: { state: State }) {
     const canvas = ref.current!,
       parent = scroll.current!;
     function draw() {
+      const colors = getComputedStyle(document.documentElement);
+      const color = (name: string) => colors.getPropertyValue(name).trim();
       const width = Math.max(parent.clientWidth, days.length * 120 + 24),
         height = 220,
         ratio = devicePixelRatio || 1;
@@ -28,7 +30,7 @@ export function CalorieChart({ state }: { state: State }) {
       const bottom = 182,
         top = 28,
         group = (width - 24) / days.length;
-      c.strokeStyle = "#343A48";
+      c.strokeStyle = color("--border");
       c.lineWidth = 1;
       c.beginPath();
       c.moveTo(20, bottom);
@@ -38,7 +40,7 @@ export function CalorieChart({ state }: { state: State }) {
         const intake = consumed(state, d),
           spent = expense(state, d),
           x = 12 + group * (i + 0.5);
-        c.fillStyle = "#41D17D";
+        c.fillStyle = color("--chart-expense");
         c.beginPath();
         c.roundRect(x - 23, top, 46, bottom - top, 5);
         c.fill();
@@ -46,29 +48,30 @@ export function CalorieChart({ state }: { state: State }) {
           const h =
             (bottom - top) *
             Math.min(1, Math.max(0, intake / (intake + spent)));
-          c.fillStyle = "#FF2D70";
+          c.fillStyle = color("--chart-intake");
           c.beginPath();
           c.roundRect(x - 23, bottom - h, 46, h, 5);
           c.fill();
         }
         c.textAlign = "center";
-        c.font = "10px Roboto";
-        c.fillStyle = intake <= spent ? "#41D17D" : "#FF2D70";
+        c.font = "10px 'DM Sans Variable'";
+        c.fillStyle =
+          intake <= spent ? color("--chart-expense") : color("--chart-intake");
         const delta = sub(spent, intake);
         c.fillText(
           `${delta >= 0 ? "-" : "+"}${Math.round(Math.abs(delta))} kcal`,
           x,
           21,
         );
-        c.fillStyle = "#B8BEC8";
-        c.font = "12px Roboto";
+        c.fillStyle = color("--muted");
+        c.font = "12px 'DM Sans Variable'";
         c.fillText(
           `${d.slice(8)}/${d.slice(5, 7)}${complete(state, d) ? "" : " *"}`,
           x,
           bottom + 23,
         );
       });
-      c.strokeStyle = "#FF5252";
+      c.strokeStyle = color("--chart-warning");
       c.lineWidth = 2;
       c.setLineDash([8, 6]);
       c.beginPath();
@@ -76,16 +79,20 @@ export function CalorieChart({ state }: { state: State }) {
       c.lineTo(width - 20, 110);
       c.stroke();
       c.setLineDash([]);
-      c.fillStyle = "#FF5252";
+      c.fillStyle = color("--chart-warning");
       c.textAlign = "left";
-      c.font = "10px Roboto";
+      c.font = "10px 'DM Sans Variable'";
       c.fillText("50 %", 22, 105);
     }
     const ro = new ResizeObserver(draw);
     ro.observe(parent);
     draw();
     parent.scrollLeft = parent.scrollWidth;
-    return () => ro.disconnect();
+    window.addEventListener("kalo-appearance-change", draw);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("kalo-appearance-change", draw);
+    };
   }, [state]);
   return (
     <div ref={scroll} className="card chart-scroll">

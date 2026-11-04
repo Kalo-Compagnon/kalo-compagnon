@@ -1,17 +1,27 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { repository, supabase } from "./persistence";
-import { dayKey, titleDay, labelDay, allDays, type State } from "./domain";
+import {
+  dayKey,
+  titleDay,
+  labelDay,
+  allDays,
+  basal,
+  profileBasal,
+  type State,
+} from "./domain";
 import { Context } from "./ui";
 import { Global } from "./Global";
 import { Meals } from "./Meals";
 import { Measurements } from "./Measurements";
 import { Activity } from "./Activity";
-import { DataScreen } from "./Settings";
+import { Account, DataScreen } from "./Settings";
+import { Profile } from "./Profile";
+import { Appearance, applyAppearance } from "./Appearance";
 const tabs = [
-  ["global", "Global", "ic_home", "#2F6BFF"],
-  ["meals", "Repas", "ic_meat", "#FF2D70"],
-  ["measurements", "Mensuration", "cm", "#FFD54F"],
-  ["activity", "Activité", "ic_other", "#41D17D"],
+  ["global", "Global", "ic_home", "#6255bd"],
+  ["meals", "Repas", "ic_meat", "#6255bd"],
+  ["measurements", "Mensuration", "cm", "#6255bd"],
+  ["activity", "Activité", "ic_other", "#6255bd"],
 ];
 export default function App() {
   const [, render] = useState(0),
@@ -25,8 +35,18 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null);
   const state = repository.state,
     day = editing ?? today;
+  const weightSignature = JSON.stringify(
+    Object.entries(state.days).map(([d, v]) => [d, v.weightKg]),
+  );
   const notify = (s: string) => setMessage(s);
   useEffect(() => repository.subscribe(() => render((v) => v + 1)), []);
+  useEffect(() => {
+    const apply = () => applyAppearance(state.settings);
+    apply();
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, [state.settings.theme, state.settings.haloColor]);
   useEffect(() => {
     let cancelled = false;
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null =
@@ -38,6 +58,8 @@ export default function App() {
       setReady(false);
       setSheet(null);
       setEditing(null);
+      setScreen("global");
+      setMessage("");
       if (channel && supabase) void supabase.removeChannel(channel);
       try {
         await repository.load(id);
@@ -86,21 +108,41 @@ export default function App() {
   useEffect(() => {
     if (!ready) return;
     const missing = allDays(state).filter(
-      (d) =>
-        !state.days[d] || (!state.days[d].basal && state.settings.basal > 0),
+      (d) => !state.days[d] || (!state.days[d].basal && basal(state, d) > 0),
     );
-    if (missing.length)
+    const automatic = Boolean(state.settings.birthDate);
+    const current = automatic
+      ? profileBasal(state, today)
+      : state.settings.basal;
+    const refresh =
+      automatic &&
+      (state.days[today]?.basal !== current ||
+        state.settings.basal !== current);
+    if (missing.length || refresh)
       void repository
         .update((s) => {
           for (const d of missing)
             s.days[d] = {
               ...s.days[d],
-              basal: s.days[d]?.basal || s.settings.basal,
+              basal: basal(s, d),
               target: s.days[d]?.target ?? s.settings.target,
             };
+          if (automatic) {
+            s.settings.basal = current;
+            s.days[today] = { ...s.days[today], basal: current };
+          }
         })
         .catch((e) => notify(String(e)));
-  }, [ready, today, state.settings.first, state.settings.basal]);
+  }, [
+    ready,
+    today,
+    state.settings.first,
+    state.settings.basal,
+    state.settings.birthDate,
+    state.settings.sex,
+    state.settings.height,
+    weightSignature,
+  ]);
   useEffect(() => {
     if (sheet) {
       dialog.current?.showModal();
@@ -130,7 +172,7 @@ export default function App() {
   if (fatal)
     return (
       <main className="screen">
-        <h1>Logger</h1>
+        <h1>Kalo</h1>
         <p role="alert">{fatal}</p>
         <p>
           Aucune donnée n’a été effacée. Réessaie après avoir autorisé le
@@ -167,14 +209,57 @@ export default function App() {
         update,
       }}
     >
-      <div
-        className={`app ${editing ? "editing" : ""}`}
-        style={
-          {
-            "--accent": tabs.find((t) => t[0] === screen)?.[3] ?? "#2F6BFF",
-          } as React.CSSProperties
-        }
-      >
+      <div className={`app ${editing ? "editing" : ""}`}>
+        <div className="ambient-halo" aria-hidden="true" />
+        <aside className="logger-sidebar" aria-label="Kalo">
+          <div className="logger-brand">
+            Kalo<span>.</span>
+          </div>
+          <p className="sidebar-label">MON ESPACE</p>
+          <div className="sidebar-footer">
+            <strong>À ton rythme.</strong>
+            <p>
+              Un peu plus de repères.
+              <br />
+              Un peu moins de charge mentale.
+            </p>
+            <button className="text-button" onClick={() => setScreen("data")}>
+              Données et sauvegardes
+            </button>
+            <button
+              className="text-button"
+              onClick={() => setSheet(<Appearance />)}
+            >
+              Apparence
+            </button>
+          </div>
+        </aside>
+        <div className="logger-topbar">
+          <div className="logger-brand mobile-brand">
+            Kalo<span>.</span>
+          </div>
+          <p className="logger-breadcrumb">
+            Mon espace <span>/</span>{" "}
+            {screen === "data"
+              ? "Données"
+              : tabs.find((t) => t[0] === screen)?.[1]}
+          </p>
+          <button
+            className="account-access"
+            onClick={() => setSheet(<Account />)}
+          >
+            <span className="account-avatar" aria-hidden="true">
+              {state.settings.displayName
+                ?.slice(0, 2)
+                .toLocaleUpperCase("fr") || "K"}
+            </span>
+            <span>
+              {repository.scope === "guest"
+                ? "Mode local · Se connecter"
+                : `${state.settings.displayName || "Mon compte"} · Compte`}
+            </span>
+          </button>
+        </div>
         {editing && (
           <div className="edit-banner">
             <span>
@@ -189,12 +274,13 @@ export default function App() {
           <header>
             {screen === "data" && (
               <button
-                className="text-button"
+                className="text-button header-back"
                 onClick={() => setScreen("global")}
               >
                 ‹ Retour
               </button>
             )}
+            <p className="logger-eyebrow">MON JOURNAL · MON ÉQUILIBRE</p>
             <h1>{title}</h1>
             {screen !== "data" && (
               <p className="subtitle">
@@ -204,6 +290,11 @@ export default function App() {
               </p>
             )}
           </header>
+          {screen === "global" &&
+            repository.scope !== "guest" &&
+            !state.settings.profileCompleted && (
+              <Profile key={repository.scope} inline />
+            )}
           {screen === "global" && <Global onExport={() => setScreen("data")} />}
           {screen === "meals" && <Meals />}
           {screen === "measurements" && <Measurements key={day} />}
@@ -221,7 +312,6 @@ export default function App() {
                 setScreen(id);
                 window.scrollTo(0, 0);
               }}
-              style={{ color: screen === id ? color : undefined }}
             >
               {icon === "cm" ? (
                 <b className="cm-icon">cm</b>

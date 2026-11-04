@@ -27,12 +27,14 @@ await page.screenshot({
   fullPage: true,
   animations: "disabled",
 });
+await page.locator('.weight-tracking input[type="text"]').fill("80");
+await page.locator('.weight-tracking button[type="submit"]').click();
+await expect(page.locator(".weight-record")).toHaveCount(1);
 await page
   .getByRole("button", { name: "Paramétrer le métabolisme basal" })
   .click();
-await page.getByLabel("Âge", { exact: true }).fill("30");
+await page.getByLabel("Date de naissance", { exact: true }).fill("1996-01-01");
 await page.getByLabel("Taille (cm)", { exact: true }).fill("180");
-await page.getByLabel("Poids (kg)", { exact: true }).fill("80");
 await page.getByRole("button", { name: "Calculer", exact: true }).click();
 await page.getByRole("button", { name: "Repas", exact: true }).click();
 await page
@@ -122,9 +124,9 @@ await expect
               resolve(
                 read.result.find(
                   (doc) =>
-                    doc.key.startsWith("day/") &&
-                    doc.value?.measurements?.Poitrine !== undefined,
-                )?.value.measurements.Poitrine,
+                    doc.key.startsWith("measurement/") &&
+                    doc.key.endsWith("/Poitrine"),
+                )?.value,
               );
               db.close();
             };
@@ -158,6 +160,10 @@ await expect(page.getByRole("region", { name: "Suivi du poids" })).toHaveCount(
   0,
 );
 await page.getByRole("button", { name: "Global", exact: true }).click();
+// Remove the onboarding weigh-in before exercising the historical fixtures.
+await page.locator(".weight-record").first().click();
+await page.getByRole("button", { name: "Supprimer cette pesée", exact: true }).click();
+await expect(page.getByRole("dialog")).not.toBeVisible();
 const weight = page.getByLabel("Poids sur la balance (kg)", { exact: true });
 await page.getByLabel("Date de la pesée").fill("2026-10-01");
 await weight.fill("80,5");

@@ -159,5 +159,5 @@ const server = createServer(async (req, res) => {
 });
 server.requestTimeout = 30000;
 server.listen(port, production ? "0.0.0.0" : "127.0.0.1", () =>
-  console.log(`Logger + Garmin : http://localhost:${port}`),
+  console.log(`Kalo + Garmin : http://localhost:${port}`),
 );

@@ -1,55 +1,68 @@
-# Design QA — conversion React
+# Design QA — Kalo, adaptation du style Campus
 
-final result: blocked
+final result: passed
 
-## Preuves examinées le 1 octobre 2026
+Métabolisme : âge remplacé par la date de naissance, poids remplacé par la moyenne en lecture seule des sept dernières journées pesées, sans inclure les journées futures. Formulaire vérifié sur mobile : `qa/kalo-basal-birthdate-average.png`. Les 38 tests unitaires passent ; le parcours dédié vérifie correction et suppression d’une pesée puis rechargement, avec mise à jour de la dépense du jour. Les valeurs historiques enregistrées restent conservées.
 
-- Source visuelle : `../screen-global.png`, 1080 × 2400 pixels. Ancien Global du 13 septembre, assombri, avec sélecteurs Jour/Semaine/14 jours. La capture `screen-global-integrated.png` est noire.
-- Source actuelle : layouts XML et Kotlin inventoriés dans ANDROID_ANALYSIS.md. Global utilise désormais une moyenne glissante et un objectif cumulé.
-- Rendu : `qa/verified-Global-390x844.png`, page complète au viewport 390 × 844, DPR 1. Données de test : entrées du jour et journée historique, moyenne d'une journée complète.
-- Comparaison réunie : [qa/comparison-global.png](qa/comparison-global.png). Source ramenée uniformément à 390 pixels de large (facteur 390/1080), web à sa taille CSS. Barres système Android conservées dans la référence, sans imitation dans le web. Densité Android d'origine inconnue : ce rapprochement ne mesure pas la parité au pixel.
-- Écrans secondaires : `qa/verified-Repas-*`, `qa/verified-Mensuration-*`, `qa/verified-Activité-*`. Détail et vue secrète également capturés.
-- Formats : 390 × 844 portrait, 844 × 390 paysage, 1920 × 1080 PC et 2560 × 1440. Contextes tactiles mobiles et contextes PC distincts, animations terminées avant capture.
+Budget alimentaire dynamique : dépense estimée moins déficit choisi, puis repas consommés pour le reste à manger. Remplacement de l’objectif fixe dans Repas et le profil ; récapitulatif dans l’accueil. Cas sans métabolisme, repas incomplets et déficit supérieur à la dépense traités explicitement. Vérification de la cohérence Repas/accueil après ajout de 100 kcal d’activité manuelle ; capture `qa/kalo-dynamic-budget-mobile.png`. 34 tests unitaires réussis.
 
-## Comparaison
+Modification des journées : le clic simple est sans effet. Un appui de 650 ms ouvre les options, puis le bouton « Modifier cette journée » active explicitement la modification. Un mouvement de plus de 10 px ou une annulation du pointeur interrompt le geste. Le clavier ouvre les mêmes options via le bouton natif. Vérification ajoutée au parcours navigateur étendu.
 
-La source et le rendu ne représentent ni la même version ni les mêmes données. Leur comparaison confirme la structure générale (titre, bilan, deux cartes, graphique, navigation), sans certifier la fidélité demandée sur tous les écrans. Aucun score de similitude n'est annoncé.
+## Mise à jour Kalo et apparence — 4 novembre 2026
 
-| Surface | Observation et limite |
-|---|---|
-| Typographie | Roboto embarquée, hiérarchie et graisses cohérentes avec la référence ; tailles reprises des XML actuels. Titre, cartes et navigation lisibles. Métriques et retours de ligne exacts à comparer avec une référence actuelle. |
-| Espacements | Marges mobiles de 18 px, cartes arrondies et navigation flottante conservées. Le bilan actuel est plus haut que l'ancien, avec des textes supplémentaires du Kotlin actuel. Global passe en deux colonnes sur PC. Aucun débordement horizontal sur les quatre écrans et quatre formats. |
-| Couleurs | Valeurs Android, dont fond #0B0D12 et accents bleu/rose/jaune/vert. L'ancienne capture est assombrie ; ses pixels ne remplacent pas les couleurs du source. |
-| Images | PNG originaux, chemins vectoriels Android, Canvas porté du dessin natif. Silhouette nette et non déformée dans le rendu examiné. Référence actuelle manquante pour vérifier précisément rubans et étiquettes. |
-| Textes | Textes du code actuel, notamment moyenne glissante et objectif. Différences connues avec la capture ancienne. Références manquantes pour les autres écrans. |
+- Nom Kalo vérifié dans les deux en-têtes, le titre du navigateur et le manifeste d’installation. Les identifiants internes du stockage restent inchangés pour conserver les données existantes.
+- Halo circulaire flouté, non interactif, derrière les écrans. Couleur libre ou préréglée, indépendante du mode Clair / Sombre / Suivre l’appareil. Surfaces avec transparence et flou d’arrière-plan lorsque le navigateur le permet.
+- Prévisualisation, annulation, enregistrement, rechargement, préférence système et conservation d’une couleur arbitraire vérifiés dans `tests/appearance-browser.mjs`.
+- Vérifications visuelles : `qa/kalo-light-mobile.png`, `qa/kalo-dark-mobile.png`, `qa/kalo-appearance-small.png`, `qa/kalo-dark-*-mobile.png` et `qa/kalo-dark-*-desktop.png`. Mensurations, graphiques, formulaires et import FIT inspectés en sombre. Couleurs et textes des canvas adaptés au thème.
+- Aucun débordement horizontal en sombre à 320, 390, 844 et 1440 px ; navigation et interactions principales opérationnelles. L’aperçu du formulaire reste utilisable sur petit écran.
+- `npm.cmd test` : 29 tests réussis, incluant validation des préférences, compatibilité des anciens exports et isolation de la couleur par compte.
+- `npm.cmd run test:browser` : tous les parcours réussis, dont le nouveau parcours d’apparence.
+- Les captures Campus ci-dessous documentent l’étape précédente, avant le renommage Kalo et l’ajout du halo personnalisable.
 
-Une comparaison focalisée au pixel donnerait une précision trompeuse avec ces états et densités différents. Il faut des captures Android actuelles au même état pour la réaliser.
+Vérification du 4 novembre 2026. Périmètre : transposition de la charte graphique de Campus aux fonctions existantes de Logger.
 
-## Corrections et vérification après correction
+## Références et preuves
 
-1. Nom accessible de Mensuration : exclusion du texte décoratif « cm » du nom accessible, sans modification visuelle. Navigation testée après correction.
-2. Incréments rapides : utilisation de la dernière valeur dans la transaction pour ne pas perdre une pression rapprochée. Test de double pression passé.
-3. Sélection directe sur le corps : mêmes seuils de coordonnées que Kotlin, en plus des étiquettes et du balayage. Compilation et parcours des vues vérifiés ; gestes réels sur iPhone à confirmer.
-4. Captures intermédiaires pendant la transition de couleur : remplacées comme preuves principales par les captures `verified-*`, après contrôle de l'onglet actif et terminaison des animations.
+- Source : https://lowtaire.github.io/sched/, captures réelles `qa/campus-reference-mobile.png` (viewport 390 × 844) et `qa/campus-reference-desktop.png` (1440 × 1000), DPR 1. Feuille CSS source consultée pour les polices et couleurs.
+- Rendu : `qa/logger-campus-mobile.png`, `qa/logger-campus-desktop.png` aux mêmes dimensions CSS et DPR. Les captures complètes dépassent la hauteur du viewport lorsque le contenu défile.
+- Comparaisons réunies : `qa/campus-comparison-mobile.png` et `qa/campus-comparison-desktop.png`, source à gauche et Logger à droite, chaque colonne à sa largeur CSS native. Premier viewport avec un bandeau de légende de 40 px.
+- Écrans secondaires : `qa/logger-campus-meals-*`, `qa/logger-campus-measurements-*`, `qa/logger-campus-activity-*` aux formats mobile, desktop, paysage, petit mobile et tablette.
+- Contrôles supplémentaires : 320 × 740, 768 × 1024, 844 × 390, puis parcours existants à 1920 × 1080 et 2560 × 1440.
+- Ancien rapport Android conservé dans `qa/design-qa-android-2026-10-01.md` ; il ne représente pas la référence graphique retenue pour cette évolution.
 
-5. [P2 corrigé] Repas en paysage : le bouton Ajouter chevauchait la navigation flottante. Réduction uniquement en paysage du remplissage de la carte et de la hauteur du bouton. La nouvelle capture qa/verified-Repas-844x390.png montre le bouton dégagé ; contrôle géométrique et clic navigateur réussis après correction.
+## Constat et corrections
 
-6. Navigation rapprochée du source actuel : remplissage de 8 px, icône « cm » de 13 px, espacement icône/texte nul, fond actif opaque #202532 et contour #343A48. Dégradés issus de LiquidGlassLayout ; flou retiré car absent du dessin Android. Compilation et parcours navigateur aux quatre formats réussis après ces corrections.
+| Priorité | Surface | Constat | Correction et résultat |
+| --- | --- | --- | --- |
+| P2 corrigé | Mobile paysage | Le nouvel en-tête plaçait le bouton Ajouter sous la navigation fixe à 844 × 390. | En-tête et espacements compacts en paysage ; contrôle géométrique et parcours navigateur réussis. |
+| P2 corrigé | Contrastes | Les anciens champs et étiquettes canvas utilisaient des textes clairs après changement du thème. | Couleurs adaptées dans les feuilles CSS et les deux canvas ; inspection des mensurations et graphiques. |
+| P2 corrigé | Identité | Polices Roboto et accents néon de l’ancienne interface. | DM Sans et Manrope hébergées localement, palette Campus appliquée aux composants et à l’icône existante. |
 
-Comparaison post-correction : qa/comparison-global.png. Aucun changement graphique n'a été justifié à partir de la capture ancienne seule.
+## Comparaison visuelle
 
-## Tests navigateur
+| Surface obligatoire | Vérification |
+| --- | --- |
+| Polices et typographie | DM Sans Variable pour le corps, Manrope Variable pour les titres et valeurs. Polices chargées localement et famille calculée vérifiée. Titres avec chasse resserrée, libellés en petites capitales espacées comme la référence. |
+| Espacements et disposition | Marges mobiles 20 px, barre supérieure 78 px ; colonne latérale PC 218 px et barre supérieure 83 px comme Campus. Cartes arrondies 19 px, espaces de 14 à 24 px. Aucun débordement horizontal sur les cinq formats capturés. |
+| Couleurs et surfaces | Fond #f6f5f0, surfaces #fff, bordures #e7e7e1, violet #6255bd et carte principale #6153b5. Cartes secondaires lavande, vert sauge et pêche. Textes secondaires légèrement renforcés pour la lecture. |
+| Images et assets | Campus ne requiert aucune photographie à transférer. Illustrations anatomiques Android conservées sans déformation ; étiquettes adaptées en lavande. Icône existante recolorée, sans nouveau dessin. |
+| Contenu | Termes et actions de Logger conservés. Les cours et l’université de Campus ne sont pas recopiés dans le produit. Identité affichée : logger. |
+| Navigation et états | Navigation latérale PC et inférieure mobile, état actif violet, focus visible. Connexion, formulaire de profil, modales, champs et actions principales fonctionnels. |
 
-Playwright/Chromium autorisé explicitement. Profils isolés sans données personnelles. Résultats : qa/browser-results.json et qa/extended-results.json.
+Les vues réunies permettent de comparer directement les polices, la barre supérieure, les marges, les surfaces et les cartes. Les captures secondaires montrent aussi les étiquettes anatomiques et champs à une taille lisible.
 
-Réussis : basal ; aliment personnalisé avec calcul attendu ; extra sans calories puis modification ; pas ; mensurations et double incrément ; repas à quantité variable ; photo ; téléchargements JSON/CSV ; suppression puis restauration JSON avec photo ; assistant historique ; progression poids/taille ; édition d'une journée passée ; rechargement ; navigation et absence de débordement aux quatre formats. Aucune exception JavaScript pageerror détectée.
+## Écarts intentionnels et limites
 
-Ces tests ne remplacent ni Safari/iPhone réel ni Supabase réel.
+- Les blocs suivent les besoins de Logger : bilan, statistiques, poids et historique. Le calendrier de Campus n’est pas ajouté.
+- Pictogrammes existants conservés ; leur style plein diffère des icônes de contour de Campus. Écart P3 accepté pour conserver les ressources de l’application.
+- Les fonds pastel et le violet sont repris ; les lignes décoratives de la carte Campus ne sont pas nécessaires aux données de Logger.
+- Vérifications avec Chromium dans des contextes isolés. Safari sur iPhone réel et connexion à deux comptes Supabase réels non vérifiés ici.
+- Ancienne comparaison Android automatisée ignorée par le test existant car `screen-global.png` est absent ; comparaison Campus effectuée séparément et décrite ci-dessus.
 
-## Contrôles ouverts
+## Validation fonctionnelle
 
-1. Captures Android actuelles des écrans et dialogues au même état. Aucune référence exploitable pour les trois autres écrans, aucun émulateur configuré ou appareil connecté disponible.
-2. Safari sur iPhone : clavier, caméra, fichiers, gestes, rotation, installation.
-3. Supabase configuré : authentification, RLS et synchronisation réelle entre appareils ; tests actuels avec serveur simulé.
-
-Le statut blocked porte sur l'acceptation de la fidélité visuelle complète. Compilation et parcours ci-dessus passent. La conversion n'est pas déclarée identique à Android ou prête pour production.
+- `npm.cmd test` : 27 tests réussis.
+- `npm.cmd run build` : TypeScript et compilation réussis.
+- `npm.cmd run test:browser` : parcours principaux, étendus et profil mobile réussis.
+- Tests de disposition supplémentaires : aucune largeur dépassée, bouton Ajouter accessible en paysage.
+- Aucun compte réel créé et aucune publication distante effectuée.

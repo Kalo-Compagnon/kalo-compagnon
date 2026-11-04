@@ -1,5 +1,6 @@
 import {
   add,
+  basal,
   dayKey,
   div,
   estimateSteps,
@@ -168,7 +169,7 @@ export async function readFit(file: File, day: string, s: State) {
       if (state.imports.some((i) => i.hash === hash)) return;
       for (const m of accepted) {
         const d = state.days[m.day] ?? {
-          basal: state.settings.basal,
+          basal: basal(state, m.day),
           target: state.settings.target,
         };
         d.fitSteps = (d.fitSteps ?? 0) + m.steps;

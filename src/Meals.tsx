@@ -1,14 +1,45 @@
 import { useApp, ValueDialog, Button, ActionRow, Confirm } from "./ui";
-import { entriesOn, target, expense, fmt, dayKey } from "./domain";
+import { entriesOn, dailyBudget, consumed, expense, fmt, sub } from "./domain";
 import { FoodHub, ExtraEditor } from "./FoodHub";
+import {
+  Apple,
+  Cookie,
+  CupSoda,
+  Sparkles,
+  UtensilsCrossed,
+} from "lucide-react";
+
+function EntryPictogram({ type }: { type: string }) {
+  const { icon: Icon, label } =
+    type === "extra"
+      ? { icon: Sparkles, label: "Extra" }
+      : type === "meal"
+        ? { icon: UtensilsCrossed, label: "Repas" }
+        : type === "drink"
+          ? { icon: CupSoda, label: "Boisson" }
+          : type === "snack"
+            ? { icon: Cookie, label: "Collation" }
+            : { icon: Apple, label: "Aliment" };
+  return (
+    <span
+      className={`category-badge ${type}`}
+      role="img"
+      aria-label={label}
+      title={label}
+    >
+      <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+    </span>
+  );
+}
 export function Meals() {
   const { state, day, update, modal } = useApp(),
     entries = entriesOn(state, day),
-    food = Math.trunc(entries.reduce((a, e) => a + (e.calories ?? 0), 0)),
-    goal = target(state, day),
-    remaining = goal - food,
+    food = consumed(state, day),
+    budget = dailyBudget(state, day),
+    goal = budget?.target ?? 0,
+    remaining = budget?.remaining ?? 0,
     spent = expense(state, day),
-    delta = Math.trunc(spent) - food;
+    delta = sub(spent, food);
   return (
     <>
       <button
@@ -16,13 +47,13 @@ export function Meals() {
         onClick={() =>
           modal(
             <ValueDialog
-              title="Objectif calorique journalier"
-              initial={goal}
+              title="Objectif de déficit quotidien"
+              initial={state.settings.deficitGoal}
               min={1}
+              max={3000}
               onSave={(v) =>
                 update((s) => {
-                  s.days[day] = { ...s.days[day], target: v };
-                  if (day === dayKey()) s.settings.target = v;
+                  s.settings.deficitGoal = v;
                 })
               }
             />,
@@ -31,26 +62,53 @@ export function Meals() {
       >
         <span className="label">CALORIES DU JOUR</span>
         <span className="consumed-row">
-          <strong>{food.toLocaleString("fr-FR")}</strong>
+          <strong>{fmt(food)}</strong>
           <b className={remaining >= 0 ? "light-pink" : "yellow"}>
-            {remaining >= 0
-              ? `${remaining.toLocaleString("fr-FR")} restantes`
-              : `+${(-remaining).toLocaleString("fr-FR")} dépassées`}
+            {!budget
+              ? "Budget à calculer"
+              : !budget.possible
+                ? "Déficit à ajuster"
+                : remaining >= 0
+                  ? `${fmt(remaining)} kcal restantes`
+                  : `${fmt(-remaining)} kcal au-dessus du budget`}
           </b>
         </span>
-        <progress
-          value={Math.min(
-            100,
-            Math.max(0, Math.trunc((food * 100) / Math.max(1, goal))),
-          )}
-          max={100}
-        />
+        {budget && budget.possible && (
+          <progress
+            value={Math.min(
+              100,
+              Math.max(0, Math.trunc((food * 100) / Math.max(1, goal))),
+            )}
+            max={100}
+          />
+        )}
         <span className="target">
-          Objectif {goal.toLocaleString("fr-FR")} kcal · modifier
+          {budget
+            ? `Budget dynamique : ${fmt(goal)} kcal`
+            : "Renseigne ton métabolisme pour calculer le budget"}
         </span>
+        <span className="target">
+          Déficit choisi : {fmt(state.settings.deficitGoal)} kcal · modifier
+        </span>
+        {budget && (
+          <span className="target">
+            {fmt(spent)} kcal de dépense estimée −{" "}
+            {fmt(state.settings.deficitGoal)} kcal de déficit
+          </span>
+        )}
+        {budget && !budget.possible && (
+          <span className="target">
+            Le déficit choisi dépasse la dépense estimée de cette journée.
+          </span>
+        )}
+        {budget?.partial && (
+          <span className="target">
+            Estimation partielle · des calories restent à renseigner.
+          </span>
+        )}
         <b className="theoretical">
-          {spent > 0
-            ? `${delta >= 0 ? "Déficit" : "Surplus"} théorique estimé : ${Math.abs(delta).toLocaleString("fr-FR")} kcal`
+          {budget
+            ? `${delta >= 0 ? "Déficit" : "Surplus"} théorique estimé : ${fmt(Math.abs(delta))} kcal`
             : "Déficit théorique estimé : —"}
         </b>
       </button>
@@ -85,17 +143,7 @@ export function Meals() {
             }
           >
             <div className="entry">
-              <span className={`category-badge ${e.type}`}>
-                {e.type === "extra"
-                  ? "E"
-                  : e.type === "meal"
-                    ? "R"
-                    : e.type === "drink"
-                      ? "B"
-                      : e.type === "snack"
-                        ? "S"
-                        : "A"}
-              </span>
+              <EntryPictogram type={e.type} />
               <div className="entry-text">
                 <strong>
                   {e.foodName}

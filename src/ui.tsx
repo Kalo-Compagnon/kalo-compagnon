@@ -21,6 +21,69 @@ export interface AppContext {
 }
 export const Context = createContext<AppContext>(null!);
 export const useApp = () => useContext(Context);
+export function HoldButton({
+  children,
+  onHold,
+  label,
+}: {
+  children: ReactNode;
+  onHold: () => void;
+  label: string;
+}) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const origin = useRef({ x: 0, y: 0 });
+  const [holding, setHolding] = useState(false);
+  const cancel = () => {
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = null;
+    setHolding(false);
+  };
+  useEffect(() => {
+    window.addEventListener("blur", cancel);
+    document.addEventListener("visibilitychange", cancel);
+    return () => {
+      if (timer.current !== null) clearTimeout(timer.current);
+      window.removeEventListener("blur", cancel);
+      document.removeEventListener("visibilitychange", cancel);
+    };
+  }, []);
+  return (
+    <button
+      type="button"
+      className={`history-day${holding ? " holding" : ""}`}
+      aria-label={label}
+      aria-haspopup="dialog"
+      onPointerDown={(e) => {
+        if (e.button !== 0 || !e.isPrimary) return;
+        cancel();
+        origin.current = { x: e.clientX, y: e.clientY };
+        setHolding(true);
+        timer.current = setTimeout(() => {
+          cancel();
+          onHold();
+        }, 650);
+      }}
+      onPointerMove={(e) => {
+        if (
+          Math.hypot(
+            e.clientX - origin.current.x,
+            e.clientY - origin.current.y,
+          ) > 10
+        )
+          cancel();
+      }}
+      onPointerUp={cancel}
+      onPointerCancel={cancel}
+      onPointerLeave={cancel}
+      onContextMenu={(e) => e.preventDefault()}
+      onClick={(e) => {
+        if (e.detail === 0) onHold();
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 export function HistoryList({
   children,
   visibleCount = 5,

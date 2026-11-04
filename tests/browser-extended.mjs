@@ -197,6 +197,45 @@ try {
   await expect(page.locator("dialog")).not.toBeVisible();
   await tab("Global");
   await page.locator(".history-day").first().click();
+  await expect(page.locator(".edit-banner")).not.toBeVisible();
+  await expect(page.locator("dialog")).not.toBeVisible();
+  const historyDay = page.locator(".history-day").first();
+  await historyDay.dispatchEvent("pointerdown", {
+    button: 0,
+    isPrimary: true,
+    clientX: 40,
+    clientY: 40,
+  });
+  await historyDay.dispatchEvent("pointermove", { clientX: 40, clientY: 65 });
+  await page.waitForTimeout(750);
+  await expect(page.locator("dialog")).not.toBeVisible();
+  await historyDay.dispatchEvent("pointerdown", {
+    button: 0,
+    isPrimary: true,
+    clientX: 40,
+    clientY: 40,
+  });
+  await historyDay.dispatchEvent("pointercancel");
+  await page.waitForTimeout(750);
+  await expect(page.locator("dialog")).not.toBeVisible();
+  await historyDay.focus();
+  await historyDay.press("Enter");
+  await expect(
+    page.getByRole("button", { name: "Modifier cette journée", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".edit-banner")).not.toBeVisible();
+  await button("Fermer").click();
+  await historyDay.hover();
+  await page.mouse.down();
+  await page.waitForTimeout(750);
+  await page.mouse.up();
+  await expect(
+    page.getByRole("button", { name: "Modifier cette journée", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".edit-banner")).not.toBeVisible();
+  await page
+    .getByRole("button", { name: "Modifier cette journée", exact: true })
+    .click();
   await expect(page.locator(".edit-banner")).toBeVisible();
   await tab("Repas");
   await expect(page.locator(".entry")).toContainText("Historique QA");

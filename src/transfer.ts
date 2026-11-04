@@ -17,6 +17,7 @@
   f,
   normalize,
   sub,
+  ageOn,
 } from "./domain";
 export function download(name: string, text: string, type: string) {
   const url = URL.createObjectURL(new Blob([text], { type })),
@@ -94,6 +95,32 @@ export function validateState(value: unknown): State {
     "objectifs",
   );
   assert(["male", "female"].includes(s.settings.sex), "sexe");
+  assert(
+    s.settings.birthDate === undefined ||
+      (str(s.settings.birthDate) && ageOn(s.settings.birthDate) !== null),
+    "date de naissance",
+  );
+  assert(
+    s.settings.theme === undefined ||
+      ["light", "dark", "system"].includes(s.settings.theme),
+    "thème",
+  );
+  assert(
+    s.settings.haloColor === undefined ||
+      (str(s.settings.haloColor) &&
+        /^#[0-9a-f]{6}$/i.test(s.settings.haloColor)),
+    "couleur du halo",
+  );
+  assert(
+    s.settings.displayName === undefined ||
+      (str(s.settings.displayName) && s.settings.displayName.length <= 60),
+    "prénom",
+  );
+  assert(
+    s.settings.profileCompleted === undefined ||
+      typeof s.settings.profileCompleted === "boolean",
+    "profil",
+  );
   for (const list of [s.entries, s.foods, s.meals, s.physical, s.imports]) {
     const ids = new Set();
     for (const item of list) {
@@ -118,6 +145,7 @@ export function validateState(value: unknown): State {
       "fitSteps",
       "fitCalories",
       "fitCoveredSteps",
+      "manualActivityCalories",
       "weightKg",
     ] as const)
       assert(
@@ -246,6 +274,7 @@ const headers = [
   "steps",
   "step_kcal",
   "fit_activity_kcal",
+  "manual_activity_kcal",
   "fit_covered_steps",
   "waist_cm",
   "weight_kg",
@@ -268,12 +297,13 @@ export function exportCSV(s: State) {
       date: d,
       consumed_kcal: consumed(s, d),
       expense_kcal: expense(s, d),
-      deficit_kcal: basal(s, d) > 0 ? sub(expense(s, d),consumed(s, d)) : null,
+      deficit_kcal: basal(s, d) > 0 ? sub(expense(s, d), consumed(s, d)) : null,
       target_kcal: target(s, d),
       basal_kcal: basal(s, d),
       steps: steps(day),
       step_kcal: f(steps(day) * f(0.045)),
       fit_activity_kcal: day.fitCalories ?? 0,
+      manual_activity_kcal: day.manualActivityCalories ?? 0,
       fit_covered_steps: day.fitCoveredSteps ?? 0,
       payload_json: JSON.stringify(day),
     });
@@ -478,6 +508,7 @@ export function importCSV(text: string): { state: State; warnings: string[] } {
           steps: Math.max(0, n(r.steps) - 300),
           fitSteps: 0,
           fitCalories: n(r.fit_activity_kcal),
+          manualActivityCalories: n(r.manual_activity_kcal),
           fitCoveredSteps: n(r.fit_covered_steps),
         };
         break;

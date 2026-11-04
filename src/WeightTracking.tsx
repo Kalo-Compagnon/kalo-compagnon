@@ -28,6 +28,31 @@ export function WeightTracking() {
     y: 100 - (80 * (r.weight - low)) / (high - low),
     ...r,
   }));
+  // Monotone cubic interpolation keeps the curve on the recorded points,
+  // without inventing peaks between two weigh-ins.
+  const slopes = points
+    .slice(1)
+    .map((p, i) => (p.y - points[i].y) / (p.x - points[i].x));
+  const tangents = points.map((_, i) => {
+    if (i === 0) return slopes[0] ?? 0;
+    if (i === points.length - 1) return slopes[i - 1];
+    const before = slopes[i - 1],
+      after = slopes[i];
+    if (before * after <= 0) return 0;
+    const left = points[i].x - points[i - 1].x;
+    const right = points[i + 1].x - points[i].x;
+    const w1 = 2 * right + left,
+      w2 = right + 2 * left;
+    return (w1 + w2) / (w1 / before + w2 / after);
+  });
+  const curve = points
+    .map((p, i) => {
+      if (i === 0) return `M ${p.x},${p.y}`;
+      const previous = points[i - 1],
+        step = (p.x - previous.x) / 3;
+      return `C ${previous.x + step},${previous.y + step * tangents[i - 1]} ${p.x - step},${p.y - step * tangents[i]} ${p.x},${p.y}`;
+    })
+    .join(" ");
   return (
     <section
       className="card padded weight-tracking"
@@ -112,8 +137,8 @@ export function WeightTracking() {
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#38bdf8" />
-                <stop offset="100%" stopColor="#a78bfa" />
+                <stop offset="0%" stopColor="#6255bd" />
+                <stop offset="100%" stopColor="#897acb" />
               </linearGradient>
             </defs>
             <text x="4" y="22" fill="currentColor" fontSize="10">
@@ -136,14 +161,16 @@ export function WeightTracking() {
                 {labelDay(last.date)}
               </text>
             )}
-            <polyline
-              points={points.map((p) => `${p.x},${p.y}`).join(" ")}
+            <path
+              d={curve}
               fill="none"
               stroke={`url(#${gradientId})`}
               strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
             {points.map((p) => (
-              <circle key={p.date} cx={p.x} cy={p.y} r="3" fill="#a78bfa">
+              <circle key={p.date} cx={p.x} cy={p.y} r="3" fill="#6255bd">
                 <title>
                   {labelDay(p.date)} : {fmt(p.weight)} kg
                 </title>

@@ -164,6 +164,8 @@ function Body({
     let gone = false;
     function draw() {
       if (gone || !img.complete || !img.naturalWidth) return;
+      const colors = getComputedStyle(document.documentElement);
+      const color = (name: string) => colors.getPropertyValue(name).trim();
       const w = canvas.parentElement!.clientWidth - 2,
         h = slide === 0 ? 430 : 490,
         dpr = devicePixelRatio || 1;
@@ -174,7 +176,7 @@ function Body({
       const c = canvas.getContext("2d")!;
       c.scale(dpr, dpr);
       bounds.current = [];
-      c.font = "bold 12px Roboto";
+      c.font = "bold 12px 'DM Sans Variable'";
       const scale = Math.min(
           (w - 16) / img.naturalWidth,
           (h - 16) / img.naturalHeight,
@@ -196,14 +198,14 @@ function Body({
         ))
           top = Math.max(top, b.y + b.h + 8);
         const left = lx >= w / 2 ? lx - bw : lx;
-        c.fillStyle = active ? "#FFD54F" : "rgba(37,42,54,.92)";
+        c.fillStyle = active ? "#6255BD" : color("--canvas-label");
         c.beginPath();
         c.roundRect(left, top, bw, 50, 7);
         c.fill();
         c.textAlign = "center";
-        c.fillStyle = active ? "#14161B" : "white";
+        c.fillStyle = active ? "#FFFFFF" : color("--text");
         c.fillText(zone, left + bw / 2, top + 19);
-        c.fillStyle = active ? "#14161B" : "#FFD54F";
+        c.fillStyle = active ? "#FFFFFF" : color("--accent");
         c.fillText(value, left + bw / 2, top + 40);
         bounds.current.push({ zone, x: left, y: top, w: bw, h: 50 });
       }
@@ -216,7 +218,7 @@ function Body({
           xx = w * 0.53 - ww / 2,
           yy = h * 0.17;
         c.drawImage(img, sx, 0, sw, sh, xx, yy, ww, hh);
-        c.strokeStyle = "#FFD54F";
+        c.strokeStyle = "#6255BD";
         c.lineWidth = 2;
         c.beginPath();
         c.moveTo(w * 0.13, yy + hh * 0.04);
@@ -275,7 +277,7 @@ function Body({
         c.strokeStyle =
           slide > 0
             ? front
-              ? "#FFD54F"
+              ? "#6255BD"
               : "rgba(255,255,255,.59)"
             : "rgba(205,209,216,.22)";
         c.lineWidth = slide > 0 ? 3 : 1.3;
@@ -314,9 +316,11 @@ function Body({
     }
     img.onload = draw;
     const ro = new ResizeObserver(draw);
+    window.addEventListener("kalo-appearance-change", draw);
     ro.observe(canvas.parentElement!);
     return () => {
       gone = true;
+      window.removeEventListener("kalo-appearance-change", draw);
       ro.disconnect();
     };
   }, [slide, selected, values]);

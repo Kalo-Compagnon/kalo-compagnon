@@ -107,10 +107,16 @@ export interface Day {
   fitSteps?: number;
   fitCalories?: number;
   fitCoveredSteps?: number;
+  manualActivityCalories?: number;
   measurements?: Record<string, number>;
   measurementHistory?: { timestamp: number; values: Record<string, number> }[];
 }
 export interface Settings {
+  birthDate?: string;
+  theme?: "light" | "dark" | "system";
+  haloColor?: string;
+  displayName?: string;
+  profileCompleted?: boolean;
   legacyRates?: Record<string, number>;
   legacyQuantities?: Record<string, number>;
   first: string;
@@ -201,16 +207,68 @@ export const groups = [
   zones.slice(6),
   ["Longueur", "Circonférence"],
 ];
-export const basal = (s: State, d: string) =>
-  (s.days[d]?.basal ?? 0) > 0 ? s.days[d].basal! : s.settings.basal;
-export const target = (s: State, d: string) =>
-  s.days[d]?.target ?? s.settings.target;
+export function ageOn(birthDate: string, on = dayKey()): number | null {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(birthDate) ||
+    birthDate > on ||
+    dayKey(parseDay(birthDate)) !== birthDate
+  )
+    return null;
+  const birth = parseDay(birthDate),
+    date = parseDay(on);
+  return (
+    date.getFullYear() -
+    birth.getFullYear() -
+    (on.slice(5) < birthDate.slice(5) ? 1 : 0)
+  );
+}
+export function rollingWeight(s: State, through = dayKey()) {
+  const records = Object.entries(s.days)
+    .filter(
+      ([date, day]) =>
+        date <= through &&
+        Number.isFinite(day.weightKg) &&
+        (day.weightKg ?? 0) > 0,
+    )
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 7);
+  return records.length
+    ? {
+        value: f(
+          records.reduce((sum, [, d]) => sum + d.weightKg!, 0) / records.length,
+        ),
+        count: records.length,
+      }
+    : null;
+}
+export function profileBasal(s: State, day = dayKey()) {
+  const age = s.settings.birthDate ? ageOn(s.settings.birthDate, day) : null;
+  const weight = rollingWeight(s, day);
+  if (age === null || !weight) return 0;
+  try {
+    return calculateBasal(s.settings.sex, age, s.settings.height, weight.value);
+  } catch {
+    return 0;
+  }
+}
+export const basal = (s: State, d: string) => {
+  if (s.settings.birthDate && d === dayKey()) return profileBasal(s, d);
+  if ((s.days[d]?.basal ?? 0) > 0) return s.days[d].basal!;
+  return s.settings.birthDate ? profileBasal(s, d) : s.settings.basal;
+};
+export const target = (s: State, d: string) => dailyBudget(s, d)?.target ?? 0;
 export const steps = (d: Day) =>
   300 + Math.max(0, d.steps ?? 0) + Math.max(0, d.fitSteps ?? 0);
 export const activity = (d: Day) =>
   add(
-    mul(Math.max(0, steps(d) - Math.max(0, d.fitCoveredSteps ?? 0)), f(0.045)),
-    Math.max(0, d.fitCalories ?? 0),
+    add(
+      mul(
+        Math.max(0, steps(d) - Math.max(0, d.fitCoveredSteps ?? 0)),
+        f(0.045),
+      ),
+      Math.max(0, d.fitCalories ?? 0),
+    ),
+    Math.max(0, d.manualActivityCalories ?? 0),
   );
 export const expense = (s: State, d: string) =>
   add(basal(s, d), activity(s.days[d] ?? {}));
@@ -220,6 +278,18 @@ export const entriesOn = (s: State, d: string) =>
     .sort((a, b) => b.timestamp - a.timestamp);
 export const consumed = (s: State, d: string) =>
   f(entriesOn(s, d).reduce((a, e) => a + (e.calories ?? 0), 0));
+export function dailyBudget(s: State, day: string) {
+  if (basal(s, day) <= 0) return null;
+  const spent = expense(s, day),
+    available = sub(spent, s.settings.deficitGoal);
+  return {
+    spent,
+    target: Math.max(0, available),
+    remaining: sub(available, consumed(s, day)),
+    possible: available >= 0,
+    partial: entriesOn(s, day).some((e) => e.calories === null),
+  };
+}
 export const complete = (s: State, d: string) => {
   const es = entriesOn(s, d);
   return (

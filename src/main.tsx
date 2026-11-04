@@ -1,9 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource/roboto/latin-400.css";
-import "@fontsource/roboto/latin-500.css";
-import "@fontsource/roboto/latin-700.css";
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/manrope";
 import "./styles.css";
+import "./campus-theme.css";
+import "./appearance.css";
 import App from "./App";
 // Replace the previous prototype's cache-first worker, which otherwise serves stale HTML.
 if ("serviceWorker" in navigator)
