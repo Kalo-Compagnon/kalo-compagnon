@@ -451,6 +451,7 @@ progress::-moz-progress-bar {
   background: var(--pastel-purple);
   color: var(--accent);
 }
+.slide-controls button:not(.slide-title) { display: grid; place-items: center; }
 .slide-dots {
   color: var(--accent);
 }

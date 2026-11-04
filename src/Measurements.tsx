@@ -10,6 +10,7 @@ import {
   num,
 } from "./ui";
 import { groups, zones, fmt, timestamp, type Physical } from "./domain";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   currentMeasurements,
   measurementRecords,
@@ -491,7 +492,7 @@ export function Measurements() {
           aria-label="Page précédente"
           onClick={() => changeSlide(slide === 4 ? 3 : slide - 1)}
         >
-          ◀
+          <ChevronLeft size={22} strokeWidth={2} aria-hidden="true" />
         </button>
         <button
           className="slide-title"
@@ -517,7 +518,7 @@ export function Measurements() {
           aria-label="Page suivante"
           onClick={() => changeSlide(slide + 1)}
         >
-          ▶
+          <ChevronRight size={22} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
       <p className="slide-dots">
