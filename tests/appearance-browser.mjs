@@ -21,6 +21,57 @@ try {
     page.evaluate(() =>
       document.documentElement.style.getPropertyValue("--halo-color"),
     );
+  const expectAccent = async (color) => {
+    const neutral = await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--text")
+        .trim(),
+    );
+    const neutralRgb = `rgb(${[1, 3, 5].map((i) => parseInt(neutral.slice(i, i + 2), 16)).join(", ")})`;
+    await expect(page.locator(".balance-card .goal-chip")).toHaveCSS(
+      "color",
+      neutralRgb,
+    );
+    await expect(page.locator(".balance-card .cum-deficit")).toHaveCSS(
+      "color",
+      neutralRgb,
+    );
+    const semantic = await page.evaluate(() => {
+      const style = getComputedStyle(document.documentElement);
+      return [
+        style.getPropertyValue("--pink").trim(),
+        style.getPropertyValue("--green").trim(),
+      ];
+    });
+    for (let i = 0; i < 2; i++) {
+      const expected = `rgb(${[1, 3, 5].map((offset) => parseInt(semantic[i].slice(offset, offset + 2), 16)).join(", ")})`;
+      await expect(page.locator(".daily-stats .value").nth(i)).toHaveCSS(
+        "color",
+        expected,
+      );
+    }
+    const rgb = `rgb(${[1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16)).join(", ")})`;
+    await expect(page.locator(".balance-card")).toHaveCSS(
+      "background-color",
+      rgb,
+    );
+    await expect(page.locator(".weight-tracking .primary")).toHaveCSS(
+      "background-color",
+      rgb,
+    );
+    if (await page.getByRole("dialog").isVisible()) {
+      await expect(page.getByRole("dialog").locator(".primary")).toHaveCSS(
+        "background-color",
+        rgb,
+      );
+      const accents = await page.evaluate(() =>
+        [document.documentElement, document.querySelector("dialog")].map((el) =>
+          getComputedStyle(el).getPropertyValue("--accent").trim(),
+        ),
+      );
+      expect(accents[0]).toBe(accents[1]);
+    }
+  };
   await page.goto("http://localhost:8787");
   await expect(page).toHaveTitle("Kalo");
   await expect(page.locator(".mobile-brand")).toHaveText("Kalo.");
@@ -29,12 +80,14 @@ try {
   await page.getByRole("button", { name: "Rose", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect.poll(halo).toBe("#dc92b7");
+  await expectAccent("#dc92b7");
   await page.getByRole("button", { name: "Annuler", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect.poll(halo).toBe("#a89ae5");
+  await expectAccent("#a89ae5");
   await open();
   await page.getByLabel("Mode d’affichage").selectOption("dark");
-  await page.getByLabel("Couleur du halo").evaluate((input) => {
+  await page.getByLabel("Couleur d’accent").evaluate((input) => {
     Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
       "value",
@@ -43,6 +96,7 @@ try {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect.poll(halo).toBe("#128abc");
+  await expectAccent("#128abc");
   await page
     .getByRole("button", { name: "Enregistrer l’apparence", exact: true })
     .click();
@@ -59,6 +113,7 @@ try {
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.screenshot({ path: "qa/kalo-light-mobile.png", fullPage: true });
+  await expectAccent("#128abc");
   await open();
   await page.getByLabel("Mode d’affichage").selectOption("system");
   await page
@@ -70,6 +125,25 @@ try {
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect.poll(halo).toBe("#128abc");
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  for (const mode of ["light", "dark"]) {
+    await page.emulateMedia({ colorScheme: mode });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", mode);
+    const surface = await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--summary-surface")
+        .trim(),
+    );
+    const surfaceRgb = `rgb(${[1, 3, 5].map((i) => parseInt(surface.slice(i, i + 2), 16)).join(", ")})`;
+    await expect(page.locator(".calorie-summary")).toHaveCSS(
+      "background-color",
+      surfaceRgb,
+    );
+    await page.screenshot({
+      path: `qa/kalo-meals-accent-${mode}.png`,
+      fullPage: true,
+    });
+  }
   console.log(
     "Kalo : nom, halo personnalisé, annulation, persistance et thèmes indépendants OK",
   );

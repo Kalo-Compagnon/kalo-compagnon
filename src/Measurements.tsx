@@ -198,14 +198,14 @@ function Body({
         ))
           top = Math.max(top, b.y + b.h + 8);
         const left = lx >= w / 2 ? lx - bw : lx;
-        c.fillStyle = active ? "#6255BD" : color("--canvas-label");
+        c.fillStyle = active ? color("--brand") : color("--canvas-label");
         c.beginPath();
         c.roundRect(left, top, bw, 50, 7);
         c.fill();
         c.textAlign = "center";
-        c.fillStyle = active ? "#FFFFFF" : color("--text");
+        c.fillStyle = active ? color("--on-brand") : color("--text");
         c.fillText(zone, left + bw / 2, top + 19);
-        c.fillStyle = active ? "#FFFFFF" : color("--accent");
+        c.fillStyle = active ? color("--on-brand") : color("--accent");
         c.fillText(value, left + bw / 2, top + 40);
         bounds.current.push({ zone, x: left, y: top, w: bw, h: 50 });
       }
@@ -218,7 +218,7 @@ function Body({
           xx = w * 0.53 - ww / 2,
           yy = h * 0.17;
         c.drawImage(img, sx, 0, sw, sh, xx, yy, ww, hh);
-        c.strokeStyle = "#6255BD";
+        c.strokeStyle = color("--accent");
         c.lineWidth = 2;
         c.beginPath();
         c.moveTo(w * 0.13, yy + hh * 0.04);
@@ -277,7 +277,7 @@ function Body({
         c.strokeStyle =
           slide > 0
             ? front
-              ? "#6255BD"
+              ? color("--accent")
               : "rgba(255,255,255,.59)"
             : "rgba(205,209,216,.22)";
         c.lineWidth = slide > 0 ? 3 : 1.3;

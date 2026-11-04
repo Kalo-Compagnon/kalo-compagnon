@@ -55,8 +55,7 @@ export function CalorieChart({ state }: { state: State }) {
         }
         c.textAlign = "center";
         c.font = "10px 'DM Sans Variable'";
-        c.fillStyle =
-          intake <= spent ? color("--chart-expense") : color("--chart-intake");
+        c.fillStyle = intake <= spent ? color("--green") : color("--pink");
         const delta = sub(spent, intake);
         c.fillText(
           `${delta >= 0 ? "-" : "+"}${Math.round(Math.abs(delta))} kcal`,

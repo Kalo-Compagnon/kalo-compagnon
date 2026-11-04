@@ -137,8 +137,8 @@ export function WeightTracking() {
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#6255bd" />
-                <stop offset="100%" stopColor="#897acb" />
+                <stop offset="0%" stopColor="var(--accent)" />
+                <stop offset="100%" stopColor="var(--accent)" />
               </linearGradient>
             </defs>
             <text x="4" y="22" fill="currentColor" fontSize="10">
@@ -170,7 +170,7 @@ export function WeightTracking() {
               strokeLinejoin="round"
             />
             {points.map((p) => (
-              <circle key={p.date} cx={p.x} cy={p.y} r="3" fill="#6255bd">
+              <circle key={p.date} cx={p.x} cy={p.y} r="3" fill="var(--accent)">
                 <title>
                   {labelDay(p.date)} : {fmt(p.weight)} kg
                 </title>

@@ -5,6 +5,7 @@ import "@fontsource-variable/manrope";
 import "./styles.css";
 import "./campus-theme.css";
 import "./appearance.css";
+import "./accent.css";
 import App from "./App";
 // Replace the previous prototype's cache-first worker, which otherwise serves stale HTML.
 if ("serviceWorker" in navigator)

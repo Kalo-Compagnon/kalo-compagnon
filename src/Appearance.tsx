@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { type Settings } from "./domain";
 import { Button, Field, Sheet, useApp } from "./ui";
+import { accentPalette } from "./accent";
 
 export const defaultHaloColor = "#a89ae5";
 
@@ -16,6 +17,11 @@ export function applyAppearance(
     "--halo-color",
     settings.haloColor ?? defaultHaloColor,
   );
+  for (const [name, value] of Object.entries(
+    accentPalette(settings.haloColor ?? defaultHaloColor, dark),
+  )) {
+    document.documentElement.style.setProperty(name, value);
+  }
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", dark ? "#17181e" : "#f6f5f0");
@@ -76,7 +82,7 @@ export function Appearance() {
         </label>
         <div className="halo-picker">
           <Field
-            label="Couleur du halo"
+            label="Couleur d’accent"
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
@@ -109,8 +115,10 @@ export function Appearance() {
           ))}
         </div>
         <p className="note">
-          Aperçu en direct. La couleur du halo reste la même en mode clair et
-          sombre. Ce réglage est personnel à ton compte.
+          Une seule couleur pour toute l’app : halo, boutons, navigation et
+          graphiques de poids. Les apports restent rouges et les dépenses
+          vertes. Aperçu en direct, en mode clair comme sombre. Ce réglage est
+          personnel à ton compte.
         </p>
         <Button primary type="submit" disabled={busy}>
           {busy ? "Enregistrement…" : "Enregistrer l’apparence"}

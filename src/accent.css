@@ -1,0 +1,121 @@
+/* Shared accent: filled controls keep the exact chosen color, while text
+   and translucent surfaces use readable shades of the same color. */
+:root .sheet {
+  --accent: inherit;
+}
+:root .primary,
+:root .activity .primary,
+:root .weight-tracking .primary,
+:root .weight-record-form .primary,
+:root .measurement-history {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+:root .primary:hover {
+  background: var(--brand-hover);
+}
+:root .balance-card {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+:root .balance-card .section-label,
+:root .balance-card .period-chip,
+:root .balance-card .balance-status {
+  color: var(--on-brand);
+}
+:root .balance-card .net,
+:root .balance-card .goal-chip,
+:root .balance-card .cum-deficit {
+  color: var(--on-brand) !important;
+}
+:root .balance-card .goal-chip {
+  background: transparent;
+  border-color: currentColor;
+}
+:root .account-avatar,
+:root .category-badge,
+:root .category-badge.meal,
+:root .category-badge.extra,
+:root .fit-symbol {
+  background: var(--pastel-purple);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+:root .action-row {
+  background: var(--pastel-purple);
+  border-left-color: var(--accent);
+}
+:root .action-row:nth-of-type(2n) {
+  background: var(--pastel-green);
+  border-left-color: var(--accent);
+}
+:root .action-row:nth-of-type(3n) {
+  background: var(--pastel-peach);
+  border-left-color: var(--accent);
+}
+:root .outline:hover {
+  background: var(--pastel-purple);
+  border-color: var(--accent);
+}
+:root .text-button,
+:root .light-pink,
+:root .group-title,
+:root .weight-record strong,
+:root .steps-input b,
+:root .steps-history strong,
+:root .row-actions button {
+  color: var(--accent);
+}
+:root .fit-drop {
+  border-color: var(--accent);
+}
+:root .slide-dots {
+  color: var(--accent);
+}
+:root progress,
+:root progress::-webkit-progress-bar {
+  background: var(--pastel-purple);
+}
+:root progress::-webkit-progress-value {
+  background: var(--accent);
+}
+:root progress::-moz-progress-bar {
+  background: var(--accent);
+}
+/* Nutrition colors remain semantic and independent of the chosen accent. */
+:root .global-grid .stat-row .stat-card:first-child {
+  background: var(--intake-soft);
+}
+:root .global-grid .stat-row .stat-card:nth-child(2) {
+  background: var(--expense-soft);
+}
+:root .calorie-summary {
+  background: var(--summary-surface);
+}
+:root .steps-history strong {
+  color: var(--green);
+}
+:root .balance-card .goal-chip,
+:root .balance-card .cum-deficit {
+  color: var(--text) !important;
+}
+:root .balance-card .net.green,
+:root .balance-card .cum-deficit.green,
+:root .balance-card .goal-chip.green {
+  color: var(--green) !important;
+}
+:root .balance-card .net.pink,
+:root .balance-card .cum-deficit.pink {
+  color: var(--pink) !important;
+}
+:root .balance-card .goal-chip.yellow {
+  color: var(--yellow) !important;
+}
+:root .balance-card .net.green,
+:root .balance-card .net.pink,
+:root .balance-card .goal-chip,
+:root .balance-card .cum-deficit {
+  background: var(--card);
+  border-radius: 8px;
+  padding: 6px 10px;
+}

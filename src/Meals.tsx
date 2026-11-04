@@ -62,8 +62,8 @@ export function Meals() {
       >
         <span className="label">CALORIES DU JOUR</span>
         <span className="consumed-row">
-          <strong>{fmt(food)}</strong>
-          <b className={remaining >= 0 ? "light-pink" : "yellow"}>
+          <strong className="pink">{fmt(food)}</strong>
+          <b className={remaining >= 0 ? "green" : "pink"}>
             {!budget
               ? "Budget à calculer"
               : !budget.possible
@@ -106,7 +106,7 @@ export function Meals() {
             Estimation partielle · des calories restent à renseigner.
           </span>
         )}
-        <b className="theoretical">
+        <b className={`theoretical ${delta >= 0 ? "green" : "pink"}`}>
           {budget
             ? `${delta >= 0 ? "Déficit" : "Surplus"} théorique estimé : ${fmt(Math.abs(delta))} kcal`
             : "Déficit théorique estimé : —"}
@@ -156,7 +156,7 @@ export function Meals() {
                     minute: "2-digit",
                   })}
                 </strong>
-                <b className={e.calories === null ? "yellow" : "light-pink"}>
+                <b className={e.calories === null ? "yellow" : "pink"}>
                   {e.calories === null
                     ? "À estimer"
                     : `${fmt(e.calories)} kcal`}

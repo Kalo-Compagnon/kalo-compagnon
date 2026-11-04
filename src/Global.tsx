@@ -207,7 +207,10 @@ export function Global({ onExport }: { onExport: () => void }) {
         </div>
         <div>
           <h2 className="section-title">Apport et dépense</h2>
-          <p className="legend">Apport (violet, base) · Dépense (vert, haut)</p>
+          <p className="legend">
+            <span className="pink">Apport (rouge, bas)</span> ·{" "}
+            <span className="green">Dépense (vert, haut)</span>
+          </p>
           <CalorieChart state={state} />
           <p className="note">
             Glisser pour parcourir les jours · * Données incomplètes
