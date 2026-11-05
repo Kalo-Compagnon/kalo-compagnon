@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Lavande",
+    "accent": "#a89ae5",
+    "directory": "assets/app-icons/v1/a89ae5/"
+  },
+  {
+    "name": "Pêche",
+    "accent": "#e7a580",
+    "directory": "assets/app-icons/v1/e7a580/"
+  },
+  {
+    "name": "Sauge",
+    "accent": "#98bd93",
+    "directory": "assets/app-icons/v1/98bd93/"
+  },
+  {
+    "name": "Bleu",
+    "accent": "#80b4e7",
+    "directory": "assets/app-icons/v1/80b4e7/"
+  },
+  {
+    "name": "Rose",
+    "accent": "#dc92b7",
+    "directory": "assets/app-icons/v1/dc92b7/"
+  }
+]

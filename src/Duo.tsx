@@ -4,7 +4,7 @@ import { docsToState } from "./persistence";
 import { categories, privateSharing, type Category } from "./duo-model";
 import { DuoComparison, type DuoProfile } from "./DuoComparison";
 import { duoRequest, type DuoSnapshot } from "./duo-client";
-import demo from "../demo/duo-demo.json";
+import demo from "./duo-demo.json";
 import { validateState } from "./transfer";
 
 type DuoProps = {
@@ -39,7 +39,7 @@ function DemoDuo({ settings = false, onPartnerAccent }: DuoProps) {
   const content = (
     <>
       <section className="card padded">
-        <h2>Coralie &amp; Loric · Démonstration</h2>
+        <h2>Exemple de Duo</h2>
         <p>Données entièrement fictives · Lecture seule.</p>
       </section>
       {!settings && (
@@ -160,39 +160,73 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
           </Button>
           {snapshot?.status === "none" && (
             <section className="card padded">
-              <h2>Aucun partenaire associé</h2>
-              <p>
-                Crée un code privé valable 24 heures et transmets-le à ton
-                partenaire. Son acceptation vous associera. Aucune catégorie
-                n’est partagée au départ.
-              </p>
-              <Button disabled={busy} onClick={() => void run("invite")}>
-                Créer une invitation
-              </Button>
-              <Field
-                label="Code reçu de mon partenaire"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-              />
-              <Button
-                disabled={busy || !code.trim()}
-                onClick={() => void run("accept", { code: code.trim() })}
-              >
-                Accepter cette liaison
-              </Button>
+              {snapshot.mode === "fixed" ? (
+                <>
+                  <h2>Votre Duo privé</h2>
+                  <p>
+                    Vos deux comptes sont déjà associés. Chacun doit activer le
+                    Duo avant de partager ses données.
+                  </p>
+                  <Button
+                    primary
+                    disabled={busy}
+                    onClick={() => void run("join")}
+                  >
+                    Activer mon Duo
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h2>Aucun partenaire associé</h2>
+                  <p>
+                    Crée un code privé valable 24 heures et transmets-le à ton
+                    partenaire. Son acceptation vous associera. Aucune catégorie
+                    n’est partagée au départ.
+                  </p>
+                  <Button disabled={busy} onClick={() => void run("invite")}>
+                    Créer une invitation
+                  </Button>
+                  <Field
+                    label="Code reçu de mon partenaire"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                  />
+                  <Button
+                    disabled={busy || !code.trim()}
+                    onClick={() => void run("accept", { code: code.trim() })}
+                  >
+                    Accepter cette liaison
+                  </Button>
+                </>
+              )}
             </section>
           )}
           {snapshot?.status === "pending" && (
             <section className="card padded">
               <h2>Liaison en attente</h2>
-              <p>
-                Code privé : <code>{snapshot.code}</code>
-              </p>
-              <p>
-                Aucune donnée partagée avant acceptation. Le code expire après
-                24 heures.
-              </p>
+              {snapshot.mode === "fixed" ? (
+                <p>
+                  Ton accord est enregistré. Ton partenaire doit aussi activer
+                  son Duo pour terminer la liaison.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    Code privé : <code>{snapshot.code}</code>
+                  </p>
+                  <p>
+                    Aucune donnée partagée avant acceptation. Le code expire
+                    après 24 heures.
+                  </p>
+                </>
+              )}
             </section>
+          )}
+          {snapshot?.status === "unavailable" && (
+            <p>Cet espace privé est réservé aux deux comptes associés.</p>
+          )}
+          {snapshot?.status === "unconfigured" && (
+            <p role="alert">L’espace Duo n’est pas encore activé.</p>
           )}
           {snapshot?.status === "active" && (
             <>
@@ -262,28 +296,29 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
               )}
             </>
           )}
-          {snapshot && snapshot.status !== "none" && (
-            <Button
-              disabled={busy}
-              onClick={() =>
-                modal(
-                  <Confirm
-                    title="Révoquer la liaison Duo ?"
-                    action={async () => {
-                      await duoRequest("revoke");
-                      window.dispatchEvent(new Event("duo-changed"));
-                      modal(<Duo settings />);
-                    }}
-                  >
-                    L’accès partagé sera retiré côté serveur et les
-                    autorisations seront supprimées pour les deux comptes.
-                  </Confirm>,
-                )
-              }
-            >
-              Révoquer la liaison
-            </Button>
-          )}
+          {snapshot &&
+            (snapshot.status === "pending" || snapshot.status === "active") && (
+              <Button
+                disabled={busy}
+                onClick={() =>
+                  modal(
+                    <Confirm
+                      title="Révoquer la liaison Duo ?"
+                      action={async () => {
+                        await duoRequest("revoke");
+                        window.dispatchEvent(new Event("duo-changed"));
+                        modal(<Duo settings />);
+                      }}
+                    >
+                      L’accès partagé sera retiré côté serveur et les
+                      autorisations seront supprimées pour les deux comptes.
+                    </Confirm>,
+                  )
+                }
+              >
+                Révoquer la liaison
+              </Button>
+            )}
         </>
       )}
     </>

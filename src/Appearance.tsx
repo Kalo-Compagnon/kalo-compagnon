@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { type Settings } from "./domain";
-import { Button, Field, Sheet, useApp } from "./ui";
+import { Button, Sheet, useApp } from "./ui";
 import { accentPalette } from "./accent";
 
-export const defaultHaloColor = "#a89ae5";
+import {
+  accentPresets,
+  defaultHaloColor,
+  isPresetAccent,
+} from "./appearance-presets";
+import { installationPage, updateApplicationIcons } from "./app-icons";
+export { defaultHaloColor } from "./appearance-presets";
 
 export function applyAppearance(
   settings: Pick<Settings, "theme" | "haloColor">,
@@ -38,13 +44,21 @@ export function Appearance() {
   );
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    const preview = () => applyAppearance({ theme, haloColor: color });
+    const preview = () => {
+      applyAppearance({ theme, haloColor: color });
+      updateApplicationIcons(repo.scope !== "guest" ? color : defaultHaloColor);
+    };
     preview();
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     media.addEventListener("change", preview);
     return () => {
       media.removeEventListener("change", preview);
       applyAppearance(repo.state.settings);
+      updateApplicationIcons(
+        repo.scope !== "guest"
+          ? repo.state.settings.haloColor
+          : defaultHaloColor,
+      );
     };
   }, [theme, color, repo]);
   return (
@@ -54,14 +68,18 @@ export function Appearance() {
           e.preventDefault();
           setBusy(true);
           try {
+            if (!isPresetAccent(color))
+              throw new Error(
+                "Choisis une couleur proposée pour enregistrer ton apparence.",
+              );
             await update((s) => {
               s.settings.theme = theme;
               s.settings.haloColor = color;
             });
             close();
             notify("Apparence enregistrée");
-          } catch {
-            /* update already reports persistence errors. */
+          } catch (error) {
+            notify((error as Error).message);
           } finally {
             setBusy(false);
           }
@@ -80,27 +98,13 @@ export function Appearance() {
             <option value="system">Suivre l’appareil</option>
           </select>
         </label>
-        <div className="halo-picker">
-          <Field
-            label="Couleur d’accent"
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-          />
-          <span className="halo-color-value">{color.toUpperCase()}</span>
-        </div>
+        <p className="label">Couleur d’accent</p>
         <div
           className="halo-presets"
           role="group"
           aria-label="Couleurs proposées"
         >
-          {[
-            ["Lavande", defaultHaloColor],
-            ["Pêche", "#e7a580"],
-            ["Sauge", "#98bd93"],
-            ["Bleu", "#80b4e7"],
-            ["Rose", "#dc92b7"],
-          ].map(([name, value]) => (
+          {accentPresets.map(([name, value]) => (
             <button
               key={name}
               type="button"
@@ -114,12 +118,32 @@ export function Appearance() {
             </button>
           ))}
         </div>
+        {!isPresetAccent(color) && (
+          <p className="note">
+            Ta couleur actuelle est personnalisée. Choisis une des cinq couleurs
+            proposées pour l’apparence et l’icône.
+          </p>
+        )}
         <p className="note">
           Une seule couleur pour toute l’app : halo, boutons, navigation et
           graphiques de poids. Les apports restent rouges et les dépenses
           vertes. Aperçu en direct, en mode clair comme sombre. Ce réglage est
           personnel à ton compte.
         </p>
+        <p className="note">
+          Sur iPhone, changer de couleur peut nécessiter de supprimer puis de
+          réajouter Kalo à l’écran d’accueil.
+        </p>
+        {repo.scope !== "guest" && (
+          <p className="note">
+            <a
+              className="text-button"
+              href={installationPage(state.settings.haloColor)}
+            >
+              Préparer l’icône pour un nouvel ajout sur iPhone
+            </a>
+          </p>
+        )}
         <Button primary type="submit" disabled={busy}>
           {busy ? "Enregistrement…" : "Enregistrer l’apparence"}
         </Button>

@@ -87,33 +87,26 @@ try {
   await expectAccent("#a89ae5");
   await open();
   await page.getByLabel("Mode d’affichage").selectOption("dark");
-  await page.getByLabel("Couleur d’accent").evaluate((input) => {
-    Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    ).set.call(input, "#128abc");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-  await expect.poll(halo).toBe("#128abc");
-  await expectAccent("#128abc");
+  await page.getByRole("button", { name: "Bleu", exact: true }).click();
+  await expect.poll(halo).toBe("#80b4e7");
+  await expectAccent("#80b4e7");
   await page
     .getByRole("button", { name: "Enregistrer l’apparence", exact: true })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect.poll(halo).toBe("#128abc");
+  await expect.poll(halo).toBe("#80b4e7");
   await page.screenshot({ path: "qa/kalo-dark-mobile.png", fullPage: true });
   await open();
   await page.getByLabel("Mode d’affichage").selectOption("light");
-  await expect.poll(halo).toBe("#128abc");
+  await expect.poll(halo).toBe("#80b4e7");
   await page
     .getByRole("button", { name: "Enregistrer l’apparence", exact: true })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.screenshot({ path: "qa/kalo-light-mobile.png", fullPage: true });
-  await expectAccent("#128abc");
+  await expectAccent("#80b4e7");
   await open();
   await page.getByLabel("Mode d’affichage").selectOption("system");
   await page
@@ -124,7 +117,7 @@ try {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect.poll(halo).toBe("#128abc");
+  await expect.poll(halo).toBe("#80b4e7");
   await page.getByRole("button", { name: "Repas", exact: true }).click();
   for (const mode of ["light", "dark"]) {
     await page.emulateMedia({ colorScheme: mode });

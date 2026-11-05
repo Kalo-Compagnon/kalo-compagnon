@@ -23,7 +23,8 @@ import { Activity } from "./Activity";
 import { Duo } from "./Duo";
 import { Account, DataScreen } from "./Settings";
 import { Profile } from "./Profile";
-import { Appearance, applyAppearance } from "./Appearance";
+import { Appearance, applyAppearance, defaultHaloColor } from "./Appearance";
+import { updateApplicationIcons } from "./app-icons";
 const tabs = [
   ["global", "Accueil", "ic_home"],
   ["meals", "Repas", "ic_meat"],
@@ -58,12 +59,19 @@ export default function App() {
   const notify = (s: string) => setMessage(s);
   useEffect(() => repository.subscribe(() => render((v) => v + 1)), []);
   useEffect(() => {
-    const apply = () => applyAppearance(state.settings);
+    const apply = () => {
+      applyAppearance(state.settings);
+      updateApplicationIcons(
+        ready && repository.scope !== "guest"
+          ? state.settings.haloColor
+          : defaultHaloColor,
+      );
+    };
     apply();
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, [state.settings.theme, state.settings.haloColor]);
+  }, [state.settings.theme, state.settings.haloColor, ready, repository.scope]);
   useEffect(() => {
     let cancelled = false;
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null =
@@ -73,6 +81,7 @@ export default function App() {
       if (scope === id) return;
       scope = id;
       setReady(false);
+      updateApplicationIcons();
       setSheet(null);
       setEditing(null);
       setScreen("global");

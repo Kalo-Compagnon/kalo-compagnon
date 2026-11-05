@@ -2,7 +2,9 @@ import { supabase } from "./persistence";
 import type { Doc } from "./persistence";
 import type { Sharing } from "./duo-model";
 export interface DuoSnapshot {
-  status: "none" | "pending" | "active";
+  status: "none" | "pending" | "active" | "unavailable" | "unconfigured";
+  mode?: "fixed";
+  consented?: boolean;
   code?: string;
   sharing?: Sharing;
   partnerSharing?: Sharing;
@@ -18,6 +20,10 @@ export async function duoRequest(
     p_action: action,
     p_payload: payload,
   });
+  if (error?.code === "PGRST202" || error?.code === "42883")
+    throw new Error(
+      "L’espace Duo n’est pas encore activé. Réessaie après son activation.",
+    );
   if (error)
     throw new Error(
       "Duo indisponible. Vérifie ta connexion ou reconnecte-toi à ton compte, puis réessaie.",

@@ -49,7 +49,13 @@ La présentation reprend la charte du site [Campus](https://lowtaire.github.io/s
 
 Le menu **Compte > Apparence**, disponible aussi dans Données, propose Clair, Sombre ou Suivre l’appareil et une seule **couleur d’accent** pour le halo, les boutons, la navigation, les liens et la courbe de poids. Le choix déjà enregistré pour le halo devient automatiquement l’accent global. **Les apports restent rouges et les dépenses vertes**, dans les cartes, chiffres et graphiques associés, indépendamment de l’accent choisi. Les fonds des boutons conservent la couleur exacte ; les textes noirs ou blancs et les nuances des surfaces s’adaptent pour rester lisibles en clair et sombre. L’aperçu est immédiat ; Enregistrer conserve les préférences du compte et Annuler restaure l’apparence enregistrée. Ces réglages sont synchronisés et inclus dans les sauvegardes. Le stockage et le format interne `logger-web` restent compatibles avec les anciennes données.
 
+La sélection d’accent est limitée aux cinq couleurs proposées. Le favicon et les références d’installation PWA/iPhone suivent la couleur du compte connecté, avec un logo à fond toujours sombre et deux nuances d’accent. Les PNG sont générés depuis le SVG original, sans modifier sa géométrie. Détails, fichiers, génération et limites iOS : [APP-ICONS.md](APP-ICONS.md).
+
 ## Données
+
+Le Duo privé est réservé à une paire configurée côté serveur. Le dépôt ne contient aucun identifiant réel de partenaire. Voir [supabase/README.md](supabase/README.md).
+
+Les configurations propres aux comptes, exports et rapports locaux sont exclus de Git dans `local-only/`. La démonstration intégrée utilise uniquement deux profils fictifs anonymes. Le build supprime les anciens bundles générés pour ne pas republier de contenu retiré.
 
 Le métabolisme utilise maintenant la date de naissance pour calculer l’âge et la moyenne des **sept dernières journées comportant une pesée**, jusqu’à la journée considérée. Les jours sans pesée sont ignorés ; avec moins de sept relevés, seuls les relevés disponibles sont moyennés. Le poids moyen est affiché en lecture seule dans le profil et le calcul du métabolisme. Une nouvelle pesée, sa correction ou sa suppression actualise automatiquement le métabolisme et le budget du jour. Les métabolismes déjà enregistrés des journées passées sont conservés. Sans pesée, le profil peut être enregistré mais aucun métabolisme automatique n’est calculé ; ajouter un relevé dans « Poids sur la balance ». Les anciens profils sans date de naissance conservent leur métabolisme existant jusqu’à leur mise à jour, sans inventer de date de naissance.
 

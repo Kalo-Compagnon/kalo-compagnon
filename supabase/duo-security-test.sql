@@ -1,3 +1,5 @@
+-- Legacy checks for 20261105_duo.sql ONLY (invitation-based Duo).
+-- Current fixed-pair SQL is tested by tests/private-duo-sql.test.ts with npm test.
 -- Integration checks for a disposable LOCAL Supabase database, after both SQL files.
 -- Run with an administrator connection. All fixtures are rolled back.
 begin;

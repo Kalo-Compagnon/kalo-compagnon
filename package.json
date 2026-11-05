@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/publish-static.mjs",
+    "build": "tsx scripts/check-icons.ts && tsc --noEmit && vite build && node scripts/publish-static.mjs",
+    "generate:icons": "tsx scripts/generate-icons.ts",
     "test": "tsx --test tests/*.test.ts",
-    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs",
+    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs && node tests/app-icons-browser.mjs && node tests/private-duo-browser.mjs",
     "test:fit": "node tests/fit-service.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "build:fit": "node server/build.mjs",
@@ -26,6 +27,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.15",
     "@playwright/test": "^1.63.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",

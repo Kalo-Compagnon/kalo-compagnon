@@ -57,7 +57,7 @@ try {
   const tab = (name) => page.getByRole("button", { name, exact: true }).click();
   await tab("Duo");
   await expect(
-    page.getByRole("heading", { name: "Coralie & Loric · Démonstration" }),
+    page.getByRole("heading", { name: "Exemple de Duo" }),
   ).toBeVisible();
   await expect(
     page.getByText("Données entièrement fictives · Lecture seule.", {
@@ -65,17 +65,17 @@ try {
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Coralie", exact: true }),
+    page.getByRole("heading", { name: "Profil A", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Loric", exact: true }),
+    page.getByRole("heading", { name: "Profil B", exact: true }),
   ).toBeVisible();
   const leftHome = page.getByRole("region", {
-    name: "Accueil de Coralie",
+    name: "Accueil de Profil A",
     exact: true,
   });
   const rightHome = page.getByRole("region", {
-    name: "Accueil de Loric",
+    name: "Accueil de Profil B",
     exact: true,
   });
   for (const home of [leftHome, rightHome]) {
@@ -145,7 +145,7 @@ try {
   await expect(commonChart).toHaveCount(1);
   await expect(commonChart).toHaveAttribute(
     "aria-label",
-    /Coralie, apport.*Loric, apport/,
+    /Profil A, apport.*Profil B, apport/,
   );
   await expect
     .poll(() =>
@@ -225,10 +225,10 @@ try {
   ).toHaveCount(0);
   await page.getByLabel("Journée du Duo").fill("2026-10-09");
   await expect(
-    page.getByRole("region", { name: "Coralie · Activité physique" }),
+    page.getByRole("region", { name: "Profil A · Activité physique" }),
   ).toContainText("6956");
   await expect(
-    page.getByRole("region", { name: "Loric · Activité physique" }),
+    page.getByRole("region", { name: "Profil B · Activité physique" }),
   ).toContainText("6272");
   await page.getByLabel("Journée du Duo").fill("2026-11-05");
   for (const theme of ["light", "dark"]) {

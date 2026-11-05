@@ -1,1 +1,25 @@
-{"name":"Kalo","short_name":"Kalo","lang":"fr","start_url":"./","scope":"./","display":"standalone","background_color":"#f6f5f0","theme_color":"#f6f5f0","icons":[{"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{
+  "id": "./",
+  "name": "Kalo",
+  "short_name": "Kalo",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f5f0",
+  "theme_color": "#f6f5f0",
+  "icons": [
+    {
+      "src": "assets/app-icons/v1/a89ae5/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app-icons/v1/a89ae5/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

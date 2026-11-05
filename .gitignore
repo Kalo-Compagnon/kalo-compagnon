@@ -9,3 +9,14 @@ tests/*.class
 server/classes/
 qa/
 legacy-prototype/
+local-only/
+*.local.sql
+*.local.json
+*.pem
+*.key
+*.p12
+*.pfx
+/backups/
+/exports/
+supabase/.temp/
+.supabase/
