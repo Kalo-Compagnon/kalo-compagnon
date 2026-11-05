@@ -1,4 +1,69 @@
 /* Campus visual language, adapted to Logger's existing screens. */
+.duo-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+.duo-dashboard > * {
+  min-width: 0;
+}
+.duo-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.duo-columns > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+:root .duo .card.padded {
+  padding: 12px;
+}
+:root .duo .balance-card {
+  padding: 16px;
+  min-height: 0;
+}
+:root .duo .average-stat {
+  padding: 12px;
+}
+:root .duo .daily-band {
+  padding: 8px 12px;
+}
+.duo-identities button {
+  width: 100%;
+}
+.duo-steps-cards > .card {
+  background: var(--brand);
+}
+:root .duo-steps-cards > .card h2,
+:root .duo-steps-cards > .card p {
+  color: var(--balance-label);
+}
+.duo-home-profile .global-grid {
+  display: block;
+}
+.duo-home-profile > h2 {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.duo-home-profile .stat-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.duo-home-profile .daily-band {
+  grid-template-columns: minmax(0, 1fr);
+}
+.duo-home-profile .daily-band small {
+  grid-column: auto;
+}
+.duo-home-profile .global-grid > div:nth-child(2) {
+  min-width: 0;
+  padding-inline: 0;
+}
+.duo-home-profile .net {
+  overflow-wrap: anywhere;
+}
 :root {
   --bg: #f6f5f0;
   --card: #fff;

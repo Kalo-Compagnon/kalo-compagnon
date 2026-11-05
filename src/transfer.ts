@@ -121,6 +121,10 @@ export function validateState(value: unknown): State {
       typeof s.settings.profileCompleted === "boolean",
     "profil",
   );
+  assert(
+    s.settings.duoDemo === undefined || typeof s.settings.duoDemo === "boolean",
+    "démonstration Duo",
+  );
   for (const list of [s.entries, s.foods, s.meals, s.physical, s.imports]) {
     const ids = new Set();
     for (const item of list) {

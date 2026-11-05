@@ -112,6 +112,7 @@ export interface Day {
   measurementHistory?: { timestamp: number; values: Record<string, number> }[];
 }
 export interface Settings {
+  duoDemo?: boolean;
   birthDate?: string;
   theme?: "light" | "dark" | "system";
   haloColor?: string;

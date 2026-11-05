@@ -2,6 +2,80 @@ import { useId, useState } from "react";
 import { useApp, Button, HistoryList, Sheet } from "./ui";
 import { fmt, labelDay, dayKey } from "./domain";
 
+// Recorded points only: Duo must never interpolate missing weigh-ins.
+export function WeightPoints({
+  records,
+  color,
+  comparison,
+  name,
+}: {
+  records: { date: string; percent: number }[];
+  color: string;
+  name?: string;
+  comparison?: {
+    records: { date: string; percent: number }[];
+    color: string;
+    name?: string;
+  };
+}) {
+  const all = [...records, ...(comparison?.records ?? [])].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+  const low = Math.min(0, ...all.map((r) => r.percent)) - 0.5;
+  const high = Math.max(0, ...all.map((r) => r.percent)) + 0.5;
+  const first = all[0],
+    last = all.at(-1);
+  if (!first || !last) return null;
+  const time = (d: string) => new Date(`${d}T12:00:00`).getTime();
+  return (
+    <svg
+      viewBox="0 0 320 120"
+      role="img"
+      aria-label="Évolution relative du poids, pesées enregistrées"
+      style={{ width: "100%", maxHeight: 180 }}
+    >
+      <text x="4" y="22" fill="currentColor" fontSize="10">
+        {fmt(high)} %
+      </text>
+      <text x="4" y="104" fill="currentColor" fontSize="10">
+        {fmt(low)} %
+      </text>
+      <text x="52" y="118" fill="currentColor" fontSize="10">
+        {labelDay(first.date)}
+      </text>
+      <text x="308" y="118" textAnchor="end" fill="currentColor" fontSize="10">
+        {labelDay(last.date)}
+      </text>
+      {[{ records, color, name }, ...(comparison ? [comparison] : [])].map(
+        (series, index) => (
+          <g key={index}>
+            {series.records.map((r) => (
+              <circle
+                key={r.date}
+                cx={
+                  first.date === last.date
+                    ? 160
+                    : 52 +
+                      (256 * (time(r.date) - time(first.date))) /
+                        (time(last.date) - time(first.date))
+                }
+                cy={100 - (80 * (r.percent - low)) / (high - low)}
+                r="3"
+                fill={series.color}
+              >
+                <title>
+                  {series.name ? `${series.name} · ` : ""}
+                  {labelDay(r.date)} : {fmt(r.percent)} %
+                </title>
+              </circle>
+            ))}
+          </g>
+        ),
+      )}
+    </svg>
+  );
+}
+
 export function WeightTracking() {
   const { state, day, update, notify, modal } = useApp();
   const gradientId = useId();

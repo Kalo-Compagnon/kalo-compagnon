@@ -11,7 +11,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("http://localhost:8787");
-  await page.getByRole("button", { name: "Activité", exact: true }).click();
+  await page.getByRole("button", { name: "Corps", exact: true }).click();
   const input = page.getByLabel(
     "Kcal dépensées · total ajouté pour cette journée",
   );
@@ -31,7 +31,7 @@ try {
     "",
   );
   await page.reload();
-  await page.getByRole("button", { name: "Activité", exact: true }).click();
+  await page.getByRole("button", { name: "Corps", exact: true }).click();
   await expect(input).toHaveValue("200");
   await page.screenshot({
     path: "qa/kalo-manual-activity-mobile.png",
@@ -43,7 +43,7 @@ try {
     page.getByText("Aucune dépense ajoutée manuellement.", { exact: true }),
   ).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Activité", exact: true }).click();
+  await page.getByRole("button", { name: "Corps", exact: true }).click();
   await expect(input).toHaveValue("0");
   if (errors.length) throw Error(errors.join("\n"));
   console.log(

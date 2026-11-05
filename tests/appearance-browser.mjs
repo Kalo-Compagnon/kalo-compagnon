@@ -22,19 +22,19 @@ try {
       document.documentElement.style.getPropertyValue("--halo-color"),
     );
   const expectAccent = async (color) => {
-    const neutral = await page.evaluate(() =>
+    const balanceAccent = await page.evaluate(() =>
       getComputedStyle(document.documentElement)
-        .getPropertyValue("--text")
+        .getPropertyValue("--balance-accent")
         .trim(),
     );
-    const neutralRgb = `rgb(${[1, 3, 5].map((i) => parseInt(neutral.slice(i, i + 2), 16)).join(", ")})`;
+    const balanceRgb = `rgb(${[1, 3, 5].map((i) => parseInt(balanceAccent.slice(i, i + 2), 16)).join(", ")})`;
     await expect(page.locator(".balance-card .goal-chip")).toHaveCSS(
       "color",
-      neutralRgb,
+      balanceRgb,
     );
     await expect(page.locator(".balance-card .cum-deficit")).toHaveCSS(
       "color",
-      neutralRgb,
+      balanceRgb,
     );
     const semantic = await page.evaluate(() => {
       const style = getComputedStyle(document.documentElement);

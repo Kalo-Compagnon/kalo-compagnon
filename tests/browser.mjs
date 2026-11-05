@@ -64,7 +64,7 @@ await page
 await page.getByLabel("Courte note (facultatif)").fill("Extra test");
 await page.getByRole("button", { name: "Ajouter", exact: true }).click();
 await page.getByText("À estimer", { exact: true }).waitFor();
-await page.getByRole("button", { name: "Global", exact: true }).click();
+await page.getByRole("button", { name: "Accueil", exact: true }).click();
 assert.ok(
   await page.getByText("Données à renseigner", { exact: true }).isVisible(),
 );
@@ -81,7 +81,7 @@ await page.reload();
 await page.locator(".liquid-nav").waitFor();
 await page.getByRole("button", { name: "Repas", exact: true }).click();
 assert.equal(await page.locator(".entry").count(), 2);
-await page.getByRole("button", { name: "Activité", exact: true }).click();
+await page.getByRole("button", { name: "Corps", exact: true }).click();
 await page.getByLabel("Pas à ajouter", { exact: true }).fill("2000");
 await page
   .getByRole("button", { name: "Enregistrer les pas", exact: true })
@@ -92,7 +92,8 @@ await page.screenshot({
   fullPage: true,
   animations: "disabled",
 });
-await page.getByRole("button", { name: "Mensuration", exact: true }).click();
+await page.getByRole("button", { name: "Corps", exact: true }).click();
+await page.getByRole("button", { name: "Mensurations", exact: true }).click();
 await page.locator(".body-figure canvas").waitFor();
 await page.screenshot({
   path: "qa/measurements-overview-mobile.png",
@@ -140,7 +141,8 @@ await expect
   )
   .toBe(95.5);
 await page.reload();
-await page.getByRole("button", { name: "Mensuration", exact: true }).click();
+await page.getByRole("button", { name: "Corps", exact: true }).click();
+await page.getByRole("button", { name: "Mensurations", exact: true }).click();
 await page.getByRole("button", { name: "Page suivante", exact: true }).click();
 await expect(chest).toHaveValue("95.5");
 await page.getByLabel("Poitrine en centimètres", { exact: true }).fill("95.5");
@@ -159,7 +161,7 @@ await page
 await expect(page.getByRole("region", { name: "Suivi du poids" })).toHaveCount(
   0,
 );
-await page.getByRole("button", { name: "Global", exact: true }).click();
+await page.getByRole("button", { name: "Accueil", exact: true }).click();
 // Remove the onboarding weigh-in before exercising the historical fixtures.
 await page.locator(".weight-record").first().click();
 await page.getByRole("button", { name: "Supprimer cette pesée", exact: true }).click();
@@ -182,7 +184,7 @@ await expect(
   page.getByRole("region", { name: "Suivi du poids" }),
 ).toContainText("-0,7 kg");
 await page.reload();
-await page.getByRole("button", { name: "Global", exact: true }).click();
+await page.getByRole("button", { name: "Accueil", exact: true }).click();
 await expect(
   page.getByText("Historique des pesées (2)", { exact: true }),
 ).toBeVisible();
@@ -212,7 +214,7 @@ await page
 await expect(
   page.getByText("Historique des pesées (1)", { exact: true }),
 ).toBeVisible();
-await page.getByRole("button", { name: "Global", exact: true }).click();
+await page.getByRole("button", { name: "Accueil", exact: true }).click();
 assert.ok(
   await page.getByText("Déficit quotidien moyen", { exact: true }).isVisible(),
 );
@@ -229,7 +231,7 @@ const sizes = [
 ];
 for (const [width, height] of sizes) {
   await page.setViewportSize({ width, height });
-  for (const name of ["Global", "Repas", "Mensuration", "Activité"]) {
+  for (const name of ["Accueil", "Repas", "Corps", "Duo"]) {
     await page.getByRole("button", { name, exact: true }).click();
     await page.screenshot({
       path: `qa/${name}-${width}x${height}.png`,

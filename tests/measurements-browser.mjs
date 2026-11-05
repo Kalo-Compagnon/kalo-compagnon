@@ -53,8 +53,10 @@ try {
   });
   await page.goto("http://localhost:8787/logger/");
   await page.evaluate(() => window.seedFinished);
-  const tab = () =>
-    page.getByRole("button", { name: "Mensuration", exact: true }).click();
+  const tab = async () => {
+    await page.getByRole("button", { name: "Corps", exact: true }).click();
+    await page.getByRole("button", { name: "Mensurations", exact: true }).click();
+  };
   await tab();
   await page
     .getByRole("button", { name: "Page suivante", exact: true })

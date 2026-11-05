@@ -45,8 +45,20 @@ export function accentPalette(color: string, dark: boolean) {
     contrast("#ffffff", brand) >= contrast("#000000", brand)
       ? "#ffffff"
       : "#000000";
+  const darkerBrand = mix("#000000", brand, 0.25);
+  const chartIntake = mix("#000000", brand, 0.55);
+  const readableShade = (background: string, edge: string) => {
+    let shade = darkerBrand;
+    for (let i = 1; i <= 100 && contrast(shade, background) < 4.5; i++)
+      shade = mix(edge, darkerBrand, i / 100);
+    return shade;
+  };
   return {
+    "--balance-accent": readableShade(card, dark ? "#ffffff" : "#000000"),
+    "--balance-label": readableShade(brand, onBrand),
     "--brand": brand,
+    "--duo-chart-intake": chartIntake,
+    "--duo-chart-hatch": mix("#ffffff", chartIntake, 0.2),
     "--on-brand": onBrand,
     "--brand-hover": mix(
       onBrand === "#ffffff" ? "#000000" : "#ffffff",

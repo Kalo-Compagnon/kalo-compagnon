@@ -97,19 +97,19 @@
 }
 :root .balance-card .goal-chip,
 :root .balance-card .cum-deficit {
-  color: var(--text) !important;
+  color: var(--balance-accent) !important;
 }
 :root .balance-card .net.green,
 :root .balance-card .cum-deficit.green,
 :root .balance-card .goal-chip.green {
-  color: var(--green) !important;
+  color: var(--balance-accent) !important;
 }
 :root .balance-card .net.pink,
 :root .balance-card .cum-deficit.pink {
-  color: var(--pink) !important;
+  color: var(--balance-accent) !important;
 }
 :root .balance-card .goal-chip.yellow {
-  color: var(--yellow) !important;
+  color: var(--balance-accent) !important;
 }
 :root .balance-card .net.green,
 :root .balance-card .net.pink,
@@ -118,4 +118,23 @@
   background: var(--card);
   border-radius: 8px;
   padding: 6px 10px;
+}
+:root .balance-card .section-label,
+:root .balance-card .period-chip,
+:root .balance-card .balance-status {
+  color: var(--balance-label);
+}
+:root .balance-card .net {
+  color: var(--balance-accent) !important;
+  background: var(--card);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+:root .duo-home-profile .balance-card .net {
+  font-size: 24px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }

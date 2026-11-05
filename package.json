@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/publish-static.mjs",
     "test": "tsx --test tests/*.test.ts",
-    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs",
+    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs",
     "test:fit": "node tests/fit-service.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "build:fit": "node server/build.mjs",

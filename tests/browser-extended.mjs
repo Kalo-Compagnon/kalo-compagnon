@@ -32,7 +32,7 @@ try {
     await button("＋ Ajouter").click();
   };
   const data = async () => {
-    await tab("Global");
+    await tab("Accueil");
     await button("Exporter toutes mes données (.csv)").click();
     await page.getByRole("heading", { name: "Données", exact: true }).waitFor();
   };
@@ -152,7 +152,8 @@ try {
   await page.getByLabel("Poids (kg), facultatif", { exact: true }).fill("78");
   await button("Enregistrer").click();
   await expect(page.locator("dialog")).not.toBeVisible();
-  await tab("Mensuration");
+  await tab("Corps");
+  await button("Mensurations").click();
   await button("Page suivante").click();
   await page.getByLabel("Poitrine en centimètres", { exact: true }).fill("95");
   await button("Augmenter de 0,5 centimètre").dblclick();
@@ -195,7 +196,7 @@ try {
   await button("Importer après vérification").click();
   await button("Confirmer").click();
   await expect(page.locator("dialog")).not.toBeVisible();
-  await tab("Global");
+  await tab("Accueil");
   await page.locator(".history-day").first().click();
   await expect(page.locator(".edit-banner")).not.toBeVisible();
   await expect(page.locator("dialog")).not.toBeVisible();
@@ -265,7 +266,7 @@ try {
     p.on("pageerror", (e) => errors.push(e.message));
     await p.goto("http://localhost:8787");
     await p.locator(".liquid-nav").waitFor();
-    for (const name of ["Global", "Repas", "Mensuration", "Activité"]) {
+    for (const name of ["Accueil", "Repas", "Corps", "Duo"]) {
       const b = p.getByRole("button", { name, exact: true });
       await b.click();
       await expect(b).toHaveAttribute("aria-current", "page");

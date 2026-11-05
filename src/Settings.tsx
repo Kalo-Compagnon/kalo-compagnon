@@ -15,6 +15,7 @@ import { PhysicalRecords } from "./Measurements";
 import { LegacyMenu } from "./LegacyMeals";
 import { Profile } from "./Profile";
 import { Appearance } from "./Appearance";
+import { Duo } from "./Duo";
 export function DataScreen() {
   const { state, modal, update, notify } = useApp();
   const [preview, setPreview] = useState<{
@@ -173,6 +174,9 @@ export function Account() {
   return (
     <Sheet title="Mon compte" subtitle={repo.status}>
       <Button onClick={() => modal(<Appearance />)}>Apparence</Button>
+      {connected && (
+        <Button onClick={() => modal(<Duo settings />)}>Partage Duo</Button>
+      )}
       {!supabase ? (
         <p>
           La synchronisation distante n’est pas configurée. Tes données sont

@@ -12,7 +12,8 @@ try {
   });
   await page.goto('http://localhost:8787/logger/');
   await expect(page.getByRole('heading',{name:'Aujourd’hui',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Mensuration',exact:true}).click();
+  await page.getByRole('button',{name:'Corps',exact:true}).click();
+  await page.getByRole('button',{name:'Mensurations',exact:true}).click();
   await expect(page.locator('.body-figure canvas')).toBeVisible();
   await page.waitForFunction(()=>document.querySelector('canvas')?.style.height==='430px');
   if(failed.length)throw new Error(failed.join('\n'));

@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { repository, supabase } from "./persistence";
 import {
   dayKey,
@@ -14,25 +20,36 @@ import { Global } from "./Global";
 import { Meals } from "./Meals";
 import { Measurements } from "./Measurements";
 import { Activity } from "./Activity";
+import { Duo } from "./Duo";
 import { Account, DataScreen } from "./Settings";
 import { Profile } from "./Profile";
 import { Appearance, applyAppearance } from "./Appearance";
 const tabs = [
-  ["global", "Global", "ic_home", "#6255bd"],
-  ["meals", "Repas", "ic_meat", "#6255bd"],
-  ["measurements", "Mensuration", "cm", "#6255bd"],
-  ["activity", "Activité", "ic_other", "#6255bd"],
+  ["global", "Accueil", "ic_home"],
+  ["meals", "Repas", "ic_meat"],
+  ["body", "Corps", "ic_other"],
+  ["duo", "Duo", "ic_heart"],
 ];
 export default function App() {
   const [, render] = useState(0),
     [ready, setReady] = useState(false),
     [fatal, setFatal] = useState(""),
     [screen, setScreen] = useState("global"),
+    [bodySection, setBodySection] = useState("activity"),
+    [partnerAccent, setPartnerAccent] = useState<string | null>(null),
+    [demoAccent, setDemoAccent] = useState<string | null>(null),
     [editing, setEditing] = useState<string | null>(null),
     [today, setToday] = useState(dayKey()),
     [sheet, setSheet] = useState<ReactNode>(null),
     [message, setMessage] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
+  const handlePartnerAccent = useCallback(
+    (accent: string | null, first: string | null = null) => {
+      setPartnerAccent(accent);
+      setDemoAccent(first);
+    },
+    [],
+  );
   const state = repository.state,
     day = editing ?? today;
   const weightSignature = JSON.stringify(
@@ -59,6 +76,8 @@ export default function App() {
       setSheet(null);
       setEditing(null);
       setScreen("global");
+      setPartnerAccent(null);
+      setDemoAccent(null);
       setMessage("");
       if (channel && supabase) void supabase.removeChannel(channel);
       try {
@@ -187,15 +206,17 @@ export default function App() {
       </main>
     );
   const title =
-    screen === "measurements"
+    screen === "body" && bodySection === "measurements"
       ? "Mensurations"
-      : screen === "activity"
-        ? "Activité physique"
-        : screen === "data"
-          ? "Données"
-          : editing
-            ? "Journée en modification"
-            : "Aujourd’hui";
+      : screen === "body"
+        ? "Corps"
+        : screen === "duo"
+          ? "Duo"
+          : screen === "data"
+            ? "Données"
+            : editing
+              ? "Journée en modification"
+              : "Aujourd’hui";
   return (
     <Context.Provider
       value={{
@@ -210,7 +231,17 @@ export default function App() {
       }}
     >
       <div className={`app ${editing ? "editing" : ""}`}>
-        <div className="ambient-halo" aria-hidden="true" />
+        <div
+          className="ambient-halo"
+          aria-hidden="true"
+          style={
+            screen === "duo" && partnerAccent
+              ? {
+                  background: `linear-gradient(90deg, ${demoAccent || "var(--halo-color)"} 0%, ${demoAccent || "var(--halo-color)"} 50%, ${partnerAccent} 50%, ${partnerAccent} 100%)`,
+                }
+              : undefined
+          }
+        />
         <aside className="logger-sidebar" aria-label="Kalo">
           <div className="logger-brand">
             Kalo<span>.</span>
@@ -284,7 +315,7 @@ export default function App() {
             <h1>{title}</h1>
             {screen !== "data" && (
               <p className="subtitle">
-                {screen === "measurements"
+                {screen === "body" && bodySection === "measurements"
                   ? "Fais glisser pour parcourir les groupes"
                   : titleDay(day)}
               </p>
@@ -297,12 +328,36 @@ export default function App() {
             )}
           {screen === "global" && <Global onExport={() => setScreen("data")} />}
           {screen === "meals" && <Meals />}
-          {screen === "measurements" && <Measurements key={day} />}
-          {screen === "activity" && <Activity key={day} />}
+          {screen === "body" && (
+            <>
+              <div className="halo-presets" aria-label="Sections de Corps">
+                <button
+                  aria-pressed={bodySection === "activity"}
+                  onClick={() => setBodySection("activity")}
+                >
+                  Activité
+                </button>
+                <button
+                  aria-pressed={bodySection === "measurements"}
+                  onClick={() => setBodySection("measurements")}
+                >
+                  Mensurations
+                </button>
+              </div>
+              {bodySection === "activity" ? (
+                <Activity key={day} />
+              ) : (
+                <Measurements key={day} />
+              )}
+            </>
+          )}
+          {screen === "duo" && (
+            <Duo key={repository.scope} onPartnerAccent={handlePartnerAccent} />
+          )}
           {screen === "data" && <DataScreen />}
         </main>
         <nav className="liquid-nav" aria-label="Navigation principale">
-          {tabs.map(([id, label, icon, color]) => (
+          {tabs.map(([id, label, icon]) => (
             <button
               key={id}
               className={`tab ${screen === id ? "active" : ""}`}
@@ -310,6 +365,7 @@ export default function App() {
               aria-current={screen === id ? "page" : undefined}
               onClick={() => {
                 setScreen(id);
+                if (id === "body") setBodySection("activity");
                 window.scrollTo(0, 0);
               }}
             >

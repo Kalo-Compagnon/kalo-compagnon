@@ -2,6 +2,25 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { accentPalette, contrast } from "../src/accent";
 
+test("Duo: dark accent and lighter hatch remain derived from each profile", () => {
+  for (const color of ["#000000", "#ffffff", "#dc92b7", "#80b4e7"]) {
+    const palette = accentPalette(color, false);
+    const original = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));
+    const dark = [1, 3, 5].map((i) =>
+      parseInt(palette["--duo-chart-intake"].slice(i, i + 2), 16),
+    );
+    const hatch = [1, 3, 5].map((i) =>
+      parseInt(palette["--duo-chart-hatch"].slice(i, i + 2), 16),
+    );
+    assert.ok(dark.every((v, i) => v <= original[i]));
+    assert.ok(hatch.every((v, i) => v > dark[i]));
+    assert.equal(
+      palette["--duo-chart-intake"],
+      accentPalette(color, true)["--duo-chart-intake"],
+    );
+  }
+});
+
 test("Accent global : couleur choisie exacte et contrastes lisibles en clair et sombre", () => {
   for (const color of [
     "#000000",
@@ -16,6 +35,10 @@ test("Accent global : couleur choisie exacte et contrastes lisibles en clair et 
   ]) {
     for (const dark of [false, true]) {
       const p = accentPalette(color, dark);
+      assert.ok(
+        contrast(p["--balance-accent"], dark ? "#23242e" : "#ffffff") >= 4.5,
+      );
+      assert.ok(contrast(p["--balance-label"], color) >= 4.5);
       assert.equal(
         p["--chart-intake"],
         accentPalette("#128abc", dark)["--chart-intake"],
