@@ -68,3 +68,30 @@ Les vues réunies permettent de comparer directement les polices, la barre supé
 - `npm.cmd run test:browser` : parcours principaux, étendus et profil mobile réussis.
 - Tests de disposition supplémentaires : aucune largeur dépassée, bouton Ajouter accessible en paysage.
 - Aucun compte réel créé et aucune publication distante effectuée.
+
+## Sélecteur alimentaire compact — 8 novembre 2026
+
+Référence : capture fournie dans la conversation (798 × 450), utilisée pour l’organisation des éléments, conformément au brief qui impose de conserver la charte Kalo. Comparaison visuelle avec `qa/food-picker-mobile.png` et `qa/food-picker-dark.png` à 390 × 844. Il s’agit d’une adaptation mobile dans la feuille existante, pas d’une copie de la palette noire ni d’une comparaison pixel à pixel. Les aliments affichés diffèrent : aucune valeur illustrative de la référence n’est injectée dans le catalogue.
+
+Corrections après le premier rendu : suppression du grand bouton de recherche OFF au profit de la loupe, champ arrondi de 42 px, filtres de 28 px, navigation secondaire de 28 px et lignes séparées par une bordure fine. Libellé « Aliments bruts » repris de la référence. Création personnelle conservée sous forme de commande discrète ; favoris et modification personnelle restent fonctionnels.
+
+Surfaces vérifiées :
+- Typographie : polices Kalo conservées, hiérarchie titre / nom / source lisible, noms longs sur plusieurs lignes.
+- Espacements : densité de la référence reprise, absence de grandes cartes, aucune largeur dépassée à 320/390/768/1440 px.
+- Couleurs : variables de thème et accent personnalisé conservés, captures en clair et en sombre avec accent rose.
+- Ressources : aucune image décorative nécessaire ; icônes de la bibliothèque existante, aucun faux scanner.
+- Contenu : titre, recherche, filtres, Récents/Favoris/Catalogue et ajout présents ; états vides et indisponibilité Ciqual explicites.
+
+Validation : `npm.cmd run build`, `npm.cmd test` (64 tests) et `node tests/food-picker-browser.mjs` réussis après la correction visuelle. Le test navigateur vérifie aussi les hauteurs compactes, les favoris, l’ajout au journal, l’erreur OFF simulée et les quatre formats. La suite navigateur complète avait réussi avant cette correction CSS ; le test ciblé du sélecteur a été réexécuté ensuite.
+
+Écarts intentionnels : palette, police, feuille modale et navigation de Kalo conservées ; étoile de favoris ajoutée à côté de l’action d’ajout pour garder cette fonction accessible. Vérification Safari/iPhone physique et API OFF réelle non effectuée.
+
+final result: passed (organisation compacte et adaptation à la charte Kalo)
+
+## Intégration visible dans Repas — 8 novembre 2026
+
+Le sélecteur compact est désormais affiché directement sous le budget calorique dans Meals.tsx, et non seulement derrière « Ajouter / Aliment ». La capture qa/food-picker-inline-desktop.png montre la page à 1544 × 820 (capture pleine page, contenu plus haut que la fenêtre), comparée à la capture utilisateur du même écran avant changement. Le choix d'un aliment ouvre la quantité existante, avec retour vers Repas. La commande secondaire conserve les repas et extras. Les thèmes Kalo et la navigation mobile sont préservés.
+
+Le test food-picker-browser.mjs exerce désormais l'entrée directe depuis Repas. Build et test ciblé réussis. Les tests historiques ont été ajustés pour distinguer le sélecteur intégré de celui qui sert encore à la composition de repas dans une fenêtre.
+
+final result: passed (sélecteur visible directement dans la page Repas)

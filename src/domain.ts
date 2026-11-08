@@ -65,6 +65,12 @@ export interface Entry {
   fatGrams?: number;
 }
 export interface Food {
+  source?: "ciqual" | "off";
+  sourceVersion?: string;
+  externalId?: string;
+  brand?: string;
+  aliases?: string[];
+  missingNutrients?: string[];
   id: string;
   name: string;
   category: string;
@@ -358,8 +364,10 @@ export function calculateBasal(
     sex === "male" ? 5 : -161,
   );
 }
+export const referenceAmount = (food: Pick<Food, "referenceUnit">) =>
+  food.referenceUnit === "unité" ? 1 : 100;
 export function nutrients(food: Food, quantity: number): number[] {
-  const factor = div(quantity, 100);
+  const factor = div(quantity, referenceAmount(food));
   return [
     food.kcalPer100,
     food.proteinPer100,
@@ -411,9 +419,27 @@ export function mealEntry(
           .join(" · ")
       : meal.notes,
     calories: v[0],
-    proteinGrams: v[1],
-    carbsGrams: v[2],
-    fatGrams: v[3],
+    proteinGrams: parts.some((p) =>
+      foods
+        .find((f) => f.id === p.foodId)
+        ?.missingNutrients?.includes("proteinPer100"),
+    )
+      ? undefined
+      : v[1],
+    carbsGrams: parts.some((p) =>
+      foods
+        .find((f) => f.id === p.foodId)
+        ?.missingNutrients?.includes("carbsPer100"),
+    )
+      ? undefined
+      : v[2],
+    fatGrams: parts.some((p) =>
+      foods
+        .find((f) => f.id === p.foodId)
+        ?.missingNutrients?.includes("fatPer100"),
+    )
+      ? undefined
+      : v[3],
   };
 }
 export function estimateSteps(

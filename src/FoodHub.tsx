@@ -1,3 +1,4 @@
+import FoodPicker from "./FoodPicker";
 import { useState } from "react";
 import {
   useApp,
@@ -18,7 +19,6 @@ import {
   nutrients,
   mealTotals,
   mealEntry,
-  normalize,
   fmt,
   timestamp,
 } from "./domain";
@@ -103,13 +103,17 @@ export function ExtraEditor({
     </Sheet>
   );
 }
-export function FoodHub() {
+export function FoodHub({
+  initialFood = null,
+  initialPage = "home",
+}: { initialFood?: Food | null; initialPage?: string } = {}) {
   const { state, day, update, close, notify, modal } = useApp();
-  const [page, setPage] = useState("home"),
+  const [page, setPage] = useState(initialPage),
     [query, setQuery] = useState(""),
-    [category, setCategory] = useState("Toutes"),
-    [food, setFood] = useState<Food | null>(null),
-    [quantity, setQuantity] = useState("100"),
+    [food, setFood] = useState<Food | null>(initialFood),
+    [quantity, setQuantity] = useState(
+      initialFood?.referenceUnit === "unité" ? "1" : "100",
+    ),
     [meal, setMeal] = useState<Meal | null>(null),
     [name, setName] = useState(""),
     [parts, setParts] = useState<Ingredient[]>([]),
@@ -130,7 +134,7 @@ export function FoodHub() {
         const food = s.foods.find((x) => x.id === p.foodId);
         if (food) {
           food.usageCount++;
-          food.lastUsedAt = timestamp(day);
+          food.lastUsedAt = Date.now();
         }
       });
     });
@@ -145,7 +149,7 @@ export function FoodHub() {
   }
   const selectFood = (v: Food) => {
     setFood(v);
-    setQuantity("100");
+    setQuantity(v.referenceUnit === "unité" ? "1" : "100");
     setIndex(null);
     setVariable(false);
     setPage(picking ? "ingredient" : "quantity");
@@ -325,91 +329,44 @@ export function FoodHub() {
         </form>
       </Sheet>
     );
-  if (page === "foods") {
-    const q = normalize(query);
-    const foods = state.foods
-      .filter(
-        (f) =>
-          (category === "Toutes" || f.category === category) &&
-          normalize(f.name).includes(q),
-      )
-      .sort(
-        (a, b) =>
-          Number(b.isFavorite) - Number(a.isFavorite) ||
-          (q ? 0 : b.usageCount - a.usageCount) ||
-          (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0) ||
-          a.name.localeCompare(b.name),
-      )
-      .slice(0, 40);
+  if (page === "foods")
     return (
       <Sheet
-        title="Rechercher un aliment"
-        subtitle="Tape un nom. Les favoris et habitudes remontent en premier."
+        title="Ajouter un aliment"
         back={() => setPage(picking ? "composer" : "home")}
       >
-        <Field
-          label="Rechercher"
-          placeholder="Ex. jambon, pâtes, mozzarella…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <label className="field">
-          Catégorie
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <Button
-          onClick={() => {
+        <FoodPicker
+          query={query}
+          setQuery={setQuery}
+          select={selectFood}
+          create={() => {
             setFood(null);
             setPage("food-form");
           }}
-        >
-          ＋ Créer un aliment personnalisé
-        </Button>
-        {!foods.length && <p>Aucun résultat</p>}
-        {foods.map((v) => (
-          <ActionRow
-            key={v.id}
-            onClick={() => selectFood(v)}
-            onFavorite={() =>
-              void update((s) => {
-                const x = s.foods.find((f) => f.id === v.id)!;
-                x.isFavorite = !x.isFavorite;
-              })
-            }
-            favorite={v.isFavorite}
-            onEdit={
-              v.isCustom
-                ? () => {
-                    setFood(v);
-                    setPage("food-form");
-                  }
-                : undefined
-            }
-          >
-            <span>{v.name}</span>
-            <small>
-              {fmt(v.kcalPer100)} kcal / 100 {v.referenceUnit}
-            </small>
-          </ActionRow>
-        ))}
+          edit={(v) => {
+            setFood(v);
+            setPage("food-form");
+          }}
+        />
       </Sheet>
     );
-  }
   if (page === "food-form")
-    return <FoodForm food={food} done={() => setPage("foods")} />;
+    return (
+      <FoodForm
+        food={food}
+        done={() => (initialPage === "food-form" ? close() : setPage("foods"))}
+      />
+    );
   if ((page === "quantity" || page === "ingredient") && food)
     return (
       <Sheet
         title={food.name}
         subtitle={`Quantité libre en ${food.referenceUnit}`}
-        back={() => setPage(page === "ingredient" ? "composer" : "foods")}
+        back={() =>
+          initialPage === "quantity"
+            ? close()
+            : setPage(page === "ingredient" ? "composer" : "foods")
+        }
       >
         <form
           onSubmit={async (e) => {
@@ -441,13 +398,19 @@ export function FoodHub() {
                   quantityGrams: amount,
                   quantityUnit: food.referenceUnit,
                   calories: v[0],
-                  proteinGrams: v[1],
-                  carbsGrams: v[2],
-                  fatGrams: v[3],
+                  proteinGrams: food.missingNutrients?.includes("proteinPer100")
+                    ? undefined
+                    : v[1],
+                  carbsGrams: food.missingNutrients?.includes("carbsPer100")
+                    ? undefined
+                    : v[2],
+                  fatGrams: food.missingNutrients?.includes("fatPer100")
+                    ? undefined
+                    : v[3],
                 });
                 const used = s.foods.find((f) => f.id === food.id)!;
                 used.usageCount++;
-                used.lastUsedAt = timestamp(day);
+                used.lastUsedAt = Date.now();
               });
               notify(`${food.name} ajouté`);
               close();
@@ -461,7 +424,11 @@ export function FoodHub() {
             min={0.0001}
             required
           />
-          <p className="card padded">{macro(nutrients(food, num(quantity)))}</p>
+          <p className="card padded">
+            {food.missingNutrients?.length
+              ? `${fmt(nutrients(food, num(quantity))[0])} kcal · Macronutriments incomplets`
+              : macro(nutrients(food, num(quantity)))}
+          </p>
           {page === "ingredient" && (
             <label className="check">
               <input
@@ -514,7 +481,6 @@ export function FoodHub() {
           onClick={() => {
             setPicking(true);
             setQuery("");
-            setCategory("Toutes");
             setPage("foods");
           }}
         >
@@ -544,6 +510,7 @@ export function FoodHub() {
 function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
   const { update } = useApp();
   const [name, setName] = useState(food?.name ?? ""),
+    [brand, setBrand] = useState(food?.brand ?? ""),
     [category, setCategory] = useState(food?.category ?? "Féculents"),
     [unit, setUnit] = useState(food?.referenceUnit ?? "g"),
     [values, setValues] = useState(
@@ -557,7 +524,11 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
   return (
     <Sheet
       title={food ? "Modifier l’aliment" : "Nouvel aliment"}
-      subtitle="Valeurs nutritionnelles pour 100 g ou 100 ml."
+      subtitle={
+        unit === "unité"
+          ? "Valeurs nutritionnelles pour 1 unité (par exemple une merguez)."
+          : "Valeurs nutritionnelles pour 100 g ou 100 ml."
+      }
       back={done}
     >
       <form
@@ -565,14 +536,17 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
           e.preventDefault();
           if (!name.trim()) return;
           const v: Food = {
+            ...food,
             id: food?.id ?? crypto.randomUUID(),
             name: name.trim(),
+            brand: brand.trim(),
             category,
             referenceUnit: unit,
             kcalPer100: num(values[0]),
             proteinPer100: num(values[1]),
             carbsPer100: num(values[2]),
             fatPer100: num(values[3]),
+            missingNutrients: undefined,
             isCustom: true,
             isFavorite: food?.isFavorite ?? false,
             usageCount: food?.usageCount ?? 0,
@@ -590,6 +564,11 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
           value={name}
           required
           onChange={(e) => setName(e.target.value)}
+        />
+        <Field
+          label="Marque (facultatif)"
+          value={brand}
+          onChange={(e) => setBrand(e.target.value)}
         />
         <label className="field">
           Catégorie
@@ -613,9 +592,14 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
         ))}
         <label className="field">
           Unité
-          <select value={unit} onChange={(e) => setUnit(e.target.value)}>
+          <select
+            aria-label="Unité"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+          >
             <option>g</option>
             <option>ml</option>
+            <option value="unité">unité (pièce)</option>
           </select>
         </label>
         <Button primary type="submit">

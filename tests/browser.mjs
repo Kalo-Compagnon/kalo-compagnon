@@ -37,25 +37,34 @@ await page.getByLabel("Date de naissance", { exact: true }).fill("1996-01-01");
 await page.getByLabel("Taille (cm)", { exact: true }).fill("180");
 await page.getByRole("button", { name: "Calculer", exact: true }).click();
 await page.getByRole("button", { name: "Repas", exact: true }).click();
-await page
-  .getByRole("button", { name: "Ajouter", exact: false })
-  .first()
-  .click();
+await page.locator(".add-meal").click();
 await page
   .getByRole("button", {
     name: "Aliment Recherche instantanée et quantité libre",
   })
   .click();
-await page.getByLabel("Rechercher", { exact: true }).fill("banane");
-await page.locator(".row-main").first().waitFor();
-await page.locator(".row-main").first().click();
+await page
+  .getByRole("dialog")
+  .getByRole("button", {
+    name: "＋ Créer un aliment personnalisé",
+    exact: true,
+  })
+  .click();
+await page.getByLabel("Nom", { exact: true }).fill("Banane personnelle QA");
+await page.getByLabel("kcal", { exact: true }).fill("89");
+await page
+  .getByRole("button", { name: "Enregistrer l’aliment", exact: true })
+  .click();
+await page
+  .getByRole("dialog")
+  .getByLabel("Rechercher", { exact: true })
+  .fill("banane");
+await page.locator("dialog .row-main").first().waitFor();
+await page.locator("dialog .row-main").first().click();
 await page.getByLabel("Quantité (g)", { exact: true }).fill("123.4");
 await page.getByRole("button", { name: "Ajouter", exact: true }).click();
 await page.locator(".entry").first().waitFor();
-await page
-  .getByRole("button", { name: "Ajouter", exact: false })
-  .first()
-  .click();
+await page.locator(".add-meal").click();
 await page
   .getByRole("button", {
     name: "Extra / Photo Restaurant, imprévu ou estimation ultérieure",
@@ -164,7 +173,9 @@ await expect(page.getByRole("region", { name: "Suivi du poids" })).toHaveCount(
 await page.getByRole("button", { name: "Accueil", exact: true }).click();
 // Remove the onboarding weigh-in before exercising the historical fixtures.
 await page.locator(".weight-record").first().click();
-await page.getByRole("button", { name: "Supprimer cette pesée", exact: true }).click();
+await page
+  .getByRole("button", { name: "Supprimer cette pesée", exact: true })
+  .click();
 await expect(page.getByRole("dialog")).not.toBeVisible();
 const weight = page.getByLabel("Poids sur la balance (kg)", { exact: true });
 await page.getByLabel("Date de la pesée").fill("2026-10-01");

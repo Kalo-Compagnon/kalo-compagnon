@@ -14,6 +14,7 @@
   expense,
   consumed,
   nutrients,
+  referenceAmount,
   f,
   normalize,
   sub,
@@ -374,7 +375,7 @@ export function exportCSV(s: State) {
       id: food.id,
       name: food.name,
       category: food.category,
-      unit: `100 ${food.referenceUnit}`,
+      unit: `${referenceAmount(food)} ${food.referenceUnit}`,
       calories: food.kcalPer100,
       proteins_g: food.proteinPer100,
       carbs_g: food.carbsPer100,
@@ -537,13 +538,13 @@ export function importCSV(text: string): { state: State; warnings: string[] } {
         const seed = s.foods.find(
           (f) =>
             normalize(f.name) === normalize(r.name) &&
-            f.referenceUnit === (r.unit.replace(/^100\s*/, "") || "g"),
+            f.referenceUnit === (r.unit.replace(/^(?:100|1)\s*/, "") || "g"),
         );
         const food: Food = {
           id: seed?.id ?? id,
           name: r.name,
           category: r.category || "Autres",
-          referenceUnit: r.unit.replace(/^100\s*/, "") || "g",
+          referenceUnit: r.unit.replace(/^(?:100|1)\s*/, "") || "g",
           kcalPer100: n(r.calories),
           proteinPer100: n(r.proteins_g),
           carbsPer100: n(r.carbs_g),

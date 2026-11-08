@@ -1,6 +1,8 @@
 import { useApp, ValueDialog, Button, ActionRow, Confirm } from "./ui";
 import { entriesOn, dailyBudget, consumed, expense, fmt, sub } from "./domain";
 import { FoodHub, ExtraEditor } from "./FoodHub";
+import { useState } from "react";
+import FoodPicker from "./FoodPicker";
 import {
   Apple,
   Cookie,
@@ -32,6 +34,7 @@ function EntryPictogram({ type }: { type: string }) {
   );
 }
 export function Meals() {
+  const [query, setQuery] = useState("");
   const { state, day, update, modal } = useApp(),
     entries = entriesOn(state, day),
     food = consumed(state, day),
@@ -112,12 +115,26 @@ export function Meals() {
             : "Déficit théorique estimé : —"}
         </b>
       </button>
-      <Button primary className="add-meal" onClick={() => modal(<FoodHub />)}>
-        ＋ Ajouter
+      <section
+        className="card meal-food-picker"
+        aria-labelledby="meal-food-picker-title"
+      >
+        <h2 id="meal-food-picker-title">Ajouter un aliment</h2>
+        <FoodPicker
+          query={query}
+          setQuery={setQuery}
+          select={(food) =>
+            modal(<FoodHub initialFood={food} initialPage="quantity" />)
+          }
+          create={() => modal(<FoodHub initialPage="food-form" />)}
+          edit={(food) =>
+            modal(<FoodHub initialFood={food} initialPage="food-form" />)
+          }
+        />
+      </section>
+      <Button className="add-meal" onClick={() => modal(<FoodHub />)}>
+        ＋ Ajouter un repas ou un extra
       </Button>
-      <p className="note centered">
-        Repas enregistré, aliment, composition ou extra.
-      </p>
       <h2 className="timeline-heading">Chronologie</h2>
       {entries.length === 0 ? (
         <p className="empty">Rien pour l’instant. Ajoute ton premier repas.</p>

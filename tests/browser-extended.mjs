@@ -29,7 +29,7 @@ try {
   };
   const add = async () => {
     await tab("Repas");
-    await button("＋ Ajouter").click();
+    await page.locator(".add-meal").click();
   };
   const data = async () => {
     await tab("Accueil");
@@ -46,7 +46,7 @@ try {
   await page.locator(".liquid-nav").waitFor();
   await add();
   await button("Aliment Recherche instantanée et quantité libre").click();
-  await button("＋ Créer un aliment personnalisé").click();
+  await page.getByRole("dialog").getByRole("button", { name: "＋ Créer un aliment personnalisé", exact: true }).click();
   await page.getByLabel("Nom", { exact: true }).fill("Aliment QA");
   for (const [label, value] of [
     ["kcal", "120"],
@@ -56,7 +56,10 @@ try {
   ])
     await page.getByLabel(label, { exact: true }).fill(value);
   await button("Enregistrer l’aliment").click();
-  await page.getByLabel("Rechercher", { exact: true }).fill("Aliment QA");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Rechercher", { exact: true })
+    .fill("Aliment QA");
   await expect(page.locator("dialog .row-main")).toHaveCount(1);
   await page.locator("dialog .row-main").click();
   await page.getByLabel("Quantité (g)", { exact: true }).fill("125");
@@ -71,7 +74,10 @@ try {
     .getByLabel("Nom du repas", { exact: true })
     .fill("Repas variable QA");
   await button("＋ Ajouter un ingrédient").click();
-  await page.getByLabel("Rechercher", { exact: true }).fill("Aliment QA");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Rechercher", { exact: true })
+    .fill("Aliment QA");
   await expect(page.locator("dialog .row-main")).toHaveCount(1);
   await page.locator("dialog .row-main").click();
   await page.getByLabel("Quantité (g)", { exact: true }).fill("100");
@@ -282,15 +288,14 @@ try {
         animations: "disabled",
       });
       if (name === "Repas" && width === 844) {
+        await p.locator(".add-meal").scrollIntoViewIfNeeded();
         const add = await p.locator(".add-meal").boundingBox();
         const nav = await p.locator(".liquid-nav").boundingBox();
         assert.ok(
           add.y + add.height <= nav.y,
           "Le bouton Ajouter doit rester au-dessus de la navigation en paysage",
         );
-        await p
-          .getByRole("button", { name: "＋ Ajouter", exact: true })
-          .click();
+        await p.locator(".add-meal").click();
         await expect(p.getByRole("dialog")).toBeVisible();
         await p.getByRole("button", { name: "Fermer", exact: true }).click();
       }

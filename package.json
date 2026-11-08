@@ -7,13 +7,14 @@
     "dev": "vite",
     "build": "tsx scripts/check-icons.ts && tsc --noEmit && vite build && node scripts/publish-static.mjs",
     "generate:icons": "tsx scripts/generate-icons.ts",
-    "test": "tsx --test tests/*.test.ts",
-    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs && node tests/app-icons-browser.mjs && node tests/private-duo-browser.mjs",
+    "test": "tsx --test tests/*.test.ts && node --test tests/ciqual-import.mjs",
+    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs && node tests/app-icons-browser.mjs && node tests/private-duo-browser.mjs && node tests/food-picker-browser.mjs && node tests/custom-food-browser.mjs",
     "test:fit": "node tests/fit-service.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "build:fit": "node server/build.mjs",
     "serve": "node --env-file-if-exists=.env.local server/index.mjs",
-    "format": "prettier --write src tests/*.ts server/*.mjs"
+    "format": "prettier --write src tests/*.ts server/*.mjs",
+    "prepare:ciqual": "node scripts/prepare-ciqual.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",

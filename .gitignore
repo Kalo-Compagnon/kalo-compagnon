@@ -20,3 +20,14 @@ local-only/
 /exports/
 supabase/.temp/
 .supabase/
+
+# Local test reports and compiler caches
+/test-results/
+/playwright-report/
+/blob-report/
+/coverage/
+/.playwright/
+*.tsbuildinfo
+
+# Original downloaded datasets; keep only prepared application data in src/
+/data-sources/
