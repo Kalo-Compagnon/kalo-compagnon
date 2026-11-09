@@ -24,6 +24,13 @@ const weightMigration = readFileSync(
   ),
   "utf8",
 );
+const deletionMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20261109150000_food_soft_delete.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const schema = readFileSync(
   new URL("../supabase/schema.sql", import.meta.url),
   "utf8",
@@ -73,6 +80,7 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
     await db.exec(migration);
     await db.exec(subtypeMigration);
     await db.exec(weightMigration);
+    await db.exec(deletionMigration);
     const as = async (uid: string, sql: string, params: any[] = []) => {
       await db.exec("reset role");
       await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
@@ -158,6 +166,7 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
       { ...food, referenceUnit: "unité", unitWeightGrams: -1 },
       { ...food, referenceUnit: "unité", unitWeightGrams: "21" },
       { ...food, unitWeightGrams: 21 },
+      { ...food, isDeleted: "true" },
     ])
       await assert.rejects(put(a, invalid, 2));
     await db.exec("reset role");
@@ -168,6 +177,16 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
       .rows;
     assert.equal(after[0].revision, 2);
     assert.equal(after[0].value.name, "Mis à jour");
+    await db.exec("reset role");
+    await db.exec(deletionMigration);
+    assert.equal(
+      (await put(b, { ...after[0].value, isDeleted: true }, 2)).accepted,
+      true,
+    );
+    const deleted = (await as(a, "select * from public.logger_food_catalog"))
+      .rows;
+    assert.equal(deleted.length, 1);
+    assert.equal(deleted[0].value.isDeleted, true);
   } finally {
     await db.close();
   }

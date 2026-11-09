@@ -1,13 +1,16 @@
 import ciqual from "./ciqual-data.json";
 import { useEffect, useRef, useState } from "react";
 import { PlusCircle, Star } from "lucide-react";
-import { Button, Field, useApp } from "./ui";
+import { Button, Confirm, Field, useApp } from "./ui";
 import {
   fmt,
   foodLabel,
   nutrients,
   referenceAmount,
+  normalize,
+  mealTotals,
   type Food,
+  type Meal,
 } from "./domain";
 import MealCalculator, { type DraftMealPart } from "./MealCalculator";
 import {
@@ -33,9 +36,10 @@ export default function FoodPicker({
   create: () => void;
   edit: (f: Food) => void;
 }) {
-  const { state, update, notify } = useApp();
+  const { state, update, notify, modal } = useApp();
   const [parts, setParts] = useState<DraftMealPart[]>([]);
-  const [filter, setFilter] = useState<SourceFilter>("kalo"),
+  const [loadedMeal, setLoadedMeal] = useState<Meal | null>(null);
+  const [filter, setFilter] = useState<SourceFilter | "meals">("kalo"),
     [section, setSection] = useState<FoodSection>("recent");
   const gesture = useRef<{
     x: number;
@@ -57,25 +61,95 @@ export default function FoodPicker({
     },
     [],
   );
-  function animateEdit(food: Food) {
+  function animateEdit(food: Food, remove = false) {
     if (editTimer.current) return;
-    setSlide({ id: food.id, x: -104, dragging: false });
+    setSlide({ id: food.id, x: remove ? 104 : -104, dragging: false });
     editTimer.current = setTimeout(
       () => {
         editTimer.current = null;
         gesture.current = null;
         setSlide(null);
-        edit(food);
+        if (remove)
+          modal(
+            <Confirm
+              title="Supprimer cet aliment ?"
+              action={async () => {
+                await update((s) => {
+                  const saved = s.foods.find((f) => f.id === food.id);
+                  if (saved) saved.isDeleted = true;
+                });
+                setParts((old) =>
+                  old.filter((part) => part.food.id !== food.id),
+                );
+                notify("Aliment supprimé du catalogue");
+              }}
+            >
+              <p>
+                {foodLabel(food)} sera retiré du catalogue Kalo commun pour tous
+                les utilisateurs. Les anciens repas et le journal seront
+                conservés.
+              </p>
+            </Confirm>,
+          );
+        else edit(food);
       },
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180,
     );
   }
-  const foods = searchFoods(
-    [...state.foods.filter(selectableFood), ...(ciqual as CatalogFood[])],
-    query,
-    filter,
-    section,
-  );
+  const foods =
+    filter === "meals"
+      ? []
+      : searchFoods(
+          [...state.foods.filter(selectableFood), ...(ciqual as CatalogFood[])],
+          query,
+          filter,
+          section,
+        );
+  const meals = state.meals
+    .filter((meal) => {
+      if (filter !== "meals" && filter !== "all") return false;
+      if (query.trim())
+        return normalize(query)
+          .split(/\s+/)
+          .every((token) => normalize(meal.name).includes(token));
+      return section === "favorites"
+        ? meal.isFavorite
+        : section === "recent"
+          ? !!meal.lastUsedAt
+          : true;
+    })
+    .sort((a, b) =>
+      section === "recent"
+        ? (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0)
+        : a.name.localeCompare(b.name, "fr"),
+    );
+  function loadMeal(meal: Meal) {
+    const draft = meal.ingredients.map((part) => ({
+      id: crypto.randomUUID(),
+      food: state.foods.find((f) => f.id === part.foodId),
+      quantity: String(part.quantity),
+    }));
+    if (!draft.length || draft.some((part) => !part.food)) {
+      notify(
+        "Ce repas ne peut pas être chargé : des ingrédients sont manquants.",
+      );
+      return;
+    }
+    const load = () => {
+      setParts(draft as DraftMealPart[]);
+      setLoadedMeal(meal);
+    };
+    if (parts.length)
+      modal(
+        <Confirm
+          title="Remplacer le repas en préparation ?"
+          action={async () => load()}
+        >
+          Le repas en cours sera remplacé par {meal.name}.
+        </Confirm>,
+      );
+    else load();
+  }
   async function keep(value: CatalogFood, favorite = false) {
     try {
       const f = internalFood(value);
@@ -118,7 +192,7 @@ export default function FoodPicker({
         {(
           [
             ["all", "Tous"],
-            ["generic", "Aliments bruts"],
+            ["meals", "Repas"],
             ["kalo", "Catalogue Kalo"],
           ] as const
         ).map(([key, label]) => (
@@ -126,8 +200,12 @@ export default function FoodPicker({
             key={key}
             primary={filter === key}
             aria-pressed={filter === key}
+            aria-label={
+              key === "meals" ? "Afficher les repas enregistrés" : undefined
+            }
             onClick={() => {
               setFilter(key);
+              if (key === "meals") setSection("catalog");
             }}
           >
             {label}
@@ -156,21 +234,25 @@ export default function FoodPicker({
           </Button>
         ))}
       </div>
-      {!foods.length && (
+      {!foods.length && !meals.length && (
         <p role="status">
-          {query.trim()
-            ? "Aucun aliment trouv\u00e9. Essaie une autre recherche ou cr\u00e9e un aliment."
-            : section === "recent"
-              ? "Aucun aliment récent. Recherche un aliment ou ouvre le catalogue."
-              : section === "favorites"
-                ? "Aucun favori. Utilise l’étoile d’un aliment pour le retrouver ici."
-                : filter === "kalo"
-                  ? "Le catalogue Kalo est vide. Crée un aliment pour le compléter."
-                  : "Aucun aliment brut disponible dans le référentiel Ciqual."}
+          {filter === "meals"
+            ? query.trim()
+              ? "Aucun repas trouvé."
+              : "Aucun repas enregistré. Compose un repas ci-dessous puis enregistre-le."
+            : query.trim()
+              ? "Aucun aliment trouv\u00e9. Essaie une autre recherche ou cr\u00e9e un aliment."
+              : section === "recent"
+                ? "Aucun aliment récent. Recherche un aliment ou ouvre le catalogue."
+                : section === "favorites"
+                  ? "Aucun favori. Utilise l’étoile d’un aliment pour le retrouver ici."
+                  : filter === "kalo"
+                    ? "Le catalogue Kalo est vide. Crée un aliment pour le compléter."
+                    : "Aucun aliment brut disponible dans le référentiel Ciqual."}
         </p>
       )}
       <small className="food-gesture-hint">
-        Glisse un aliment personnalisé vers la gauche pour le modifier.
+        Glisse vers la gauche pour modifier, vers la droite pour supprimer.
       </small>
       <div
         className="food-results"
@@ -178,6 +260,53 @@ export default function FoodPicker({
         aria-label="Résultats des aliments"
         tabIndex={0}
       >
+        {meals.map((meal) => (
+          <div className="food-result meal-result" key={`meal-${meal.id}`}>
+            <div className="food-result-content">
+              <button
+                className="row-main"
+                onClick={() => loadMeal(meal)}
+                aria-label={`Préparer ${meal.name}`}
+              >
+                <span>{meal.name}</span>
+                <small>
+                  Repas ·{" "}
+                  {fmt(
+                    meal.ingredients.every((p) =>
+                      state.foods.some((f) => f.id === p.foodId),
+                    ) && meal.ingredients.length
+                      ? mealTotals(meal.ingredients, state.foods)[0]
+                      : meal.cachedCalories,
+                  )}{" "}
+                  kcal
+                </small>
+              </button>
+              <button
+                className="food-icon"
+                aria-label={`${meal.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"} : ${meal.name}`}
+                aria-pressed={meal.isFavorite}
+                onClick={() =>
+                  void update((s) => {
+                    const value = s.meals.find((m) => m.id === meal.id);
+                    if (value) value.isFavorite = !value.isFavorite;
+                  })
+                }
+              >
+                <Star
+                  size={18}
+                  fill={meal.isFavorite ? "currentColor" : "none"}
+                />
+              </button>
+              <button
+                className="food-icon"
+                aria-label={`Préparer le repas ${meal.name}`}
+                onClick={() => loadMeal(meal)}
+              >
+                <PlusCircle size={20} />
+              </button>
+            </div>
+          </div>
+        ))}
         {foods.map((f) => (
           <div
             className="food-result"
@@ -213,13 +342,13 @@ export default function FoodPicker({
                 setSlide(null);
                 return;
               }
-              if (dx < -8 || start.swiped) {
+              if (Math.abs(dx) > 8 || start.swiped) {
                 if (!start.swiped)
                   e.currentTarget.setPointerCapture(e.pointerId);
                 start.swiped = true;
                 setSlide({
                   id: f.id,
-                  x: Math.max(-120, Math.min(0, dx)),
+                  x: Math.max(-120, Math.min(120, dx)),
                   dragging: true,
                 });
               }
@@ -232,9 +361,9 @@ export default function FoodPicker({
                 start.pointerId !== e.pointerId
               )
                 return;
-              if (start.swiped && start.x - e.clientX > 60) {
+              if (start.swiped && Math.abs(start.x - e.clientX) > 60) {
                 e.preventDefault();
-                animateEdit(f as Food);
+                animateEdit(f as Food, e.clientX > start.x);
               } else {
                 setSlide(null);
                 if (!start.swiped) gesture.current = null;
@@ -261,8 +390,17 @@ export default function FoodPicker({
                 e.preventDefault();
                 animateEdit(f as Food);
               }
+              if (f.isCustom && e.key === "Delete") {
+                e.preventDefault();
+                animateEdit(f as Food, true);
+              }
             }}
           >
+            {f.isCustom && (
+              <span className="food-delete-reveal" aria-hidden="true">
+                Supprimer
+              </span>
+            )}
             {f.isCustom && (
               <span className="food-edit-reveal" aria-hidden="true">
                 Modifier
@@ -342,7 +480,12 @@ export default function FoodPicker({
           </div>
         ))}
       </div>
-      <MealCalculator parts={parts} setParts={setParts} />
+      <MealCalculator
+        parts={parts}
+        setParts={setParts}
+        loadedMeal={loadedMeal}
+        onReset={() => setLoadedMeal(null)}
+      />
       <small className="food-attribution">
         Catalogue Kalo : aliments ajoutés par les utilisateurs.
         {ciqual.length > 0 && (

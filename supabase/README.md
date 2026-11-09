@@ -10,6 +10,8 @@ Les tests utilisent des identifiants fictifs et une base PostgreSQL locale via P
 
 ## Catalogue Kalo commun
 
+Pour les suppressions par glissement, appliquer [20261109150000_food_soft_delete.sql](migrations/20261109150000_food_soft_delete.sql) apres les migrations ci-dessous. Les fiches sont archivees, sans suppression physique, pour conserver les anciens repas.
+
 La migration [20261109140000_food_unit_weight.sql](migrations/20261109140000_food_unit_weight.sql), a executer apres les deux migrations ci-dessous, ajoute le poids facultatif d'une unite aux fiches partagees. Les anciennes fiches par piece sans poids restent compatibles.
 
 Pour les variantes de gout, executer aussi [20261109130000_food_subtype.sql](migrations/20261109130000_food_subtype.sql) apres la migration ci-dessous. Le champ est facultatif et compatible avec les fiches existantes.

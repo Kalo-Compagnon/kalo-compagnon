@@ -6,6 +6,7 @@ import { DuoComparison, type DuoProfile } from "./DuoComparison";
 import { duoRequest, type DuoSnapshot } from "./duo-client";
 import demo from "./duo-demo.json";
 import { validateState } from "./transfer";
+import { dayKey } from "./domain";
 import { RefreshCw, SlidersHorizontal } from "lucide-react";
 
 type DuoProps = {
@@ -68,6 +69,7 @@ function DemoDuo({ settings = false, onPartnerAccent }: DuoProps) {
 function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
   const { repo, state, modal } = useApp();
   const [snapshot, setSnapshot] = useState<DuoSnapshot | null>(null);
+  const [selectedDay, setSelectedDay] = useState(dayKey());
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [code, setCode] = useState(""),
@@ -101,6 +103,7 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
   };
   useEffect(() => {
     if (scope === "guest") return;
+    setSelectedDay(dayKey());
     void run();
     const refresh = () => void run();
     const clear = () => {
@@ -289,6 +292,8 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
                 <>
                   {partnerState && (
                     <DuoComparison
+                      selectedDay={selectedDay}
+                      onDayChange={setSelectedDay}
                       profiles={[
                         {
                           name: state.settings.displayName || "Moi",
@@ -321,6 +326,7 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
           {snapshot &&
             (snapshot.status === "pending" || snapshot.status === "active") && (
               <Button
+                className="duo-revoke"
                 disabled={busy}
                 onClick={() =>
                   modal(

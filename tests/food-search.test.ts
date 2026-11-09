@@ -81,6 +81,19 @@ test("filtres, favoris, récents chronologiques, limite et dédoublonnage", () =
     2,
   );
 });
+test("Suppression : toutes les listes masquent la fiche, ses calculs restent disponibles", () => {
+  const archived = {
+    ...foods[1],
+    isDeleted: true,
+    isFavorite: true,
+    lastUsedAt: 100,
+  };
+  assert.equal(selectableFood(archived), false);
+  for (const section of ["catalog", "recent", "favorites"] as const)
+    for (const query of ["", archived.name])
+      assert.deepEqual(searchFoods([archived], query, "all", section), []);
+  assert.equal(nutrients(archived, 100)[0], archived.kcalPer100);
+});
 test("missing nutrients and zero energy remain distinct", () => {
   const missing = { ...foods[0], kcalPer100: null };
   assert.throws(() => internalFood(missing));

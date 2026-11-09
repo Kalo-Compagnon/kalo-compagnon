@@ -4,7 +4,38 @@ import assert from "node:assert/strict";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Repository } from "../src/persistence";
 import { initialState } from "../src/domain";
+import { selectableFood } from "../src/food-search";
 
+test("Catalogue : suppression commune avec conservation des fiches historiques", async () => {
+  const cloud = backend(),
+    a = new Repository(cloud.client("delete-a")),
+    b = new Repository(cloud.client("delete-b"));
+  await a.load("delete-a");
+  await b.load("delete-b");
+  await a.update((s) => {
+    s.foods.push(custom("to-delete"));
+  });
+  await a.sync();
+  await b.sync();
+  await a.update((s) => {
+    s.foods.find((f) => f.id === "to-delete")!.isDeleted = true;
+  });
+  await a.sync();
+  await b.sync();
+  const archived = b.state.foods.find((f) => f.id === "to-delete")!;
+  assert.equal(archived.isDeleted, true);
+  assert.equal(selectableFood(archived), false);
+  assert.equal(cloud.catalogue.get("to-delete")!.value.isDeleted, true);
+  await b.update((s) => {
+    s.foods.find((f) => f.id === "to-delete")!.isDeleted = false;
+  });
+  await b.sync();
+  await a.sync();
+  assert.equal(
+    a.state.foods.find((f) => f.id === "to-delete")!.isDeleted,
+    false,
+  );
+});
 function backend() {
   type Row = { value: any; revision: number };
   const privateRows = new Map<string, Map<string, Row>>();

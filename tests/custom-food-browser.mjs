@@ -137,6 +137,39 @@ try {
       ),
     );
   }
+  await page.setViewportSize({ width: 390, height: 844 });
+  async function swipeRight(distance) {
+    await card.scrollIntoViewIfNeeded();
+    const bounds = await card.boundingBox();
+    await page.mouse.move(bounds.x + 15, bounds.y + bounds.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      bounds.x + 15 + distance,
+      bounds.y + bounds.height / 2,
+      { steps: 8 },
+    );
+  }
+  await swipeRight(35);
+  await expect.poll(offset).toBeGreaterThan(25);
+  await page.mouse.up();
+  await expect.poll(offset).toBe(0);
+  await expect(dialog).not.toBeVisible();
+  await swipeRight(100);
+  await page.mouse.up();
+  await expect(dialog).toContainText("Supprimer cet aliment ?");
+  await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
+  await expect(card).toHaveCount(1);
+  await swipeRight(100);
+  await page.mouse.up();
+  await dialog.getByRole("button", { name: "Confirmer", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(card).toHaveCount(0);
+  await expect(page.locator(".entry")).toContainText("360 kcal");
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page.getByLabel("Rechercher", { exact: true }).fill("boucherie");
+  await expect(card).toHaveCount(0);
+  await expect(page.locator(".entry")).toContainText("360 kcal");
   console.log(
     "Aliment personnel: marque, unité, calcul pour 2 pièces, Catalogue Kalo, recherche et persistance OK",
   );

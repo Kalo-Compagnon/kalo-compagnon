@@ -19,5 +19,6 @@ export function sharedFood(food: Food): Partial<Food> | null {
     aliases: food.aliases ?? [],
     missingNutrients: food.missingNutrients ?? [],
     isCustom: true,
+    ...(food.isDeleted ? { isDeleted: true } : {}),
   };
 }

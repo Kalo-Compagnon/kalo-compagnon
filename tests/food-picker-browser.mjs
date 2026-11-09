@@ -82,7 +82,10 @@ try {
   await page.getByRole("button", { name: "Favoris", exact: true }).click();
   await expect(page.locator(".food-result")).toContainText(name);
   await page
-    .getByRole("button", { name: "Aliments bruts", exact: true })
+    .getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    })
     .click();
   await expect(page.locator(".food-result")).toHaveCount(0);
   for (const width of [320, 390, 768, 1440]) {

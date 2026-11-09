@@ -47,6 +47,7 @@
 .duo-date-control .field { font-size: 0; gap: 0; margin: 0; }
 .duo-date-control input { width: 100%; max-width: 100%; min-width: 0; min-height: 38px; padding: 6px 8px; font-size: 13px; box-sizing: border-box; }
 .duo-dashboard:has(> .duo-overview-controls) { margin-top: 10px; }
+.duo-revoke { margin-top: 18px; }
 @media (prefers-reduced-motion: reduce) { .duo-refresh-control.is-loading svg { animation: none; } }
 .duo-steps-cards > .card {
   background: var(--brand);
@@ -90,7 +91,7 @@
 .duo-home-profile .global-grid > div:first-child,
 .duo-home-profile .stat-row { display: contents; }
 .duo-home-profile .balance-card { margin: 0; }
-.duo-home-profile .stat-card { display: grid; grid-template-rows: subgrid; grid-row: span 2; row-gap: 0; }
+.duo-home-profile .stat-card { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: subgrid; grid-row: span 2; row-gap: 0; justify-content: stretch; padding: 0; }
 .duo-home-profile .daily-band { margin-top: 0; }
 :root {
   --bg: #f6f5f0;
@@ -770,6 +771,7 @@ progress::-moz-progress-bar {
 .food-result-content { display: flex; align-items: center; width: 100%; height: 100%; position: relative; background: var(--card); transition: transform 180ms ease-out; }
 .food-result-content.is-dragging { transition: none; user-select: none; }
 .food-edit-reveal { position: absolute; inset: 0 0 0 auto; width: 104px; display: grid; place-items: center; color: var(--accent); font-size: 13px; font-weight: 600; }
+.food-delete-reveal { position: absolute; inset: 0 auto 0 0; width: 104px; display: grid; place-items: center; color: var(--text); background: color-mix(in srgb, #d64550 24%, var(--card)); font-size: 13px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .food-result-content { transition: none; } }
 .food-picker .food-options { flex-wrap: wrap; }
 .food-picker .food-search-bar .food-create { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-height: 42px; margin: 0; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); white-space: nowrap; }
@@ -779,6 +781,8 @@ progress::-moz-progress-bar {
 .meal-calculator-heading output { color: var(--accent); font-weight: 700; white-space: nowrap; }
 .meal-calculator p { color: var(--muted); font-size: 13px; }
 .meal-calculator-parts { padding: 0; margin: 0; border: 0; min-width: 0; }
+.meal-calculator-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.meal-calculator-actions button { min-width: 0; padding: 10px 6px; font-size: 12px; margin: 0; }
 .meal-calculator-part { display: grid; grid-template-columns: minmax(0, 1fr) 100px 36px; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .meal-calculator-food { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
 .meal-calculator-food small { display: block; color: var(--muted); }

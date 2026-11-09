@@ -18,7 +18,8 @@ const words = (s: string) =>
     .filter(Boolean);
 // Preserve historical records for saved recipes, outside the selectable catalogue.
 export const selectableFood = (food: CatalogFood) =>
-  (!food.source && food.isCustom) || food.source === "ciqual";
+  !food.isDeleted &&
+  ((!food.source && food.isCustom) || food.source === "ciqual");
 export function searchFoods(
   foods: CatalogFood[],
   query: string,

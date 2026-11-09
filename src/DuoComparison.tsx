@@ -21,11 +21,16 @@ const color = (profile: DuoProfile) =>
 export function DuoComparison({
   profiles,
   initialDay = dayKey(),
+  selectedDay,
+  onDayChange,
 }: {
   profiles: [DuoProfile, DuoProfile];
   initialDay?: string;
+  selectedDay?: string;
+  onDayChange?: (day: string) => void;
 }) {
-  const [date, setDate] = useState(initialDay);
+  const [localDate, setLocalDate] = useState(initialDay);
+  const date = selectedDay ?? localDate;
   const [dark, setDark] = useState(
     document.documentElement.dataset.theme === "dark",
   );
@@ -53,10 +58,15 @@ export function DuoComparison({
           <Field
             label="Journée du Duo"
             type="date"
+            title="Choisir une date pour consulter l’historique du Duo"
             value={date}
             max={initialDay}
             onChange={(event) => {
-              if (event.target.value) setDate(event.target.value);
+              const value = event.target.value;
+              if (value && value <= initialDay) {
+                if (onDayChange) onDayChange(value);
+                else setLocalDate(value);
+              }
             }}
           />
         </div>

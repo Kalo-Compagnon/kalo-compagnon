@@ -85,6 +85,7 @@ export interface Food {
   usageCount: number;
   lastUsedAt?: number;
   isCustom: boolean;
+  isDeleted?: boolean;
 }
 export const foodLabel = (food: Pick<Food, "name" | "subtype">) =>
   food.subtype?.trim() ? `${food.name} · ${food.subtype.trim()}` : food.name;

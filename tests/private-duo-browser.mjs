@@ -12,6 +12,9 @@ const a = "10000000-0000-4000-8000-000000000001",
 const today = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Paris",
 }).format(new Date());
+const previousDay = new Date(`${today}T12:00:00Z`);
+previousDay.setUTCDate(previousDay.getUTCDate() - 1);
+const yesterday = previousDay.toISOString().slice(0, 10);
 let queue = Promise.resolve();
 function asUser(uid, work) {
   const result = queue.then(async () => {
@@ -54,6 +57,14 @@ try {
       "settings/deficitGoal": 300,
       "settings/target": 2000,
       [`day/${today}`]: { basal: 1500, steps: 1000 },
+      [`day/${yesterday}`]: { basal: 1500, steps: uid === a ? 111 : 222 },
+      "entry/history": {
+        id: "history",
+        timestamp: new Date(`${yesterday}T12:00:00+01:00`).getTime(),
+        type: "meal",
+        foodName: "Repas historique",
+        calories: uid === a ? 321 : 654,
+      },
       "entry/food": {
         id: "food",
         timestamp: new Date(`${today}T12:00:00+01:00`).getTime(),
@@ -211,6 +222,46 @@ try {
     "aria-label",
     /Profil B, apport 700 kcal/,
   );
+  const selectedDate = first.getByLabel("Journée du Duo");
+  await selectedDate.fill(yesterday);
+  await expect(
+    first
+      .getByRole("region", { name: "Accueil de Profil A", exact: true })
+      .getByLabel("Apport du jour"),
+  ).toContainText("321 kcal");
+  await expect(
+    first
+      .getByRole("region", { name: "Accueil de Profil B", exact: true })
+      .getByLabel("Apport du jour"),
+  ).toContainText("654 kcal");
+  await expect(
+    first.getByRole("region", {
+      name: "Profil B · Activité physique",
+      exact: true,
+    }),
+  ).toContainText("522");
+  await expect(first.locator("canvas")).toHaveAttribute(
+    "aria-label",
+    /Profil B, apport 654 kcal/,
+  );
+  await first
+    .getByRole("button", { name: "Actualiser Duo", exact: true })
+    .click();
+  await expect(
+    first.getByRole("region", { name: "Accueil de Profil B", exact: true }),
+  ).toBeVisible();
+  await expect(selectedDate).toHaveValue(yesterday);
+  await first.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(
+    first.getByRole("region", { name: "Accueil de Profil B", exact: true }),
+  ).toBeVisible();
+  await expect(selectedDate).toHaveValue(yesterday);
+  await expect(
+    first
+      .getByRole("region", { name: "Accueil de Profil B", exact: true })
+      .getByLabel("Apport du jour"),
+  ).toContainText("654 kcal");
+  await selectedDate.fill(today);
   await expect(
     second.getByRole("region", { name: "Accueil de Profil A", exact: true }),
   ).toContainText("Non partagé");

@@ -53,6 +53,12 @@ try {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/20261109150000_food_soft_delete.sql",
+      "utf8",
+    ),
+  );
   const errors = [];
   async function createPage(uid) {
     const context = await browser.newContext({
@@ -215,6 +221,42 @@ try {
     .fill("Produit partagé QA");
   await expect(first.locator(".food-result")).toContainText("234 kcal/100 g");
   await expect(first.locator(".food-result")).toContainText("Chocolat");
+  const deletionCard = first.locator(".food-result");
+  const deletionBox = await deletionCard.boundingBox();
+  await first.mouse.move(
+    deletionBox.x + 15,
+    deletionBox.y + deletionBox.height / 2,
+  );
+  await first.mouse.down();
+  await first.mouse.move(
+    deletionBox.x + 115,
+    deletionBox.y + deletionBox.height / 2,
+    { steps: 10 },
+  );
+  await first.mouse.up();
+  await first
+    .getByRole("dialog")
+    .getByRole("button", { name: "Confirmer", exact: true })
+    .click();
+  await expect(first.locator(".food-result")).toHaveCount(0);
+  await expect
+    .poll(
+      async () =>
+        (
+          await asUser(a, () =>
+            db.query(
+              "select value->>'isDeleted' deleted from public.logger_food_catalog",
+            ),
+          )
+        ).rows[0].deleted,
+    )
+    .toBe("true");
+  await second.reload();
+  await second.getByRole("button", { name: "Repas", exact: true }).click();
+  await second
+    .getByLabel("Rechercher", { exact: true })
+    .fill("Produit partagé QA");
+  await expect(second.locator(".food-result")).toHaveCount(0);
   await expect(first.locator(".entry")).toHaveCount(0);
   await expect(second.locator(".entry")).toHaveCount(0);
   assert.deepEqual(errors, []);

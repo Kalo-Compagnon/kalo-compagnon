@@ -115,10 +115,12 @@ export function Button({
   disabled = false,
   type = "button",
   "aria-pressed": pressed,
+  "aria-label": ariaLabel,
 }: {
   children: ReactNode;
   onClick?: () => void;
   "aria-pressed"?: boolean;
+  "aria-label"?: string;
   primary?: boolean;
   className?: string;
   disabled?: boolean;
@@ -128,6 +130,7 @@ export function Button({
     <button
       type={type}
       aria-pressed={pressed}
+      aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       className={`${primary ? "primary" : "outline"} ${className}`}

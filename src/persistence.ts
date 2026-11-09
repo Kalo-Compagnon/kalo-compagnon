@@ -61,6 +61,7 @@ export const docsToState = (docs: Doc[]): State => {
     s.foods.push({
       ...personal,
       ...food,
+      isDeleted: food.isDeleted === true,
       isFavorite: personal?.isFavorite ?? false,
       usageCount: personal?.usageCount ?? 0,
       lastUsedAt: personal?.lastUsedAt,

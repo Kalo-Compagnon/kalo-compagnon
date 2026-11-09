@@ -4,6 +4,8 @@ Le catalogue Kalo contient uniquement les aliments ajoutes par les utilisateurs 
 
 ## Catalogue partage
 
+Le glissement a gauche ouvre la modification ; a droite, il revele Supprimer puis demande confirmation. La suppression archive la fiche avec isDeleted, la masque des recherches, favoris et recents et se propage a tous les comptes. Les recettes et le journal restent exploitables. Appliquer `supabase/migrations/20261109150000_food_soft_delete.sql` apres les migrations precedentes pour synchroniser les suppressions.
+
 Appliquer aussi `supabase/migrations/20261109130000_food_subtype.sql` apres la migration du catalogue pour conserver les variantes dans les fiches partagees. Les anciennes fiches sans variante restent compatibles.
 
 Appliquer aussi `supabase/migrations/20261109130000_food_subtype.sql` apres la migration du catalogue pour conserver les variantes dans les fiches partagees. Les anciennes fiches sans variante restent compatibles.
@@ -16,7 +18,7 @@ Chaque compte peut modifier les definitions du catalogue commun. Deux modificati
 
 Tests : `tests/shared-food-sql.test.ts`, `tests/shared-food-sync.test.ts`, `tests/shared-food-browser.mjs` (deux navigateurs authentifies et vrai PostgreSQL local). La migration distante ne fait pas partie du build : elle doit etre appliquee sur Supabase pour activer le partage.
 
-Le selecteur propose Tous, Aliments bruts (Ciqual) et Catalogue Kalo. Recherche locale par nom, marque, alias et identifiant. Quatre lignes visibles puis defilement vertical. Glisser une fiche personnelle vers la gauche ouvre la modification. Au clavier : fleche gauche depuis un bouton de la fiche.
+Le selecteur propose Tous, Repas et Catalogue Kalo. Repas affiche les compositions enregistrees du compte, recherchables par nom et accessibles dans Catalogue, Favoris ou Recents. Choisir un repas recharge ses ingredients et quantites dans le calculateur, sans ajouter au journal. Quatre lignes visibles puis defilement vertical. Les aliments restent recherchables par nom, marque, variante, alias et identifiant.
 
 Les anciennes fiches externes restent archivees pour les recettes et le journal, hors du selecteur. Le client externe, son cache et son convertisseur sont supprimes.
 
@@ -46,4 +48,4 @@ Appliquer `supabase/migrations/20261109140000_food_unit_weight.sql` apres les mi
 
 La troisieme action de chaque aliment (assiette et couverts) ajoute une portion au calculateur sous la liste. Le brouillon reste en memoire, avec des quantites modifiables, le retrait de chaque portion et le total des kcal en direct. Le bouton general d'ajout de repas ou d'extra a ete retire.
 
-Seule la validation « Ajouter ce repas a la journee » cree une entree de repas dans le journal. Le nom est facultatif. Les aliments, leurs usages et les calories sont enregistres dans la meme transaction ; le brouillon est vide apres reussite et conserve en cas d'erreur. Vider le brouillon ne change pas le journal.
+Ajouter le repas et Enregistrer le repas partagent la meme ligne ; Vider le repas est separe en dessous. Ajouter cree une entree dans la journee, sans enregistrer automatiquement une recette. Enregistrer sauvegarde la composition dans Repas, sans toucher au journal ; une composition chargee est mise a jour sans doublon. Le nom est facultatif. Le brouillon est vide apres reussite et conserve en cas d'erreur. Vider le brouillon ne change pas le journal ni les recettes sauvegardees.

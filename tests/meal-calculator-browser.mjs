@@ -39,7 +39,7 @@ try {
   await expect(page.locator(".entry")).toHaveCount(0);
   await quantities.nth(0).fill("");
   await expect(
-    calculator.getByRole("button", { name: "Ajouter ce repas à la journée" }),
+    calculator.getByRole("button", { name: "Ajouter le repas" }),
   ).toBeDisabled();
   await quantities.nth(0).fill("2");
   await calculator
@@ -50,17 +50,47 @@ try {
   await add.click();
   await expect(calculator.getByLabel("Total du repas")).toHaveText("540 kcal");
   await calculator.getByLabel("Nom du repas (facultatif)").fill("Déjeuner QA");
+  await calculator
+    .getByRole("button", { name: "Enregistrer le repas", exact: true })
+    .click();
+  await expect(calculator.getByLabel("Total du repas")).toHaveText("0 kcal");
+  await expect(page.locator(".entry")).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".meal-result")).toHaveCount(1);
+  await expect(page.locator(".meal-result")).toContainText("Déjeuner QA");
+  await page
+    .getByRole("button", { name: "Préparer Déjeuner QA", exact: true })
+    .click();
+  await expect(calculator.getByLabel("Total du repas")).toHaveText("540 kcal");
+  await expect(calculator.getByLabel("Nom du repas (facultatif)")).toHaveValue(
+    "Déjeuner QA",
+  );
+  await expect(page.locator(".entry")).toHaveCount(0);
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
+    const addButton = await calculator
+      .getByRole("button", { name: "Ajouter le repas", exact: true })
+      .boundingBox();
+    const saveButton = await calculator
+      .getByRole("button", { name: "Enregistrer le repas", exact: true })
+      .boundingBox();
+    assert.ok(
+      Math.abs(addButton.y - saveButton.y) < 1 && saveButton.x > addButton.x,
+    );
     assert.ok(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     );
   }
-  await calculator
-    .getByRole("button", { name: "Ajouter ce repas à la journée" })
-    .click();
+  await calculator.getByRole("button", { name: "Ajouter le repas" }).click();
   await expect(page.locator(".entry")).toHaveCount(1);
   await expect(page.locator(".entry")).toContainText("Déjeuner QA");
   await expect(page.locator(".entry")).toContainText("540 kcal");

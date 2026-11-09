@@ -264,6 +264,23 @@ try {
           });
         });
       assert.ok(aligned, `Duo rows aligned at ${width}px in ${theme}`);
+      const fullWidth = await page
+        .locator(".duo-home-profile .stat-card")
+        .evaluateAll((cards) =>
+          cards.every((card) => {
+            const outer = card.getBoundingClientRect(),
+              band = card.querySelector(".daily-band").getBoundingClientRect();
+            return (
+              Math.abs(outer.left - band.left) < 2 &&
+              Math.abs(outer.right - band.right) < 2 &&
+              Math.abs(outer.bottom - band.bottom) < 2
+            );
+          }),
+        );
+      assert.ok(
+        fullWidth,
+        `Daily bands reach card edges at ${width}px in ${theme}`,
+      );
       await expect(page.locator(".duo-dashboard")).toHaveCSS("row-gap", "18px");
       await expect(page.locator(".duo-columns").first()).toHaveCSS(
         "column-gap",
