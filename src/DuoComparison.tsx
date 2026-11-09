@@ -37,26 +37,29 @@ export function DuoComparison({
   }, []);
   return (
     <div className="duo-dashboard">
-      <section className="card padded">
-        <div className="duo-columns duo-identities">
+      <section className="card duo-overview-controls">
+        <div className="duo-identities">
           {profiles.map((profile, index) => (
-            <div key={index} className="halo-presets">
-              <button type="button" aria-disabled="true">
-                <span style={{ background: color(profile) }} />
-                {profile.name}
-              </button>
-            </div>
+            <span key={index} className="duo-identity">
+              <span
+                className="duo-identity-dot"
+                style={{ background: color(profile) }}
+              />
+              {profile.name}
+            </span>
           ))}
         </div>
-        <Field
-          label="Journée du Duo"
-          type="date"
-          value={date}
-          max={initialDay}
-          onChange={(event) => {
-            if (event.target.value) setDate(event.target.value);
-          }}
-        />
+        <div className="duo-date-control">
+          <Field
+            label="Journée du Duo"
+            type="date"
+            value={date}
+            max={initialDay}
+            onChange={(event) => {
+              if (event.target.value) setDate(event.target.value);
+            }}
+          />
+        </div>
       </section>
       <div className="duo-columns duo-home-overviews">
         {profiles.map((profile, index) => (

@@ -33,6 +33,21 @@
 .duo-identities button {
   width: 100%;
 }
+.duo-control-bar { display: flex; align-items: center; gap: 8px; margin: 8px 0; min-width: 0; }
+.duo-control-bar small { flex: 1; min-width: 0; color: var(--muted); font-size: 12px; }
+.duo-control-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; min-height: 40px; margin: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font-size: 13px; }
+.duo-control-bar .duo-refresh-control { width: 40px; padding: 0; flex: 0 0 40px; }
+.duo-refresh-control.is-loading svg { animation: duo-refresh-spin 1s linear infinite; }
+@keyframes duo-refresh-spin { to { transform: rotate(360deg); } }
+.duo-overview-controls { display: grid; grid-template-columns: minmax(0, 1fr) 134px; align-items: center; gap: 10px; padding: 10px 12px; }
+.duo-identities { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-width: 0; }
+.duo-identity { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+.duo-identity-dot { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; }
+.duo-date-control { min-width: 0; }
+.duo-date-control .field { font-size: 0; gap: 0; margin: 0; }
+.duo-date-control input { width: 100%; max-width: 100%; min-width: 0; min-height: 38px; padding: 6px 8px; font-size: 13px; box-sizing: border-box; }
+.duo-dashboard:has(> .duo-overview-controls) { margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) { .duo-refresh-control.is-loading svg { animation: none; } }
 .duo-steps-cards > .card {
   background: var(--brand);
 }

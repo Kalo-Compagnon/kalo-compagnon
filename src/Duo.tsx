@@ -6,6 +6,7 @@ import { DuoComparison, type DuoProfile } from "./DuoComparison";
 import { duoRequest, type DuoSnapshot } from "./duo-client";
 import demo from "./duo-demo.json";
 import { validateState } from "./transfer";
+import { RefreshCw, SlidersHorizontal } from "lucide-react";
 
 type DuoProps = {
   settings?: boolean;
@@ -153,11 +154,39 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
         </p>
       ) : (
         <>
-          {busy && <p role="status">Chargement de Duo…</p>}
           {error && <p role="alert">{error}</p>}
-          <Button disabled={busy} onClick={() => void run()}>
-            Actualiser Duo
-          </Button>
+          <div className="duo-control-bar">
+            <small
+              role="status"
+              title="Actualisation automatique toutes les 30 secondes"
+            >
+              {busy
+                ? "Actualisation…"
+                : updated && !error
+                  ? `À jour · ${updated.slice(0, 5)}`
+                  : ""}
+            </small>
+            {snapshot?.status === "active" && !settings && (
+              <button
+                type="button"
+                className="duo-sharing-control"
+                aria-label="Gérer mon partage Duo"
+                onClick={() => modal(<Duo settings />)}
+              >
+                <SlidersHorizontal size={16} aria-hidden="true" /> Partage
+              </button>
+            )}
+            <button
+              type="button"
+              className={`duo-refresh-control${busy ? " is-loading" : ""}`}
+              disabled={busy}
+              aria-label="Actualiser Duo"
+              title="Actualiser Duo"
+              onClick={() => void run()}
+            >
+              <RefreshCw size={18} aria-hidden="true" />
+            </button>
+          </div>
           {snapshot?.status === "none" && (
             <section className="card padded">
               {snapshot.mode === "fixed" ? (
@@ -230,10 +259,6 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
           )}
           {snapshot?.status === "active" && (
             <>
-              <p>
-                Données synchronisées consultées à {updated}. Actualisation
-                périodique, hors temps réel.
-              </p>
               {settings ? (
                 <section className="card padded">
                   <h2>Mes autorisations de partage</h2>
@@ -262,9 +287,6 @@ function LiveDuo({ settings = false, onPartnerAccent }: DuoProps) {
                 </section>
               ) : (
                 <>
-                  <Button onClick={() => modal(<Duo settings />)}>
-                    Gérer mon partage Duo
-                  </Button>
                   {partnerState && (
                     <DuoComparison
                       profiles={[
