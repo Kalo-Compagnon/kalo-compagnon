@@ -738,6 +738,11 @@ progress::-moz-progress-bar {
 .food-result .row-main { min-width: 0; }
 .food-result .row-main span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .food-gesture-hint { color: var(--muted); font-size: 12px; }
+.food-result { position: relative; overflow: hidden; background: color-mix(in srgb, var(--accent) 18%, var(--card)); }
+.food-result-content { display: flex; align-items: center; width: 100%; height: 100%; position: relative; background: var(--card); transition: transform 180ms ease-out; }
+.food-result-content.is-dragging { transition: none; user-select: none; }
+.food-edit-reveal { position: absolute; inset: 0 0 0 auto; width: 104px; display: grid; place-items: center; color: var(--accent); font-size: 13px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .food-result-content { transition: none; } }
 .food-picker .food-options { flex-wrap: wrap; }
 .food-picker .food-search-bar .food-create { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-height: 42px; margin: 0; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); white-space: nowrap; }
 .meal-calculator { margin-top: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); min-width: 0; }

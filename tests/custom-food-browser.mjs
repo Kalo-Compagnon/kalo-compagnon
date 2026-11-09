@@ -61,6 +61,31 @@ try {
   ).toContainText("Catalogue Kalo");
   const card = page.locator(".food-result").filter({ hasText: "Merguez QA" });
   const box = await card.boundingBox();
+  const foreground = card.locator(".food-result-content");
+  const offset = () =>
+    foreground.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).m41,
+    );
+  // A short drag follows the pointer and reveals the edit action, then snaps
+  // back without opening either the editor or the quantity sheet.
+  await page.mouse.move(box.x + box.width - 20, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 55, box.y + box.height / 2, {
+    steps: 6,
+  });
+  await expect.poll(offset).toBeLessThan(-25);
+  assert.ok((await foreground.boundingBox()).x < box.x - 25);
+  await page.mouse.up();
+  await expect.poll(offset).toBe(0);
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator(".entry")).toHaveCount(1);
+  // Vertical scrolling must not begin the horizontal animation.
+  await page.mouse.move(box.x + box.width / 2, box.y + 15);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 4, box.y + 45, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(offset).toBe(0);
+  await expect(dialog).not.toBeVisible();
   await page.mouse.move(box.x + box.width - 20, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + 20, box.y + box.height / 2, { steps: 12 });
@@ -73,6 +98,32 @@ try {
   );
   await expect(dialog.getByLabel("kcal", { exact: true })).toHaveValue("180");
   await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
+  const touch = await page.context().newCDPSession(page);
+  await touch.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  const touchBox = await card.boundingBox();
+  const point = {
+    x: touchBox.x + touchBox.width - 20,
+    y: touchBox.y + touchBox.height / 2,
+  };
+  await touch.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [point],
+  });
+  await touch.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ ...point, x: point.x - 40 }],
+  });
+  await expect.poll(offset).toBeLessThan(-25);
+  await touch.send("Input.dispatchTouchEvent", {
+    type: "touchCancel",
+    touchPoints: [],
+  });
+  await expect.poll(offset).toBe(0);
+  await expect(dialog).not.toBeVisible();
+  await touch.detach();
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
     const search = await page.locator(".food-search-bar input").boundingBox();
