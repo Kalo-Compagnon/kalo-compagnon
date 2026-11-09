@@ -214,6 +214,40 @@ try {
   await expect(
     second.getByRole("region", { name: "Accueil de Profil A", exact: true }),
   ).toContainText("Non partagé");
+  await asUser(b, () =>
+    db.query("select public.logger_put('entry/food',null,1)"),
+  );
+  await first
+    .getByRole("button", { name: "Actualiser Duo", exact: true })
+    .click();
+  await expect(
+    first.getByRole("region", { name: "Accueil de Profil B", exact: true }),
+  ).toContainText("Aucun repas renseigné");
+  for (const width of [320, 390, 768, 1440]) {
+    await first.setViewportSize({ width, height: 844 });
+    const aligned = await first
+      .locator(".duo-home-overviews")
+      .evaluate((el) => {
+        const profiles = [...el.querySelectorAll(".duo-home-profile")];
+        return [
+          ".balance-card",
+          ".stat-card",
+          ".average-stat",
+          ".daily-band",
+        ].every((selector) => {
+          const left = [...profiles[0].querySelectorAll(selector)],
+            right = [...profiles[1].querySelectorAll(selector)];
+          return left.every((node, i) => {
+            const a = node.getBoundingClientRect(),
+              b = right[i].getBoundingClientRect();
+            return (
+              Math.abs(a.top - b.top) < 1 && Math.abs(a.bottom - b.bottom) < 1
+            );
+          });
+        });
+      });
+    assert.ok(aligned, `Empty partner intake stays aligned at ${width}px`);
+  }
   await first
     .getByRole("button", { name: "Révoquer la liaison", exact: true })
     .click();

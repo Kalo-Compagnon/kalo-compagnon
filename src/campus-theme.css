@@ -79,6 +79,19 @@
 .duo-home-profile .net {
   overflow-wrap: anywhere;
 }
+/* Shared tracks keep each pair aligned, including the daily bands when only
+   one profile has an empty-state or sharing message. Heights remain automatic. */
+.duo-home-overviews { grid-template-rows: repeat(6, auto); row-gap: 14px; }
+.duo-home-overviews > .duo-home-profile { display: grid; grid-template-rows: subgrid; grid-row: 1 / span 6; row-gap: 14px; }
+.duo-home-overviews > .duo-home-profile:first-child { grid-column: 1; }
+.duo-home-overviews > .duo-home-profile:last-child { grid-column: 2; }
+.duo-home-profile > h2 { margin: 0; align-self: center; }
+.duo-home-profile .global-grid,
+.duo-home-profile .global-grid > div:first-child,
+.duo-home-profile .stat-row { display: contents; }
+.duo-home-profile .balance-card { margin: 0; }
+.duo-home-profile .stat-card { display: grid; grid-template-rows: subgrid; grid-row: span 2; row-gap: 0; }
+.duo-home-profile .daily-band { margin-top: 0; }
 :root {
   --bg: #f6f5f0;
   --card: #fff;

@@ -237,6 +237,33 @@ try {
       await expect(label).not.toHaveCSS("color", "rgb(0, 0, 0)");
     for (const width of [320, 390, 768, 844, 1440]) {
       await page.setViewportSize({ width, height: 844 });
+      const aligned = await page
+        .locator(".duo-home-overviews")
+        .evaluate((el) => {
+          const profiles = [...el.querySelectorAll(".duo-home-profile")];
+          return [
+            "h2",
+            ".balance-card",
+            ".stat-card",
+            ".average-stat",
+            ".daily-band",
+          ].every((selector) => {
+            const a = [...profiles[0].querySelectorAll(selector)],
+              b = [...profiles[1].querySelectorAll(selector)];
+            return (
+              a.length === b.length &&
+              a.every((node, i) => {
+                const left = node.getBoundingClientRect(),
+                  right = b[i].getBoundingClientRect();
+                return (
+                  Math.abs(left.top - right.top) < 1 &&
+                  Math.abs(left.bottom - right.bottom) < 1
+                );
+              })
+            );
+          });
+        });
+      assert.ok(aligned, `Duo rows aligned at ${width}px in ${theme}`);
       await expect(page.locator(".duo-dashboard")).toHaveCSS("row-gap", "18px");
       await expect(page.locator(".duo-columns").first()).toHaveCSS(
         "column-gap",
