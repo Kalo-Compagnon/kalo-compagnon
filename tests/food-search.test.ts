@@ -1,15 +1,11 @@
 ﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { initialState, type Food, mealEntry, nutrients } from "../src/domain";
-import {
-  internalFood,
-  offProduct,
-  searchFoods,
-  selectableFood,
-} from "../src/food-search";
+import { internalFood, searchFoods, selectableFood } from "../src/food-search";
 import { exportJSON, importJSON, exportCSV, importCSV } from "../src/transfer";
 const food = (id: string, name: string, extra: Partial<Food> = {}): Food => ({
   ...initialState().foods[0],
+  isCustom: true,
   id,
   name,
   ...extra,
@@ -17,21 +13,38 @@ const food = (id: string, name: string, extra: Partial<Food> = {}): Food => ({
 const foods = [
   food("generic", "Yaourt aux fruits", { source: "ciqual", isFavorite: true }),
   food("brand", "Yaourt fraise", {
-    source: "off",
     brand: "Yoplait",
+    subtype: "Sans sucre",
     externalId: "12345678",
   }),
   food("custom", "Crème maison", { isCustom: true }),
   food("potato", "Pomme de terre vapeur", { source: "ciqual" }),
 ];
-test("le catalogue Kalo est exclu du sélecteur sans supprimer les données historiques", () => {
+test("Kalo contient uniquement les ajouts utilisateurs et conserve les archives", () => {
   const state = initialState();
   assert.ok(state.foods.length > 0);
   assert.equal(state.foods.filter(selectableFood).length, 0);
-  assert.ok(selectableFood(food("personal", "Personnel", { isCustom: true })));
+  assert.ok(selectableFood(food("kalo", "Personnel", { isCustom: true })));
   assert.ok(selectableFood(foods[1]));
+  const legacy = { ...state.foods[0], isFavorite: true, lastUsedAt: 123 };
+  for (const section of ["catalog", "recent", "favorites"] as const) {
+    for (const filter of ["all", "kalo"] as const) {
+      assert.deepEqual(searchFoods([legacy], "", filter, section), []);
+      assert.deepEqual(searchFoods([legacy], legacy.name, filter, section), []);
+    }
+  }
+  assert.deepEqual(
+    searchFoods(foods, "", "kalo", "catalog")
+      .map((f) => f.id)
+      .sort(),
+    ["brand", "custom"],
+  );
 });
 test("recherche: accents, fragments, ordre, marque et code", () => {
+  assert.equal(
+    searchFoods(foods, "sans sucre", "kalo", "catalog")[0].id,
+    "brand",
+  );
   for (const q of ["yaourt yoplait", "YOPLAIT yaourt", "yopl", "12345678"])
     assert.equal(searchFoods(foods, q, "all", "recent")[0].id, "brand");
   assert.equal(searchFoods(foods, "creme", "all", "recent")[0].id, "custom");
@@ -43,7 +56,7 @@ test("recherche: accents, fragments, ordre, marque et code", () => {
 });
 test("filtres, favoris, récents chronologiques, limite et dédoublonnage", () => {
   assert.deepEqual(
-    searchFoods(foods, "yaourt", "products", "recent").map((f) => f.id),
+    searchFoods(foods, "yaourt", "kalo", "recent").map((f) => f.id),
     ["brand"],
   );
   assert.deepEqual(
@@ -68,35 +81,15 @@ test("filtres, favoris, récents chronologiques, limite et dédoublonnage", () =
     2,
   );
 });
-test("OFF: énergie kJ, unités, valeurs absentes et zéro réel", () => {
-  const p = offProduct({
-    code: "12345678",
-    product_name: "Test",
-    quantity: "1 l",
-    nutriments: { energy_100g: 418.4, energy_unit: "kJ" },
-  })!;
-  assert.ok(Math.abs(p.kcalPer100! - 100) < 0.001);
-  assert.equal(p.referenceUnit, "ml");
-  assert.equal(p.proteinPer100, null);
-  assert.ok(internalFood(p).missingNutrients?.includes("proteinPer100"));
-  const missing = offProduct({ code: "1", product_name: "Test" })!;
-  assert.equal(missing.kcalPer100, null);
+test("missing nutrients and zero energy remain distinct", () => {
+  const missing = { ...foods[0], kcalPer100: null };
   assert.throws(() => internalFood(missing));
-  assert.equal(
-    offProduct({
-      code: "1",
-      product_name: "Eau",
-      nutriments: { "energy-kcal_100g": 0 },
-    })!.kcalPer100,
-    0,
-  );
-  assert.equal(
-    offProduct({
-      code: "1",
-      product_name: "Test",
-      nutriments: { "energy-kcal_100g": -1 },
-    })!.kcalPer100,
-    null,
+  assert.equal(internalFood({ ...foods[0], kcalPer100: 0 }).kcalPer100, 0);
+  assert.ok(
+    internalFood({
+      ...foods[0],
+      proteinPer100: null,
+    }).missingNutrients?.includes("proteinPer100"),
   );
 });
 test("export/import conserve provenance et ancien journal", () => {
@@ -111,6 +104,10 @@ test("export/import conserve provenance et ancien journal", () => {
   });
   const imported = importJSON(exportJSON(state));
   assert.equal(imported.foods.find((f) => f.id === "brand")?.brand, "Yoplait");
+  assert.equal(
+    imported.foods.find((f) => f.id === "brand")?.subtype,
+    "Sans sucre",
+  );
   imported.foods[0].kcalPer100 = 999;
   assert.equal(imported.entries[0].calories, 123);
 });
@@ -151,8 +148,5 @@ test("aliments à la pièce : calories et recettes par unité, sauvegardes et gr
     assert.equal(saved.brand, "Boucherie");
     assert.equal(nutrients(saved, 2)[0], 360);
   }
-  assert.equal(
-    searchFoods([unit], "boucherie", "personal", "catalog").length,
-    1,
-  );
+  assert.equal(searchFoods([unit], "boucherie", "kalo", "catalog").length, 1);
 });

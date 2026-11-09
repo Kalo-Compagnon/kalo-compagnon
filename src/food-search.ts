@@ -1,5 +1,5 @@
 ﻿import { normalize, type Food } from "./domain";
-export type SourceFilter = "all" | "products" | "generic" | "personal";
+export type SourceFilter = "all" | "kalo" | "generic";
 export type FoodSection = "recent" | "favorites" | "catalog";
 export type CatalogFood = Omit<
   Food,
@@ -16,15 +16,15 @@ const words = (s: string) =>
     .trim()
     .split(/\s+/)
     .filter(Boolean);
-// Keep legacy records in storage for existing recipes, but exclude the Kalo catalogue from selection.
+// Preserve historical records for saved recipes, outside the selectable catalogue.
 export const selectableFood = (food: CatalogFood) =>
-  food.isCustom || food.source === "off" || food.source === "ciqual";
+  (!food.source && food.isCustom) || food.source === "ciqual";
 export function searchFoods(
   foods: CatalogFood[],
   query: string,
   filter: SourceFilter,
   section: FoodSection,
-  limit = 40,
+  limit = Number.POSITIVE_INFINITY,
 ) {
   const tokens = words(query),
     q = tokens.join(" ");
@@ -34,8 +34,8 @@ export function searchFoods(
   });
   return [...unique.values()]
     .filter((f) => {
-      if (filter === "personal" && !f.isCustom) return false;
-      if (filter === "products" && f.source !== "off") return false;
+      if (!selectableFood(f)) return false;
+      if (filter === "kalo" && (!f.isCustom || !!f.source)) return false;
       if (filter === "generic" && f.source !== "ciqual") return false;
       if (!q)
         return section === "recent"
@@ -44,7 +44,7 @@ export function searchFoods(
             ? f.isFavorite
             : true;
       const text = words(
-        [f.name, f.brand, f.externalId, ...(f.aliases ?? [])]
+        [f.name, f.brand, f.subtype, f.externalId, ...(f.aliases ?? [])]
           .filter(Boolean)
           .join(" "),
       ).join(" ");
@@ -81,53 +81,9 @@ export function searchFoods(
     .slice(0, limit);
 }
 export const sourceLabel = (f: CatalogFood) =>
-  f.isCustom
-    ? "Catalogue Kalo"
-    : f.source === "off"
-      ? "Open Food Facts"
-      : f.source === "ciqual"
-        ? `Ciqual ${f.sourceVersion ?? ""} · Générique`
-        : "Catalogue Kalo";
-export const validValue = (v: unknown): number | null =>
-  typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
-export function offProduct(p: Record<string, any>): CatalogFood | null {
-  if (
-    !p ||
-    !p.code ||
-    typeof (p.product_name_fr || p.product_name) !== "string"
-  )
-    return null;
-  const n = p.nutriments ?? {};
-  // OFF's nutrition_data_per describes label input; *_100g fields are already normalized.
-  const kcal =
-    validValue(n["energy-kcal_100g"]) ??
-    (validValue(n["energy-kj_100g"]) !== null
-      ? n["energy-kj_100g"] / 4.184
-      : validValue(n.energy_100g) !== null && n.energy_unit === "kJ"
-        ? n.energy_100g / 4.184
-        : null);
-  const unit = /(?:^|\s|\d)(?:ml|cl|l)\b/i.test(
-    String(p.product_quantity_unit ?? p.quantity ?? ""),
-  )
-    ? "ml"
-    : "g";
-  return {
-    id: `off-${p.code}`,
-    externalId: String(p.code),
-    source: "off",
-    name: p.product_name_fr || p.product_name,
-    brand: typeof p.brands === "string" ? p.brands : "",
-    category: "Autres",
-    referenceUnit: unit,
-    kcalPer100: kcal,
-    proteinPer100: validValue(n.proteins_100g),
-    carbsPer100: validValue(n.carbohydrates_100g),
-    fatPer100: validValue(n.fat_100g),
-    isCustom: false,
-    isFavorite: false,
-    usageCount: 0,
-  };
-}
+  f.source === "ciqual"
+    ? `Ciqual ${f.sourceVersion ?? ""} · Aliment brut`
+    : "Catalogue Kalo";
 export function internalFood(f: CatalogFood): Food {
   if (f.kcalPer100 === null)
     throw new Error(

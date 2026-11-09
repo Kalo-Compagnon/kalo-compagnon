@@ -20,6 +20,7 @@ import {
   mealTotals,
   mealEntry,
   fmt,
+  foodLabel,
   timestamp,
 } from "./domain";
 const categories = [
@@ -360,7 +361,7 @@ export function FoodHub({
   if ((page === "quantity" || page === "ingredient") && food)
     return (
       <Sheet
-        title={food.name}
+        title={foodLabel(food)}
         subtitle={`Quantité libre en ${food.referenceUnit}`}
         back={() =>
           initialPage === "quantity"
@@ -393,7 +394,7 @@ export function FoodHub({
                   id: crypto.randomUUID(),
                   timestamp: timestamp(day),
                   type: "food",
-                  foodName: food.name,
+                  foodName: foodLabel(food),
                   note: food.category,
                   quantityGrams: amount,
                   quantityUnit: food.referenceUnit,
@@ -511,6 +512,7 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
   const { update } = useApp();
   const [name, setName] = useState(food?.name ?? ""),
     [brand, setBrand] = useState(food?.brand ?? ""),
+    [subtype, setSubtype] = useState(food?.subtype ?? ""),
     [category, setCategory] = useState(food?.category ?? "Féculents"),
     [unit, setUnit] = useState(food?.referenceUnit ?? "g"),
     [values, setValues] = useState(
@@ -540,6 +542,7 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
             id: food?.id ?? crypto.randomUUID(),
             name: name.trim(),
             brand: brand.trim(),
+            subtype: subtype.trim(),
             category,
             referenceUnit: unit,
             kcalPer100: num(values[0]),
@@ -569,6 +572,12 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
           label="Marque (facultatif)"
           value={brand}
           onChange={(e) => setBrand(e.target.value)}
+        />
+        <Field
+          label="Variante / goût (facultatif)"
+          placeholder="Ex. : vanille, chocolat, fraise…"
+          value={subtype}
+          onChange={(e) => setSubtype(e.target.value)}
         />
         <label className="field">
           Catégorie

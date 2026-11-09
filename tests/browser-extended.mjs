@@ -29,7 +29,6 @@ try {
   };
   const add = async () => {
     await tab("Repas");
-    await page.locator(".add-meal").click();
   };
   const data = async () => {
     await tab("Accueil");
@@ -45,8 +44,7 @@ try {
   await page.goto("http://localhost:8787");
   await page.locator(".liquid-nav").waitFor();
   await add();
-  await button("Aliment Recherche instantanée et quantité libre").click();
-  await page.getByRole("dialog").getByRole("button", { name: "＋ Créer un aliment personnalisé", exact: true }).click();
+  await page.locator(".food-create").click();
   await page.getByLabel("Nom", { exact: true }).fill("Aliment QA");
   for (const [label, value] of [
     ["kcal", "120"],
@@ -56,53 +54,35 @@ try {
   ])
     await page.getByLabel(label, { exact: true }).fill(value);
   await button("Enregistrer l’aliment").click();
-  await page
-    .getByRole("dialog")
-    .getByLabel("Rechercher", { exact: true })
-    .fill("Aliment QA");
-  await expect(page.locator("dialog .row-main")).toHaveCount(1);
-  await page.locator("dialog .row-main").click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+
+  await page.getByLabel("Rechercher", { exact: true }).fill("Aliment QA");
+  await page.locator(".food-result .row-main").click();
   await page.getByLabel("Quantité (g)", { exact: true }).fill("125");
   await button("Ajouter").click();
   await expect(page.locator(".entry")).toHaveCount(1);
   await expect(page.locator(".entry")).toContainText("150 kcal");
   await add();
-  await button(
-    "Composer un repas Plusieurs aliments, puis réutilisable",
-  ).click();
   await page
-    .getByLabel("Nom du repas", { exact: true })
-    .fill("Repas variable QA");
-  await button("＋ Ajouter un ingrédient").click();
-  await page
-    .getByRole("dialog")
-    .getByLabel("Rechercher", { exact: true })
-    .fill("Aliment QA");
-  await expect(page.locator("dialog .row-main")).toHaveCount(1);
-  await page.locator("dialog .row-main").click();
-  await page.getByLabel("Quantité (g)", { exact: true }).fill("100");
-  await page.getByLabel("Quantité variable lors de chaque ajout").check();
-  await button("Ajouter").click();
-  await button("Enregistrer sans ajouter").click();
-  await expect(page.locator("dialog")).not.toBeVisible();
-  await add();
-  await button("Repas enregistrés Favoris, fréquents et récents").click();
-  await page
-    .locator("dialog .row-main")
-    .filter({ hasText: "Repas variable QA" })
+    .getByRole("button", { name: "Ajouter Aliment QA au repas", exact: true })
     .click();
-  await page.getByLabel("Aliment QA (g)", { exact: true }).fill("200");
-  await button("Ajouter à la journée").click();
+  await page.getByLabel("Nom du repas (facultatif)").fill("Repas variable QA");
+  await page.locator(".meal-calculator input[type=number]").fill("200");
+  await page.locator(".meal-calculator button[type=submit]").click();
   await expect(page.locator(".entry")).toHaveCount(2);
   await expect(
     page.locator(".entry").filter({ hasText: "Repas variable QA" }),
   ).toContainText("240 kcal");
-  await add();
-  await button(
-    "Extra / Photo Restaurant, imprévu ou estimation ultérieure",
-  ).click();
-  await page.getByLabel("Nom", { exact: true }).fill("Photo QA");
-  await page.getByLabel("Calories estimées (facultatif)").fill("90");
+  await page
+    .getByRole("button", { name: "Ajouter Aliment QA au repas", exact: true })
+    .click();
+  await page.getByLabel("Nom du repas (facultatif)").fill("Photo QA");
+  await page.locator(".meal-calculator button[type=submit]").click();
+  await page
+    .locator(".action-row .row-main")
+    .filter({ hasText: "Photo QA" })
+    .click();
+  await page.getByLabel(/Calories estim/).fill("90");
   await page
     .locator("input[type=file]")
     .first()
@@ -115,7 +95,7 @@ try {
       ),
     });
   await expect(page.locator("dialog img")).toBeVisible();
-  await button("Ajouter").click();
+  await button("Enregistrer").click();
   await expect(page.locator(".entry")).toHaveCount(3);
   await data();
   const backup = await download("Sauvegarde complète (.json)");
@@ -288,16 +268,9 @@ try {
         animations: "disabled",
       });
       if (name === "Repas" && width === 844) {
-        await p.locator(".add-meal").scrollIntoViewIfNeeded();
-        const add = await p.locator(".add-meal").boundingBox();
-        const nav = await p.locator(".liquid-nav").boundingBox();
-        assert.ok(
-          add.y + add.height <= nav.y,
-          "Le bouton Ajouter doit rester au-dessus de la navigation en paysage",
-        );
-        await p.locator(".add-meal").click();
-        await expect(p.getByRole("dialog")).toBeVisible();
-        await p.getByRole("button", { name: "Fermer", exact: true }).click();
+        await p.locator(".meal-calculator").scrollIntoViewIfNeeded();
+        await expect(p.locator(".meal-calculator")).toBeVisible();
+        await expect(p.locator(".add-meal")).toHaveCount(0);
       }
       assert.equal(
         await p.evaluate(
@@ -316,7 +289,7 @@ try {
         passed: true,
         checks: [
           "custom food and exact calories",
-          "variable meal",
+          "meal calculator and explicit confirmation",
           "photo",
           "JSON/CSV download",
           "delete and restore",

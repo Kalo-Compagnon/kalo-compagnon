@@ -1,4 +1,4 @@
-import { useApp, ValueDialog, Button, ActionRow, Confirm } from "./ui";
+import { useApp, ValueDialog, ActionRow, Confirm } from "./ui";
 import { entriesOn, dailyBudget, consumed, expense, fmt, sub } from "./domain";
 import { FoodHub, ExtraEditor } from "./FoodHub";
 import { useState } from "react";
@@ -132,9 +132,6 @@ export function Meals() {
           }
         />
       </section>
-      <Button className="add-meal" onClick={() => modal(<FoodHub />)}>
-        ＋ Ajouter un repas ou un extra
-      </Button>
       <h2 className="timeline-heading">Chronologie</h2>
       {entries.length === 0 ? (
         <p className="empty">Rien pour l’instant. Ajoute ton premier repas.</p>

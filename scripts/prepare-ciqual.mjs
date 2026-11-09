@@ -98,6 +98,6 @@ if (
   if (!data.length) throw new Error("Catalogue Ciqual vide");
   await writeFile("src/ciqual-data.json", JSON.stringify(data));
   console.log(
-    `${data.length} aliments Ciqual ${version} préparés, sans données OFF.`,
+    `${data.length} aliments Ciqual ${version} préparés.`,
   );
 }

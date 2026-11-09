@@ -31,17 +31,17 @@ try {
     .getByRole("button", { name: "Catalogue Kalo", exact: true })
     .click();
   await page.getByRole("button", { name: "Catalogue", exact: true }).click();
-  await expect(page.locator(".food-result")).toHaveCount(1);
-  await expect(page.locator(".food-result")).toContainText("180 kcal/unité");
-  await expect(page.locator(".food-result")).toContainText("Boucherie QA");
+  await expect(
+    page.locator(".food-result").filter({ hasText: "Merguez QA" }),
+  ).toHaveCount(1);
+  await expect(
+    page.locator(".food-result").filter({ hasText: "Merguez QA" }),
+  ).toContainText("180 kcal/unité");
+  await expect(
+    page.locator(".food-result").filter({ hasText: "Merguez QA" }),
+  ).toContainText("Boucherie QA");
   await page.getByLabel("Rechercher", { exact: true }).fill("boucherie");
   await expect(page.locator(".food-result")).toHaveCount(1);
-  await expect(
-    page.getByRole("button", {
-      name: "Rechercher dans Open Food Facts",
-      exact: true,
-    }),
-  ).toBeVisible();
   await page
     .getByRole("button", { name: "Ajouter Merguez QA", exact: true })
     .click();
@@ -55,10 +55,15 @@ try {
   await page.reload();
   await page.getByRole("button", { name: "Repas", exact: true }).click();
   await page.getByLabel("Rechercher", { exact: true }).fill("boucherie");
-  await expect(page.locator(".food-result")).toContainText("Catalogue Kalo");
-  await page
-    .getByRole("button", { name: "Modifier Merguez QA", exact: true })
-    .click();
+  await expect(
+    page.locator(".food-result").filter({ hasText: "Merguez QA" }),
+  ).toContainText("Catalogue Kalo");
+  const card = page.locator(".food-result").filter({ hasText: "Merguez QA" });
+  const box = await card.boundingBox();
+  await page.mouse.move(box.x + box.width - 20, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 20, box.y + box.height / 2, { steps: 12 });
+  await page.mouse.up();
   await expect(
     dialog.getByLabel("Marque (facultatif)", { exact: true }),
   ).toHaveValue("Boucherie QA");
@@ -69,6 +74,11 @@ try {
   await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
+    const search = await page.locator(".food-search-bar input").boundingBox();
+    const create = await page.locator(".food-create").boundingBox();
+    assert.ok(
+      create.x >= search.x + search.width && Math.abs(create.y - search.y) < 4,
+    );
     assert.ok(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

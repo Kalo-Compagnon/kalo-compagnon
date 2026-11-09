@@ -79,6 +79,8 @@ try {
     }
     if (url.includes("/rpc/logger_put"))
       return route.fulfill({ json: { accepted: true, revision: 1 } });
+    if (url.includes("/logger_food_catalog"))
+      return route.fulfill({ json: [] });
     if (url.includes("/logger_documents"))
       return route.fulfill({
         json: [

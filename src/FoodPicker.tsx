@@ -1,7 +1,9 @@
-﻿import { useEffect, useRef, useState } from "react";
-import { PlusCircle, Star, Pencil, Search } from "lucide-react";
+import ciqual from "./ciqual-data.json";
+import { useRef, useState } from "react";
+import { PlusCircle, Star } from "lucide-react";
 import { Button, Field, useApp } from "./ui";
-import { fmt, referenceAmount, type Food } from "./domain";
+import { fmt, foodLabel, referenceAmount, type Food } from "./domain";
+import MealCalculator, { type DraftMealPart } from "./MealCalculator";
 import {
   internalFood,
   searchFoods,
@@ -11,7 +13,7 @@ import {
   type SourceFilter,
   type FoodSection,
 } from "./food-search";
-import { cachedProducts, searchOFF } from "./off";
+
 export default function FoodPicker({
   query,
   setQuery,
@@ -26,55 +28,21 @@ export default function FoodPicker({
   edit: (f: Food) => void;
 }) {
   const { state, update, notify } = useApp();
-  const [filter, setFilter] = useState<Exclude<SourceFilter, "generic">>("all"),
+  const [parts, setParts] = useState<DraftMealPart[]>([]);
+  const [filter, setFilter] = useState<SourceFilter>("kalo"),
     [section, setSection] = useState<FoodSection>("recent");
-  const [external, setExternal] = useState<CatalogFood[]>([]);
-  const [status, setStatus] = useState("");
-  const controller = useRef<AbortController | null>(null);
-  useEffect(() => {
-    let active = true;
-    void cachedProducts().then((v) => {
-      if (active) setExternal(v);
-    });
-    return () => {
-      active = false;
-      controller.current?.abort();
-    };
-  }, []);
-  useEffect(() => {
-    controller.current?.abort();
-    setStatus("");
-  }, [query]);
+  const gesture = useRef<{
+    x: number;
+    y: number;
+    id: string;
+    swiped: boolean;
+  } | null>(null);
   const foods = searchFoods(
-    [...state.foods.filter(selectableFood), ...external],
+    [...state.foods.filter(selectableFood), ...(ciqual as CatalogFood[])],
     query,
     filter,
     section,
   );
-  async function remote() {
-    if (query.trim().length < 2) return;
-    if (filter === "personal") setFilter("all");
-    controller.current?.abort();
-    const request = new AbortController();
-    controller.current = request;
-    setStatus("Recherche Open Food Facts…");
-    try {
-      const found = await searchOFF(query, request.signal);
-      if (request.signal.aborted) return;
-      setExternal((old) =>
-        [
-          ...found,
-          ...old.filter((f) => !found.some((x) => x.id === f.id)),
-        ].slice(0, 800),
-      );
-      setStatus(found.length ? "" : "Aucun produit Open Food Facts trouvé.");
-    } catch {
-      if (!request.signal.aborted)
-        setStatus(
-          "Open Food Facts temporairement indisponible. Les aliments locaux restent disponibles.",
-        );
-    }
-  }
   async function keep(value: CatalogFood, favorite = false) {
     try {
       const f = internalFood(value);
@@ -91,38 +59,24 @@ export default function FoodPicker({
   }
   return (
     <div className="food-picker">
-      <form
-        className="food-search-bar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void remote();
-        }}
-      >
+      <div className="food-search-bar">
         <Field
           label="Rechercher"
-          placeholder="Rechercher un aliment, une marque…"
+          placeholder="Rechercher un aliment, une marque..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <button
-          className="food-search-submit"
-          type="submit"
-          aria-label="Lancer la recherche Open Food Facts"
-          title="Rechercher dans Open Food Facts (nom, marque ou code-barres)"
-          disabled={query.trim().length < 2}
+          className="food-create"
+          type="button"
+          onClick={create}
+          aria-label="＋ Créer un aliment personnalisé"
+          title="Créer un aliment"
         >
-          <Search size={18} />
+          <PlusCircle size={18} aria-hidden="true" />
+          <span>Créer</span>
         </button>
-      </form>
-      {query.trim().length >= 2 && (
-        <Button
-          className="food-off-search"
-          onClick={() => void remote()}
-          disabled={status === "Recherche Open Food Facts…"}
-        >
-          Rechercher dans Open Food Facts
-        </Button>
-      )}
+      </div>
       <div
         className="food-options food-filters"
         role="group"
@@ -131,8 +85,8 @@ export default function FoodPicker({
         {(
           [
             ["all", "Tous"],
-            ["products", "Produits"],
-            ["personal", "Catalogue Kalo"],
+            ["generic", "Aliments bruts"],
+            ["kalo", "Catalogue Kalo"],
           ] as const
         ).map(([key, label]) => (
           <Button
@@ -140,8 +94,6 @@ export default function FoodPicker({
             primary={filter === key}
             aria-pressed={filter === key}
             onClick={() => {
-              controller.current?.abort();
-              setStatus("");
               setFilter(key);
             }}
           >
@@ -171,26 +123,79 @@ export default function FoodPicker({
           </Button>
         ))}
       </div>
-      {status && <p role="status">{status}</p>}
       {!foods.length && (
         <p role="status">
           {query.trim()
-            ? "Aucun aliment local trouvé. Essaie une autre recherche ou consulte Open Food Facts."
+            ? "Aucun aliment trouv\u00e9. Essaie une autre recherche ou cr\u00e9e un aliment."
             : section === "recent"
               ? "Aucun aliment récent. Recherche un aliment ou ouvre le catalogue."
               : section === "favorites"
                 ? "Aucun favori. Utilise l’étoile d’un aliment pour le retrouver ici."
-                : filter === "personal"
-                  ? "Aucun aliment personnalisé. Crée ton premier aliment dans le Catalogue Kalo."
-                  : "Recherche un produit par nom, marque ou code-barres, puis utilise la loupe pour consulter Open Food Facts."}
+                : filter === "kalo"
+                  ? "Le catalogue Kalo est vide. Crée un aliment pour le compléter."
+                  : "Aucun aliment brut disponible dans le référentiel Ciqual."}
         </p>
       )}
-      <div className="food-results">
+      <small className="food-gesture-hint">
+        Glisse un aliment personnalisé vers la gauche pour le modifier.
+      </small>
+      <div
+        className="food-results"
+        role="region"
+        aria-label="Résultats des aliments"
+        tabIndex={0}
+      >
         {foods.map((f) => (
-          <div className="food-result" key={f.id}>
+          <div
+            className="food-result"
+            key={f.id}
+            onPointerDown={(e) => {
+              gesture.current =
+                f.isCustom && e.button === 0
+                  ? { x: e.clientX, y: e.clientY, id: f.id, swiped: false }
+                  : null;
+            }}
+            onPointerMove={(e) => {
+              const start = gesture.current;
+              if (!start || start.id !== f.id) return;
+              if (Math.abs(e.clientY - start.y) > 24) {
+                gesture.current = null;
+                return;
+              }
+              if (start.x - e.clientX > 60) start.swiped = true;
+            }}
+            onPointerUp={(e) => {
+              const start = gesture.current;
+              if (!start || start.id !== f.id) return;
+              if (
+                start.swiped &&
+                start.x - e.clientX > 60 &&
+                Math.abs(e.clientY - start.y) < 24
+              ) {
+                e.preventDefault();
+                edit(f as Food);
+              } else gesture.current = null;
+            }}
+            onPointerCancel={() => {
+              gesture.current = null;
+            }}
+            onClickCapture={(e) => {
+              if (gesture.current?.swiped) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+              gesture.current = null;
+            }}
+            onKeyDown={(e) => {
+              if (f.isCustom && e.key === "ArrowLeft") {
+                e.preventDefault();
+                edit(f as Food);
+              }
+            }}
+          >
             <button className="row-main" onClick={() => void keep(f)}>
               <span>
-                {f.name}
+                {foodLabel(f)}
                 {f.brand ? ` · ${f.brand}` : ""}
               </span>
               <small>
@@ -204,7 +209,7 @@ export default function FoodPicker({
             </button>
             <button
               className="food-icon"
-              aria-label={`${f.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"} : ${f.name}`}
+              aria-label={`${f.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"} : ${foodLabel(f)}`}
               aria-pressed={f.isFavorite}
               onClick={() => void keep(f, true)}
             >
@@ -212,48 +217,61 @@ export default function FoodPicker({
             </button>
             <button
               className="food-icon"
-              aria-label={`Ajouter ${f.name}`}
+              aria-label={`Ajouter ${foodLabel(f)}`}
               onClick={() => void keep(f)}
             >
               <PlusCircle size={20} />
             </button>
-            {f.isCustom && (
-              <button
-                className="food-icon"
-                aria-label={`Modifier ${f.name}`}
-                onClick={() => edit(f as Food)}
+            <button
+              className="food-icon"
+              aria-label={`Ajouter ${foodLabel(f)} au repas`}
+              title="Ajouter au calculateur de repas"
+              onClick={() => {
+                try {
+                  const food = internalFood(f);
+                  setParts((old) => [
+                    ...old,
+                    {
+                      id: crypto.randomUUID(),
+                      food,
+                      quantity: String(referenceAmount(food)),
+                    },
+                  ]);
+                } catch (e) {
+                  notify((e as Error).message);
+                }
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                <Pencil size={18} />
-              </button>
-            )}
+                <circle cx="12" cy="12" r="5" />
+                <path d="M2 3v5a2 2 0 0 0 4 0V3M4 3v18M22 21V3c-3 2-3 8 0 8" />
+              </svg>
+            </button>
           </div>
         ))}
       </div>
-      {foods.length === 40 && (
-        <p>
-          40 résultats affichés. Précise ta recherche pour affiner la liste.
-        </p>
-      )}
-      <Button className="food-create" onClick={create}>
-        ＋ Créer un aliment personnalisé
-      </Button>
+      <MealCalculator parts={parts} setParts={setParts} />
       <small className="food-attribution">
-        Source des produits :{" "}
-        {state.foods.some((f) => f.source === "ciqual") && (
+        Catalogue Kalo : aliments ajoutés par les utilisateurs.
+        {ciqual.length > 0 && (
           <>
+            {" "}
+            · Aliments bruts :{" "}
             <a href="https://ciqual.anses.fr/" target="_blank" rel="noreferrer">
               ANSES, Ciqual
-            </a>{" "}
-            ·{" "}
+            </a>
           </>
         )}
-        <a
-          href="https://world.openfoodfacts.org/terms-of-use"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open Food Facts — ODbL
-        </a>
       </small>
     </div>
   );

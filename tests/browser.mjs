@@ -37,49 +37,45 @@ await page.getByLabel("Date de naissance", { exact: true }).fill("1996-01-01");
 await page.getByLabel("Taille (cm)", { exact: true }).fill("180");
 await page.getByRole("button", { name: "Calculer", exact: true }).click();
 await page.getByRole("button", { name: "Repas", exact: true }).click();
-await page.locator(".add-meal").click();
-await page
-  .getByRole("button", {
-    name: "Aliment Recherche instantanée et quantité libre",
-  })
-  .click();
-await page
-  .getByRole("dialog")
-  .getByRole("button", {
-    name: "＋ Créer un aliment personnalisé",
-    exact: true,
-  })
-  .click();
+await page.locator(".food-create").click();
 await page.getByLabel("Nom", { exact: true }).fill("Banane personnelle QA");
 await page.getByLabel("kcal", { exact: true }).fill("89");
 await page
   .getByRole("button", { name: "Enregistrer l’aliment", exact: true })
   .click();
+await expect(page.getByRole("dialog")).not.toBeVisible();
+
 await page
-  .getByRole("dialog")
   .getByLabel("Rechercher", { exact: true })
-  .fill("banane");
-await page.locator("dialog .row-main").first().waitFor();
-await page.locator("dialog .row-main").first().click();
+  .fill("Banane personnelle QA");
+await page.locator(".food-result .row-main").first().click();
 await page.getByLabel("Quantité (g)", { exact: true }).fill("123.4");
 await page.getByRole("button", { name: "Ajouter", exact: true }).click();
 await page.locator(".entry").first().waitFor();
-await page.locator(".add-meal").click();
 await page
   .getByRole("button", {
-    name: "Extra / Photo Restaurant, imprévu ou estimation ultérieure",
+    name: "Ajouter Banane personnelle QA au repas",
+    exact: true,
   })
   .click();
-await page.getByLabel("Courte note (facultatif)").fill("Extra test");
-await page.getByRole("button", { name: "Ajouter", exact: true }).click();
-await page.getByText("À estimer", { exact: true }).waitFor();
+await page.getByLabel("Nom du repas (facultatif)").fill("Extra test");
+await page.locator(".meal-calculator button[type=submit]").click();
+await page
+  .locator(".action-row .row-main")
+  .filter({ hasText: "Extra test" })
+  .click();
+await page.getByLabel(/Calories estim/).fill("");
+await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
 await page.getByRole("button", { name: "Accueil", exact: true }).click();
-assert.ok(
-  await page.getByText("Données à renseigner", { exact: true }).isVisible(),
-);
+await expect(
+  page.getByText(/Donn.* renseigner/, { exact: false }).first(),
+).toBeVisible();
 await page.getByRole("button", { name: "Repas", exact: true }).click();
-await page.locator(".row-main").filter({ hasText: "Extra test" }).click();
-await page.getByLabel("Calories estimées (facultatif)").fill("150");
+await page
+  .locator(".action-row .row-main")
+  .filter({ hasText: "Extra test" })
+  .click();
+await page.getByLabel(/Calories estim/).fill("150");
 await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
 await page.screenshot({
   path: "qa/meals-mobile.png",

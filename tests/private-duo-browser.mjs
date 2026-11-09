@@ -35,6 +35,12 @@ try {
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema public,auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;`);
   await db.exec(readFileSync("supabase/schema.sql", "utf8"));
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/20261109120000_shared_food_catalog.sql",
+      "utf8",
+    ),
+  );
   await db.query("insert into auth.users(id) values($1),($2)", [a, b]);
   for (const [uid, name, accent, calories] of [
     [a, "Profil A", "#dc92b7", 500],
@@ -100,6 +106,12 @@ try {
         url = new URL(request.url());
       try {
         const data = await asUser(uid, async () => {
+          if (url.pathname.endsWith("/logger_food_catalog"))
+            return (
+              await db.query(
+                "select id,value,revision::int from public.logger_food_catalog order by id",
+              )
+            ).rows;
           if (url.pathname.endsWith("/logger_documents"))
             return (
               await db.query(

@@ -713,7 +713,6 @@ progress::-moz-progress-bar {
 .food-picker .food-search-bar { display: flex; align-items: center; gap: 8px; }
 .food-search-bar .field { flex: 1; min-width: 0; font-size: 0; gap: 0; }
 .food-search-bar .field input { border-radius: 999px; min-height: 42px; padding: 10px 16px; font-size: 14px; }
-.food-search-submit { display: grid; place-items: center; width: 44px; min-height: 44px; flex: 0 0 44px; border: 0; background: none; color: var(--text); }
 .food-options { display: flex; align-items: center; gap: 8px; }
 .food-picker .food-options button { width: auto; margin: 0; min-height: 28px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 400; line-height: 1.4; box-shadow: none; }
 .food-picker .food-filters button { flex: 0 0 auto; }
@@ -733,4 +732,24 @@ progress::-moz-progress-bar {
 .meal-food-picker { padding: 20px 24px; margin-top: 18px; }
 .meal-food-picker > h2 { font-size: 18px; margin-bottom: 12px; }
 @media (max-width: 480px) { .meal-food-picker { padding: 16px; } }
-.food-picker .food-off-search { justify-self: start; width: auto; padding: 4px 0; min-height: 32px; border: 0; background: transparent; color: var(--accent); font-size: 13px; }
+
+.food-results { max-height: 539px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+.food-result { height: 77px; min-height: 77px; touch-action: pan-y; }
+.food-result .row-main { min-width: 0; }
+.food-result .row-main span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.food-gesture-hint { color: var(--muted); font-size: 12px; }
+.food-picker .food-options { flex-wrap: wrap; }
+.food-picker .food-search-bar .food-create { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-height: 42px; margin: 0; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); white-space: nowrap; }
+.meal-calculator { margin-top: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); min-width: 0; }
+.meal-calculator-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.meal-calculator-heading h3 { margin: 0; font-size: 17px; }
+.meal-calculator-heading output { color: var(--accent); font-weight: 700; white-space: nowrap; }
+.meal-calculator p { color: var(--muted); font-size: 13px; }
+.meal-calculator-parts { padding: 0; margin: 0; border: 0; min-width: 0; }
+.meal-calculator-part { display: grid; grid-template-columns: minmax(0, 1fr) 100px 36px; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.meal-calculator-food { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.meal-calculator-food small { display: block; color: var(--muted); }
+.meal-calculator-part .field { min-width: 0; font-size: 11px; }
+.meal-calculator-part input { width: 100%; min-width: 0; }
+.meal-calculator-part .food-icon { width: 36px; }
+@media (max-width: 380px) { .meal-calculator { padding: 12px; } .meal-calculator-part { grid-template-columns: minmax(0, 1fr) 76px 28px; gap: 4px; } .meal-calculator-part .food-icon { width: 28px; } }

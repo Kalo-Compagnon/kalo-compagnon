@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cloud } from "./cloud";
 import { mergeImport } from "./transfer";
 import { initialState, type State, type Settings, seedFoods } from "./domain";
+import { sharedFood } from "./shared-food";
 export type Payload = unknown;
 export interface Doc {
   key: string;
@@ -52,6 +53,19 @@ export const docsToState = (docs: Doc[]): State => {
     }
   }
   s.settings = { ...s.settings, ...prefs };
+  for (const d of docs) {
+    if (!d.key.startsWith("catalog/") || !d.value) continue;
+    const food = d.value as State["foods"][number];
+    const personal = s.foods.find((f) => f.id === food.id);
+    s.foods = s.foods.filter((f) => f.id !== food.id);
+    s.foods.push({
+      ...personal,
+      ...food,
+      isFavorite: personal?.isFavorite ?? false,
+      usageCount: personal?.usageCount ?? 0,
+      lastUsedAt: personal?.lastUsedAt,
+    });
+  }
   // New per-zone records override legacy values embedded in a day document.
   for (const d of docs) {
     const [kind, day, ...parts] = d.key.split("/");
@@ -131,9 +145,30 @@ export class Repository {
   async update(change: (s: State) => void) {
     return this.run(async () => {
       const s = this.state;
+      const previous = new Map(s.foods.map((f) => [f.id, sharedFood(f)]));
       change(s);
       const values = stateToValues(s),
         next = this.docs.map((d) => ({ ...d }));
+      // Retain the shared documents alongside private ones, with separate RPCs.
+      for (const d of this.docs)
+        if (d.key.startsWith("catalog/")) values.set(d.key, d.value);
+      for (const food of s.foods) {
+        const value = sharedFood(food);
+        const changed =
+          JSON.stringify(value) !== JSON.stringify(previous.get(food.id));
+        if (value && changed) values.set(`catalog/${food.id}`, value);
+        // Browsing the common catalogue must not create a private copy of every
+        // food on the next unrelated settings edit.
+        if (
+          !changed &&
+          !food.isFavorite &&
+          !food.usageCount &&
+          !food.lastUsedAt &&
+          !this.docs.some((d) => d.key === `food/${food.id}`) &&
+          this.docs.some((d) => d.key === `catalog/${food.id}`)
+        )
+          values.delete(`food/${food.id}`);
+      }
       for (const [k, v] of values) {
         const old = next.find((d) => d.key === k);
         if (!old) next.push({ key: k, value: v, revision: 0, pending: true });
@@ -203,15 +238,95 @@ export class Repository {
         this.docs = next;
         this.notify();
       });
+      // Shared catalogue: every authenticated account reads the same pages.
+      const catalogue: { id: string; value: Payload; revision: number }[] = [];
+      let catalogueError: unknown;
+      try {
+        for (let offset = 0; ; offset += 500) {
+          const { data, error } = await client
+            .from("logger_food_catalog")
+            .select("id,value,revision")
+            .order("id")
+            .range(offset, offset + 499);
+          if (error) throw error;
+          catalogue.push(...data);
+          if (data.length < 500) break;
+        }
+      } catch (error) {
+        catalogueError = error;
+      }
+      if (!catalogueError)
+        await this.run(async () => {
+          if (this.scope !== scope) return;
+          const next = structuredClone(this.docs);
+          // Upgrading an older client must preserve offline edits made before
+          // catalogue documents existed, even if this id is already shared.
+          for (const d of this.docs) {
+            if (!d.pending || !d.key.startsWith("food/") || !d.value) continue;
+            const value = sharedFood(d.value as State["foods"][number]);
+            if (value && !next.some((row) => row.key === `catalog/${value.id}`))
+              next.push({
+                key: `catalog/${value.id}`,
+                value,
+                revision: 0,
+                pending: true,
+              });
+          }
+          for (const row of catalogue) {
+            row.value = sharedFood(row.value as State["foods"][number]);
+            const remote = {
+              key: `catalog/${row.id}`,
+              value: row.value,
+              revision: row.revision,
+            };
+            const local = next.find((d) => d.key === remote.key);
+            if (!local) next.push({ ...remote, pending: false });
+            else if (row.revision > local.revision) {
+              if (
+                local.pending &&
+                JSON.stringify(local.value) !== JSON.stringify(row.value)
+              )
+                local.conflict = { value: row.value, revision: row.revision };
+              else
+                Object.assign(local, remote, {
+                  pending: false,
+                  conflict: undefined,
+                });
+            }
+          }
+          // Publish existing user creations as well as foods created offline.
+          for (const food of docsToState(structuredClone(next)).foods) {
+            const value = sharedFood(food);
+            if (value && !next.some((d) => d.key === `catalog/${food.id}`))
+              next.push({
+                key: `catalog/${food.id}`,
+                value,
+                revision: 0,
+                pending: true,
+              });
+          }
+          await (await db).put("documents", next, scope);
+          this.docs = next;
+          this.notify();
+        });
       for (const snapshot of structuredClone(this.docs).filter(
-        (d) => d.pending && !d.conflict,
+        (d) =>
+          d.pending &&
+          !d.conflict &&
+          (!catalogueError || !d.key.startsWith("catalog/")),
       )) {
         if (this.scope !== scope) break;
-        const { data, error } = await client.rpc("logger_put", {
-          p_key: snapshot.key,
-          p_value: snapshot.value,
-          p_revision: snapshot.revision,
-        });
+        const shared = snapshot.key.startsWith("catalog/");
+        const { data, error } = await client.rpc(
+          shared ? "logger_catalog_put" : "logger_put",
+          {
+            ...(shared
+              ? { p_id: snapshot.key.slice(8) }
+              : { p_key: snapshot.key }),
+            p_value: snapshot.value,
+            p_revision: snapshot.revision,
+          },
+        );
         if (error) throw error;
         await this.run(async () => {
           if (this.scope !== scope) return;
@@ -230,6 +345,7 @@ export class Repository {
           this.notify();
         });
       }
+      if (catalogueError) throw catalogueError;
       if (this.scope === scope)
         this.status = this.docs.some((d) => d.conflict)
           ? "Conflit à résoudre dans Synchronisation"

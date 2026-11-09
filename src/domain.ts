@@ -65,10 +65,11 @@ export interface Entry {
   fatGrams?: number;
 }
 export interface Food {
-  source?: "ciqual" | "off";
+  source?: "ciqual";
   sourceVersion?: string;
   externalId?: string;
   brand?: string;
+  subtype?: string;
   aliases?: string[];
   missingNutrients?: string[];
   id: string;
@@ -84,6 +85,9 @@ export interface Food {
   lastUsedAt?: number;
   isCustom: boolean;
 }
+export const foodLabel = (food: Pick<Food, "name" | "subtype">) =>
+  food.subtype?.trim() ? `${food.name} · ${food.subtype.trim()}` : food.name;
+
 export interface Ingredient {
   id: string;
   foodId: string;
@@ -414,7 +418,7 @@ export function mealEntry(
       ? parts
           .map((p) => {
             const food = foods.find((x) => x.id === p.foodId)!;
-            return `${food.name} ${fmt(p.quantity)} ${food.referenceUnit}`;
+            return `${foodLabel(food)} ${fmt(p.quantity)} ${food.referenceUnit}`;
           })
           .join(" · ")
       : meal.notes,
