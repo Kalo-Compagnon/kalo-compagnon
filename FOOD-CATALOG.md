@@ -16,7 +16,7 @@ Chaque compte peut modifier les definitions du catalogue commun. Deux modificati
 
 Tests : `tests/shared-food-sql.test.ts`, `tests/shared-food-sync.test.ts`, `tests/shared-food-browser.mjs` (deux navigateurs authentifies et vrai PostgreSQL local). La migration distante ne fait pas partie du build : elle doit etre appliquee sur Supabase pour activer le partage.
 
-Le selecteur propose Tous, Aliments bruts (Ciqual) et Catalogue Kalo. Recherche locale par nom, marque, alias et identifiant. Sept lignes visibles puis defilement vertical. Glisser une fiche personnelle vers la gauche ouvre la modification. Au clavier : fleche gauche depuis un bouton de la fiche.
+Le selecteur propose Tous, Aliments bruts (Ciqual) et Catalogue Kalo. Recherche locale par nom, marque, alias et identifiant. Quatre lignes visibles puis defilement vertical. Glisser une fiche personnelle vers la gauche ouvre la modification. Au clavier : fleche gauche depuis un bouton de la fiche.
 
 Les anciennes fiches externes restent archivees pour les recettes et le journal, hors du selecteur. Le client externe, son cache et son convertisseur sont supprimes.
 

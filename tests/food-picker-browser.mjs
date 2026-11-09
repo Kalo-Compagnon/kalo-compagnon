@@ -69,7 +69,7 @@ try {
       scroll: el.scrollTop,
     };
   });
-  assert.equal(dims.height, 539);
+  assert.equal(dims.height, 308);
   assert.ok(dims.total > dims.height && dims.scroll > 0);
   const first = page.locator(".food-result").first();
   const name = await first.locator(".row-main span").innerText();
@@ -94,7 +94,7 @@ try {
     );
   }
   console.log(
-    "Kalo catalogue, Ciqual filter, seven scrollable rows and persistent favorites OK",
+    "Kalo catalogue, Ciqual filter, four scrollable rows and persistent favorites OK",
   );
 } finally {
   await browser.close();
