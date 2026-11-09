@@ -10,6 +10,8 @@ Les tests utilisent des identifiants fictifs et une base PostgreSQL locale via P
 
 ## Catalogue Kalo commun
 
+La migration [20261109140000_food_unit_weight.sql](migrations/20261109140000_food_unit_weight.sql), a executer apres les deux migrations ci-dessous, ajoute le poids facultatif d'une unite aux fiches partagees. Les anciennes fiches par piece sans poids restent compatibles.
+
 Pour les variantes de gout, executer aussi [20261109130000_food_subtype.sql](migrations/20261109130000_food_subtype.sql) apres la migration ci-dessous. Le champ est facultatif et compatible avec les fiches existantes.
 
 Exécuter [20261109120000_shared_food_catalog.sql](migrations/20261109120000_shared_food_catalog.sql) dans le SQL Editor du projet existant. Ce script est réexécutable ; il crée uniquement le catalogue alimentaire commun et reprend les aliments créés par les utilisateurs. Il ne change pas les règles d’accès des documents privés. Ne pas réexécuter `schema.sql`.

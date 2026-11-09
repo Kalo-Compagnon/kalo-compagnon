@@ -34,6 +34,14 @@ Source : https://ciqual.anses.fr/ ; DOI 10.57745/RDMHWY.
 
 Les bases de calcul sont 100 g/ml ou 1 unite. Les sauvegardes et calories historiques restent compatibles.
 
+Pour les nouvelles fiches a la piece, les valeurs du paquet restent saisies pour 100 g et `unitWeightGrams` indique le poids d'une piece. Le calcul utilise quantite en pieces × poids / 100. Exemple : 500 kcal/100 g, barre de 21 g = 105 kcal pour 1 unite. Les anciennes fiches sans poids restent calculees par piece ; renseigner leur poids dans le formulaire convertit leurs valeurs existantes vers une base de 100 g. Les entrees deja enregistrees restent inchangees.
+
+Appliquer `supabase/migrations/20261109140000_food_unit_weight.sql` apres les migrations precedentes pour synchroniser le poids d'une unite. Les exports JSON/CSV conservent ce poids et la base nutritionnelle.
+
+Pour les nouvelles fiches a la piece, les valeurs du paquet restent saisies pour 100 g et `unitWeightGrams` indique le poids d'une piece. Le calcul utilise quantite en pieces × poids / 100. Exemple : 500 kcal/100 g, barre de 21 g = 105 kcal pour 1 unite. Les anciennes fiches sans poids restent calculees par piece ; renseigner leur poids dans le formulaire convertit leurs valeurs existantes vers une base de 100 g. Les entrees deja enregistrees restent inchangees.
+
+Appliquer `supabase/migrations/20261109140000_food_unit_weight.sql` apres les migrations precedentes pour synchroniser le poids d'une unite. Les exports JSON/CSV conservent ce poids et la base nutritionnelle.
+
 ## Calculateur de repas
 
 La troisieme action de chaque aliment (assiette et couverts) ajoute une portion au calculateur sous la liste. Le brouillon reste en memoire, avec des quantites modifiables, le retrait de chaque portion et le total des kcal en direct. Le bouton general d'ajout de repas ou d'extra a ete retire.

@@ -191,6 +191,11 @@ export function validateState(value: unknown): State {
   }
   for (const food of s.foods) {
     assert(
+      food.unitWeightGrams === undefined ||
+        (finite(food.unitWeightGrams) && food.unitWeightGrams > 0),
+      "poids d’une unité",
+    );
+    assert(
       str(food.name) && str(food.category) && str(food.referenceUnit),
       "aliment",
     );
@@ -375,7 +380,10 @@ export function exportCSV(s: State) {
       id: food.id,
       name: food.name,
       category: food.category,
-      unit: `${referenceAmount(food)} ${food.referenceUnit}`,
+      unit:
+        food.referenceUnit === "unité" && food.unitWeightGrams
+          ? "100 g"
+          : `${referenceAmount(food)} ${food.referenceUnit}`,
       calories: food.kcalPer100,
       proteins_g: food.proteinPer100,
       carbs_g: food.carbsPer100,

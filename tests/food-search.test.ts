@@ -150,3 +150,30 @@ test("aliments à la pièce : calories et recettes par unité, sauvegardes et gr
   }
   assert.equal(searchFoods([unit], "boucherie", "kalo", "catalog").length, 1);
 });
+
+test("Paquet pour 100 g : une barre de 21 g, fractions, repas et sauvegardes", () => {
+  const bar = food("bar", "Barre chocolat", {
+    isCustom: true,
+    referenceUnit: "unité",
+    unitWeightGrams: 21,
+    kcalPer100: 500,
+    proteinPer100: 10,
+    carbsPer100: 50,
+    fatPer100: 20,
+  });
+  assert.equal(nutrients(bar, 1)[0], 105);
+  assert.equal(nutrients(bar, 2)[0], 210);
+  assert.equal(nutrients(bar, 0.5)[0], 52.5);
+  assert.equal(nutrients({ ...bar, referenceUnit: "g" }, 100)[0], 500);
+  const state = initialState();
+  state.foods.push(bar);
+  for (const restored of [
+    importJSON(exportJSON(state)),
+    importCSV(exportCSV(state)).state,
+  ]) {
+    const saved = restored.foods.find((f) => f.id === "bar")!;
+    assert.equal(saved.unitWeightGrams, 21);
+    assert.equal(saved.kcalPer100, 500);
+    assert.equal(nutrients(saved, 2)[0], 210);
+  }
+});

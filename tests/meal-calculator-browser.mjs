@@ -18,6 +18,7 @@ try {
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nom", { exact: true }).fill("Assiette QA");
   await dialog.getByLabel("Unité", { exact: true }).selectOption("unité");
+  await dialog.getByLabel("Poids d’une unité (g)").fill("100");
   await dialog.getByLabel("kcal", { exact: true }).fill("180");
   await dialog
     .getByRole("button", { name: "Enregistrer l’aliment", exact: true })

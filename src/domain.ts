@@ -80,6 +80,7 @@ export interface Food {
   carbsPer100: number;
   fatPer100: number;
   referenceUnit: string;
+  unitWeightGrams?: number;
   isFavorite: boolean;
   usageCount: number;
   lastUsedAt?: number;
@@ -371,7 +372,10 @@ export function calculateBasal(
 export const referenceAmount = (food: Pick<Food, "referenceUnit">) =>
   food.referenceUnit === "unité" ? 1 : 100;
 export function nutrients(food: Food, quantity: number): number[] {
-  const factor = div(quantity, referenceAmount(food));
+  const factor =
+    food.referenceUnit === "unité" && food.unitWeightGrams
+      ? div(mul(quantity, food.unitWeightGrams), 100)
+      : div(quantity, referenceAmount(food));
   return [
     food.kcalPer100,
     food.proteinPer100,

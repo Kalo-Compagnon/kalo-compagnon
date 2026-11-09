@@ -11,6 +11,7 @@ export function sharedFood(food: Food): Partial<Food> | null {
     subtype: food.subtype ?? "",
     category: food.category,
     referenceUnit: food.referenceUnit,
+    ...(food.unitWeightGrams ? { unitWeightGrams: food.unitWeightGrams } : {}),
     kcalPer100: food.kcalPer100,
     proteinPer100: food.proteinPer100,
     carbsPer100: food.carbsPer100,

@@ -17,6 +17,13 @@ const subtypeMigration = readFileSync(
   ),
   "utf8",
 );
+const weightMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20261109140000_food_unit_weight.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const schema = readFileSync(
   new URL("../supabase/schema.sql", import.meta.url),
   "utf8",
@@ -65,6 +72,7 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
     );
     await db.exec(migration);
     await db.exec(subtypeMigration);
+    await db.exec(weightMigration);
     const as = async (uid: string, sql: string, params: any[] = []) => {
       await db.exec("reset role");
       await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
@@ -117,8 +125,19 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
         )
       ).rows[0].result;
     assert.equal(
-      (await put(b, { ...food, name: "Mis à jour", subtype: "Vanille" }, 1))
-        .accepted,
+      (
+        await put(
+          b,
+          {
+            ...food,
+            name: "Mis à jour",
+            subtype: "Vanille",
+            referenceUnit: "unité",
+            unitWeightGrams: 21,
+          },
+          1,
+        )
+      ).accepted,
       true,
     );
     const conflict = await put(a, { ...food, name: "Ancienne version" }, 1);
@@ -126,6 +145,7 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
     assert.equal(conflict.revision, 2);
     assert.equal(conflict.value.name, "Mis à jour");
     assert.equal(conflict.value.subtype, "Vanille");
+    assert.equal(conflict.value.unitWeightGrams, 21);
     for (const invalid of [
       { ...food, isCustom: false },
       { ...food, source: "ciqual" },
@@ -134,11 +154,16 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
       { ...food, name: "" },
       { ...food, aliases: [123] },
       { ...food, subtype: ["Vanille"] },
+      { ...food, referenceUnit: "unité", unitWeightGrams: 0 },
+      { ...food, referenceUnit: "unité", unitWeightGrams: -1 },
+      { ...food, referenceUnit: "unité", unitWeightGrams: "21" },
+      { ...food, unitWeightGrams: 21 },
     ])
       await assert.rejects(put(a, invalid, 2));
     await db.exec("reset role");
     await db.exec(migration);
     await db.exec(subtypeMigration);
+    await db.exec(weightMigration);
     const after = (await as(a, "select * from public.logger_food_catalog"))
       .rows;
     assert.equal(after[0].revision, 2);

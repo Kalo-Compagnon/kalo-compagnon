@@ -20,6 +20,8 @@ import {
   mealTotals,
   mealEntry,
   fmt,
+  mul,
+  div,
   foodLabel,
   timestamp,
 } from "./domain";
@@ -362,7 +364,11 @@ export function FoodHub({
     return (
       <Sheet
         title={foodLabel(food)}
-        subtitle={`Quantité libre en ${food.referenceUnit}`}
+        subtitle={
+          food.referenceUnit === "unité" && food.unitWeightGrams
+            ? `1 unité = ${fmt(food.unitWeightGrams)} g`
+            : `Quantité libre en ${food.referenceUnit}`
+        }
         back={() =>
           initialPage === "quantity"
             ? close()
@@ -509,12 +515,18 @@ export function FoodHub({
   return null;
 }
 function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
-  const { update } = useApp();
+  const { update, notify } = useApp();
+  const [legacyUnitValues, setLegacyUnitValues] = useState(
+    food?.referenceUnit === "unité" && !food.unitWeightGrams,
+  );
   const [name, setName] = useState(food?.name ?? ""),
     [brand, setBrand] = useState(food?.brand ?? ""),
     [subtype, setSubtype] = useState(food?.subtype ?? ""),
     [category, setCategory] = useState(food?.category ?? "Féculents"),
     [unit, setUnit] = useState(food?.referenceUnit ?? "g"),
+    [unitWeight, setUnitWeight] = useState(
+      food?.unitWeightGrams ? String(food.unitWeightGrams) : "",
+    ),
     [values, setValues] = useState(
       [
         food?.kcalPer100 ?? 0,
@@ -528,7 +540,9 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
       title={food ? "Modifier l’aliment" : "Nouvel aliment"}
       subtitle={
         unit === "unité"
-          ? "Valeurs nutritionnelles pour 1 unité (par exemple une merguez)."
+          ? legacyUnitValues
+            ? "Ancienne fiche : valeurs par unité. Ajoute son poids pour convertir les valeurs pour 100 g."
+            : "Recopie les valeurs du paquet pour 100 g, puis indique le poids d’une unité."
           : "Valeurs nutritionnelles pour 100 g ou 100 ml."
       }
       back={done}
@@ -537,6 +551,17 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
         onSubmit={async (e) => {
           e.preventDefault();
           if (!name.trim()) return;
+          if (
+            unit === "unité" &&
+            !legacyUnitValues &&
+            (!Number.isFinite(num(unitWeight)) || num(unitWeight) <= 0)
+          )
+            return;
+          const nutrition = values.map((value) =>
+            legacyUnitValues && num(unitWeight) > 0
+              ? (num(value) * 100) / num(unitWeight)
+              : num(value),
+          );
           const v: Food = {
             ...food,
             id: food?.id ?? crypto.randomUUID(),
@@ -545,10 +570,14 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
             subtype: subtype.trim(),
             category,
             referenceUnit: unit,
-            kcalPer100: num(values[0]),
-            proteinPer100: num(values[1]),
-            carbsPer100: num(values[2]),
-            fatPer100: num(values[3]),
+            unitWeightGrams:
+              unit === "unité" && num(unitWeight) > 0
+                ? num(unitWeight)
+                : undefined,
+            kcalPer100: nutrition[0],
+            proteinPer100: nutrition[1],
+            carbsPer100: nutrition[2],
+            fatPer100: nutrition[3],
             missingNutrients: undefined,
             isCustom: true,
             isFavorite: food?.isFavorite ?? false,
@@ -604,13 +633,61 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
           <select
             aria-label="Unité"
             value={unit}
-            onChange={(e) => setUnit(e.target.value)}
+            onChange={(e) => {
+              if (legacyUnitValues && e.target.value !== "unité") {
+                notify(
+                  "Renseigne d’abord le poids d’une unité pour convertir cette ancienne fiche.",
+                );
+                return;
+              }
+              setUnit(e.target.value);
+            }}
           >
             <option>g</option>
             <option>ml</option>
             <option value="unité">unité (pièce)</option>
           </select>
         </label>
+        {unit === "unité" && (
+          <>
+            <Field
+              label="Poids d’une unité (g)"
+              type="number"
+              inputMode="decimal"
+              step="any"
+              value={unitWeight}
+              min={0.0001}
+              required={!legacyUnitValues}
+              onChange={(e) => setUnitWeight(e.target.value)}
+              onBlur={() => {
+                const weight = unitWeight;
+                if (
+                  legacyUnitValues &&
+                  Number.isFinite(num(weight)) &&
+                  num(weight) > 0
+                ) {
+                  setValues((old) =>
+                    old.map((value) =>
+                      String((num(value) * 100) / num(weight)),
+                    ),
+                  );
+                  setLegacyUnitValues(false);
+                }
+              }}
+            />
+            {num(unitWeight) > 0 && (
+              <p>
+                1 unité = {fmt(num(unitWeight))} g ·{" "}
+                {fmt(
+                  legacyUnitValues
+                    ? num(values[0])
+                    : mul(num(values[0]), div(num(unitWeight), 100)),
+                )}{" "}
+                kcal
+              </p>
+            )}
+          </>
+        )}
         <Button primary type="submit">
           Enregistrer l’aliment
         </Button>

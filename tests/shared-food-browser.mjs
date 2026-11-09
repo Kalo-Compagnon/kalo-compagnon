@@ -47,6 +47,12 @@ try {
   await db.exec(
     readFileSync("supabase/migrations/20261109130000_food_subtype.sql", "utf8"),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/20261109140000_food_unit_weight.sql",
+      "utf8",
+    ),
+  );
   const errors = [];
   async function createPage(uid) {
     const context = await browser.newContext({

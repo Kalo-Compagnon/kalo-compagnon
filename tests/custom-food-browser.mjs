@@ -20,7 +20,8 @@ try {
     .getByLabel("Marque (facultatif)", { exact: true })
     .fill("Boucherie QA");
   await dialog.getByLabel("Unité", { exact: true }).selectOption("unité");
-  await expect(dialog).toContainText("pour 1 unité");
+  await expect(dialog).toContainText("pour 100 g");
+  await dialog.getByLabel("Poids d’une unité (g)").fill("100");
   await dialog.getByLabel("kcal", { exact: true }).fill("180");
   await dialog.getByLabel("g protéines", { exact: true }).fill("12");
   await dialog

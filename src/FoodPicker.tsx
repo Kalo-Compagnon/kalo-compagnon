@@ -2,7 +2,13 @@ import ciqual from "./ciqual-data.json";
 import { useRef, useState } from "react";
 import { PlusCircle, Star } from "lucide-react";
 import { Button, Field, useApp } from "./ui";
-import { fmt, foodLabel, referenceAmount, type Food } from "./domain";
+import {
+  fmt,
+  foodLabel,
+  nutrients,
+  referenceAmount,
+  type Food,
+} from "./domain";
 import MealCalculator, { type DraftMealPart } from "./MealCalculator";
 import {
   internalFood,
@@ -203,7 +209,7 @@ export default function FoodPicker({
                 {f.kcalPer100 === null
                   ? "Calories manquantes"
                   : f.referenceUnit === "unité"
-                    ? `${fmt(f.kcalPer100)} kcal/unité`
+                    ? `${fmt(nutrients(f as Food, 1)[0])} kcal/unité${f.unitWeightGrams ? ` (${fmt(f.unitWeightGrams)} g)` : ""}`
                     : `${fmt(f.kcalPer100)} kcal/${referenceAmount(f)} ${f.referenceUnit}`}
               </small>
             </button>
