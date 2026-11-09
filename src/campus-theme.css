@@ -578,7 +578,7 @@ progress::-moz-progress-bar {
   color: #664c27;
 }
 .edit-banner button {
-  color: #664c27;
+  color: #ffffff;
 }
 @media (min-width: 900px) {
   .screen,
@@ -695,9 +695,6 @@ progress::-moz-progress-bar {
   .cm-icon {
     width: 18px;
   }
-  .edit-banner {
-    margin: 12px 44px 0;
-  }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .logger-topbar {
@@ -772,6 +769,13 @@ progress::-moz-progress-bar {
 .food-result-content.is-dragging { transition: none; user-select: none; }
 .food-edit-reveal { position: absolute; inset: 0 0 0 auto; width: 104px; display: grid; place-items: center; color: var(--accent); font-size: 13px; font-weight: 600; }
 .food-delete-reveal { position: absolute; inset: 0 auto 0 0; width: 104px; display: grid; place-items: center; color: var(--text); background: color-mix(in srgb, #d64550 24%, var(--card)); font-size: 13px; font-weight: 600; }
+.swipe-card { position: relative; overflow: hidden; border-radius: 8px; touch-action: pan-y; background: color-mix(in srgb, var(--accent) 18%, var(--card)); }
+.swipe-content { position: relative; background: var(--card); transition: transform 180ms ease-out; }
+.swipe-content.is-dragging { transition: none; user-select: none; }
+.swipe-reveal { position: absolute; top: 0; bottom: 0; width: 104px; display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+.swipe-edit { right: 0; color: var(--accent); }
+.swipe-remove { left: 0; color: var(--text); background: color-mix(in srgb, #d64550 24%, var(--card)); }
+@media (prefers-reduced-motion: reduce) { .swipe-content { transition: none; } }
 @media (prefers-reduced-motion: reduce) { .food-result-content { transition: none; } }
 .food-picker .food-options { flex-wrap: wrap; }
 .food-picker .food-search-bar .food-create { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-height: 42px; margin: 0; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); white-space: nowrap; }

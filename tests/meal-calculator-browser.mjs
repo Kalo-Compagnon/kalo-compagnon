@@ -104,6 +104,121 @@ try {
   await calculator.getByRole("button", { name: "Vider le repas" }).click();
   await expect(calculator.getByLabel("Total du repas")).toHaveText("0 kcal");
   await expect(page.locator(".entry")).toHaveCount(1);
+  await page
+    .getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Catalogue des repas", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Rechercher", { exact: true })).toHaveAttribute(
+    "placeholder",
+    "Rechercher un repas...",
+  );
+  await expect(page.locator(".food-attribution")).not.toContainText("Kalo");
+  await expect(page.locator(".food-attribution")).not.toContainText("Ciqual");
+  await expect(
+    page
+      .getByRole("region", { name: "Résultats des repas", exact: true })
+      .locator(".food-result:not(.meal-result)"),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Créer un repas", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("heading", { name: "Composer un repas", exact: true }),
+  ).toBeVisible();
+  await dialog
+    .getByLabel("Nom du repas", { exact: true })
+    .fill("Second repas QA");
+  await dialog
+    .getByRole("button", { name: "＋ Ajouter un ingrédient", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await dialog.getByLabel("Rechercher", { exact: true }).fill("Assiette QA");
+  await dialog.locator(".food-result .row-main").click();
+  await dialog.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Enregistrer sans ajouter", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator(".meal-result")).toHaveCount(2);
+  await expect(page.locator(".entry")).toHaveCount(1);
+  let mealRow = page
+    .locator(".meal-swipe")
+    .filter({
+      has: page.getByRole("button", {
+        name: "Préparer Second repas QA",
+        exact: true,
+      }),
+    });
+  const offset = () =>
+    mealRow
+      .locator(".swipe-content")
+      .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m41);
+  async function dragMeal(distance) {
+    await mealRow.scrollIntoViewIfNeeded();
+    const box = await mealRow.boundingBox();
+    const x = distance < 0 ? box.x + box.width - 15 : box.x + 15;
+    await page.mouse.move(x, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(x + distance, box.y + box.height / 2, { steps: 10 });
+  }
+  await dragMeal(-35);
+  await expect.poll(offset).toBeLessThan(-25);
+  await page.mouse.up();
+  await expect.poll(offset).toBe(0);
+  await expect(calculator.getByLabel("Total du repas")).toHaveText("0 kcal");
+  await dragMeal(-100);
+  await page.mouse.up();
+  await expect(calculator.getByLabel("Nom du repas (facultatif)")).toHaveValue(
+    "Second repas QA",
+  );
+  await calculator
+    .getByLabel("Nom du repas (facultatif)")
+    .fill("Second repas modifié");
+  await calculator.getByRole("spinbutton").fill("2");
+  await calculator
+    .getByRole("button", { name: "Enregistrer le repas", exact: true })
+    .click();
+  await expect(page.locator(".meal-result")).toHaveCount(2);
+  mealRow = page
+    .locator(".meal-swipe")
+    .filter({
+      has: page.getByRole("button", {
+        name: "Préparer Second repas modifié",
+        exact: true,
+      }),
+    });
+  await expect(mealRow).toContainText("360 kcal");
+  await dragMeal(100);
+  await page.mouse.up();
+  await expect(dialog).toContainText("Supprimer ce repas ?");
+  await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
+  await expect(page.locator(".meal-result")).toHaveCount(2);
+  await dragMeal(100);
+  await page.mouse.up();
+  await dialog.getByRole("button", { name: "Confirmer", exact: true }).click();
+  await expect(page.locator(".meal-result")).toHaveCount(1);
+  await expect(page.locator(".entry")).toContainText("540 kcal");
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".meal-result")).toHaveCount(1);
+  await expect(page.locator(".meal-result")).not.toContainText("Second repas");
+  await expect(page.locator(".entry")).toContainText("540 kcal");
   console.log(
     "Meal calculator: quantities, units, removal, deferred journal entry, persistence and responsive layout OK",
   );

@@ -35,6 +35,7 @@ function EntryPictogram({ type }: { type: string }) {
 }
 export function Meals() {
   const [query, setQuery] = useState("");
+  const [pickerView, setPickerView] = useState<"foods" | "meals">("foods");
   const { state, day, update, modal } = useApp(),
     entries = entriesOn(state, day),
     food = consumed(state, day),
@@ -119,10 +120,16 @@ export function Meals() {
         className="card meal-food-picker"
         aria-labelledby="meal-food-picker-title"
       >
-        <h2 id="meal-food-picker-title">Ajouter un aliment</h2>
+        <h2 id="meal-food-picker-title">
+          {pickerView === "meals"
+            ? "Catalogue des repas"
+            : "Ajouter un aliment"}
+        </h2>
         <FoodPicker
           query={query}
           setQuery={setQuery}
+          onViewChange={setPickerView}
+          createMeal={() => modal(<FoodHub initialPage="composer" />)}
           select={(food) =>
             modal(<FoodHub initialFood={food} initialPage="quantity" />)
           }

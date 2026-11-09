@@ -13,6 +13,7 @@ import {
   type Meal,
 } from "./domain";
 import MealCalculator, { type DraftMealPart } from "./MealCalculator";
+import { SwipeActions } from "./SwipeActions";
 import {
   internalFood,
   searchFoods,
@@ -28,16 +29,23 @@ export default function FoodPicker({
   setQuery,
   select,
   create,
+  createMeal,
+  onViewChange,
+  ingredientsOnly = false,
   edit,
 }: {
   query: string;
   setQuery: (q: string) => void;
   select: (f: Food) => void;
   create: () => void;
+  createMeal: () => void;
+  onViewChange?: (view: "foods" | "meals") => void;
+  ingredientsOnly?: boolean;
   edit: (f: Food) => void;
 }) {
   const { state, update, notify, modal } = useApp();
   const [parts, setParts] = useState<DraftMealPart[]>([]);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [loadedMeal, setLoadedMeal] = useState<Meal | null>(null);
   const [filter, setFilter] = useState<SourceFilter | "meals">("kalo"),
     [section, setSection] = useState<FoodSection>("recent");
@@ -107,6 +115,7 @@ export default function FoodPicker({
         );
   const meals = state.meals
     .filter((meal) => {
+      if (ingredientsOnly) return false;
       if (filter !== "meals" && filter !== "all") return false;
       if (query.trim())
         return normalize(query)
@@ -123,7 +132,7 @@ export default function FoodPicker({
         ? (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0)
         : a.name.localeCompare(b.name, "fr"),
     );
-  function loadMeal(meal: Meal) {
+  function loadMeal(meal: Meal, scroll = false) {
     const draft = meal.ingredients.map((part) => ({
       id: crypto.randomUUID(),
       food: state.foods.find((f) => f.id === part.foodId),
@@ -138,6 +147,16 @@ export default function FoodPicker({
     const load = () => {
       setParts(draft as DraftMealPart[]);
       setLoadedMeal(meal);
+      if (scroll)
+        requestAnimationFrame(() =>
+          pickerRef.current?.querySelector(".meal-calculator")?.scrollIntoView({
+            block: "nearest",
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+              .matches
+              ? "instant"
+              : "smooth",
+          }),
+        );
     };
     if (parts.length)
       modal(
@@ -165,20 +184,28 @@ export default function FoodPicker({
     }
   }
   return (
-    <div className="food-picker">
+    <div className="food-picker" ref={pickerRef}>
       <div className="food-search-bar">
         <Field
           label="Rechercher"
-          placeholder="Rechercher un aliment, une marque..."
+          placeholder={
+            filter === "meals"
+              ? "Rechercher un repas..."
+              : "Rechercher un aliment, une marque..."
+          }
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <button
           className="food-create"
           type="button"
-          onClick={create}
-          aria-label="＋ Créer un aliment personnalisé"
-          title="Créer un aliment"
+          onClick={filter === "meals" ? createMeal : create}
+          aria-label={
+            filter === "meals"
+              ? "Créer un repas"
+              : "＋ Créer un aliment personnalisé"
+          }
+          title={filter === "meals" ? "Créer un repas" : "Créer un aliment"}
         >
           <PlusCircle size={18} aria-hidden="true" />
           <span>Créer</span>
@@ -195,27 +222,34 @@ export default function FoodPicker({
             ["meals", "Repas"],
             ["kalo", "Catalogue Kalo"],
           ] as const
-        ).map(([key, label]) => (
-          <Button
-            key={key}
-            primary={filter === key}
-            aria-pressed={filter === key}
-            aria-label={
-              key === "meals" ? "Afficher les repas enregistrés" : undefined
-            }
-            onClick={() => {
-              setFilter(key);
-              if (key === "meals") setSection("catalog");
-            }}
-          >
-            {label}
-          </Button>
-        ))}
+        )
+          .filter(([key]) => !ingredientsOnly || key !== "meals")
+          .map(([key, label]) => (
+            <Button
+              key={key}
+              primary={filter === key}
+              aria-pressed={filter === key}
+              aria-label={
+                key === "meals" ? "Afficher les repas enregistrés" : undefined
+              }
+              onClick={() => {
+                if (key !== filter && (key === "meals" || filter === "meals"))
+                  setQuery("");
+                setFilter(key);
+                onViewChange?.(key === "meals" ? "meals" : "foods");
+                if (key === "meals") setSection("catalog");
+              }}
+            >
+              {label}
+            </Button>
+          ))}
       </div>
       <div
         className="food-options food-sections"
         role="group"
-        aria-label="Parcourir les aliments"
+        aria-label={
+          filter === "meals" ? "Parcourir les repas" : "Parcourir les aliments"
+        }
       >
         {(
           [
@@ -252,60 +286,92 @@ export default function FoodPicker({
         </p>
       )}
       <small className="food-gesture-hint">
-        Glisse vers la gauche pour modifier, vers la droite pour supprimer.
+        {filter === "meals"
+          ? "Glisse à gauche pour modifier un repas, à droite pour le supprimer."
+          : "Glisse vers la gauche pour modifier, vers la droite pour supprimer."}
       </small>
       <div
         className="food-results"
         role="region"
-        aria-label="Résultats des aliments"
+        aria-label={
+          filter === "meals" ? "Résultats des repas" : "Résultats des aliments"
+        }
         tabIndex={0}
       >
         {meals.map((meal) => (
-          <div className="food-result meal-result" key={`meal-${meal.id}`}>
-            <div className="food-result-content">
-              <button
-                className="row-main"
-                onClick={() => loadMeal(meal)}
-                aria-label={`Préparer ${meal.name}`}
-              >
-                <span>{meal.name}</span>
-                <small>
-                  Repas ·{" "}
-                  {fmt(
-                    meal.ingredients.every((p) =>
-                      state.foods.some((f) => f.id === p.foodId),
-                    ) && meal.ingredients.length
-                      ? mealTotals(meal.ingredients, state.foods)[0]
-                      : meal.cachedCalories,
-                  )}{" "}
-                  kcal
-                </small>
-              </button>
-              <button
-                className="food-icon"
-                aria-label={`${meal.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"} : ${meal.name}`}
-                aria-pressed={meal.isFavorite}
-                onClick={() =>
-                  void update((s) => {
-                    const value = s.meals.find((m) => m.id === meal.id);
-                    if (value) value.isFavorite = !value.isFavorite;
-                  })
-                }
-              >
-                <Star
-                  size={18}
-                  fill={meal.isFavorite ? "currentColor" : "none"}
-                />
-              </button>
-              <button
-                className="food-icon"
-                aria-label={`Préparer le repas ${meal.name}`}
-                onClick={() => loadMeal(meal)}
-              >
-                <PlusCircle size={20} />
-              </button>
+          <SwipeActions
+            key={`meal-${meal.id}`}
+            className="meal-swipe"
+            onEdit={() => loadMeal(meal, true)}
+            onDelete={() =>
+              modal(
+                <Confirm
+                  title="Supprimer ce repas ?"
+                  action={async () => {
+                    await update((s) => {
+                      s.meals = s.meals.filter((m) => m.id !== meal.id);
+                    });
+                    if (loadedMeal?.id === meal.id) {
+                      setParts([]);
+                      setLoadedMeal(null);
+                    }
+                    notify("Repas supprimé");
+                  }}
+                >
+                  <p>
+                    {meal.name} sera retiré de tes repas enregistrés. Les repas
+                    déjà ajoutés au journal seront conservés.
+                  </p>
+                </Confirm>,
+              )
+            }
+          >
+            <div className="food-result meal-result">
+              <div className="food-result-content">
+                <button
+                  className="row-main"
+                  onClick={() => loadMeal(meal)}
+                  aria-label={`Préparer ${meal.name}`}
+                >
+                  <span>{meal.name}</span>
+                  <small>
+                    Repas ·{" "}
+                    {fmt(
+                      meal.ingredients.every((p) =>
+                        state.foods.some((f) => f.id === p.foodId),
+                      ) && meal.ingredients.length
+                        ? mealTotals(meal.ingredients, state.foods)[0]
+                        : meal.cachedCalories,
+                    )}{" "}
+                    kcal
+                  </small>
+                </button>
+                <button
+                  className="food-icon"
+                  aria-label={`${meal.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"} : ${meal.name}`}
+                  aria-pressed={meal.isFavorite}
+                  onClick={() =>
+                    void update((s) => {
+                      const value = s.meals.find((m) => m.id === meal.id);
+                      if (value) value.isFavorite = !value.isFavorite;
+                    })
+                  }
+                >
+                  <Star
+                    size={18}
+                    fill={meal.isFavorite ? "currentColor" : "none"}
+                  />
+                </button>
+                <button
+                  className="food-icon"
+                  aria-label={`Préparer le repas ${meal.name}`}
+                  onClick={() => loadMeal(meal)}
+                >
+                  <PlusCircle size={20} />
+                </button>
+              </div>
             </div>
-          </div>
+          </SwipeActions>
         ))}
         {foods.map((f) => (
           <div
@@ -441,54 +507,60 @@ export default function FoodPicker({
               >
                 <PlusCircle size={20} />
               </button>
-              <button
-                className="food-icon"
-                aria-label={`Ajouter ${foodLabel(f)} au repas`}
-                title="Ajouter au calculateur de repas"
-                onClick={() => {
-                  try {
-                    const food = internalFood(f);
-                    setParts((old) => [
-                      ...old,
-                      {
-                        id: crypto.randomUUID(),
-                        food,
-                        quantity: String(referenceAmount(food)),
-                      },
-                    ]);
-                  } catch (e) {
-                    notify((e as Error).message);
-                  }
-                }}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              {!ingredientsOnly && (
+                <button
+                  className="food-icon"
+                  aria-label={`Ajouter ${foodLabel(f)} au repas`}
+                  title="Ajouter au calculateur de repas"
+                  onClick={() => {
+                    try {
+                      const food = internalFood(f);
+                      setParts((old) => [
+                        ...old,
+                        {
+                          id: crypto.randomUUID(),
+                          food,
+                          quantity: String(referenceAmount(food)),
+                        },
+                      ]);
+                    } catch (e) {
+                      notify((e as Error).message);
+                    }
+                  }}
                 >
-                  <circle cx="12" cy="12" r="5" />
-                  <path d="M2 3v5a2 2 0 0 0 4 0V3M4 3v18M22 21V3c-3 2-3 8 0 8" />
-                </svg>
-              </button>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="5" />
+                    <path d="M2 3v5a2 2 0 0 0 4 0V3M4 3v18M22 21V3c-3 2-3 8 0 8" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
-      <MealCalculator
-        parts={parts}
-        setParts={setParts}
-        loadedMeal={loadedMeal}
-        onReset={() => setLoadedMeal(null)}
-      />
+      {!ingredientsOnly && (
+        <MealCalculator
+          parts={parts}
+          setParts={setParts}
+          loadedMeal={loadedMeal}
+          onReset={() => setLoadedMeal(null)}
+        />
+      )}
       <small className="food-attribution">
-        Catalogue Kalo : aliments ajoutés par les utilisateurs.
-        {ciqual.length > 0 && (
+        {filter === "meals"
+          ? "Catalogue de tes repas créés et enregistrés."
+          : "Catalogue Kalo : aliments ajoutés par les utilisateurs."}
+        {filter !== "meals" && ciqual.length > 0 && (
           <>
             {" "}
             · Aliments bruts :{" "}

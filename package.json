@@ -8,7 +8,7 @@
     "build": "tsx scripts/check-icons.ts && tsc --noEmit && vite build && node scripts/publish-static.mjs",
     "generate:icons": "tsx scripts/generate-icons.ts",
     "test": "tsx --test tests/*.test.ts && node --test tests/ciqual-import.mjs",
-    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs && node tests/app-icons-browser.mjs && node tests/private-duo-browser.mjs && node tests/food-picker-browser.mjs && node tests/custom-food-browser.mjs && node tests/meal-calculator-browser.mjs && node tests/shared-food-browser.mjs && node tests/unit-weight-browser.mjs",
+    "test:browser": "node tests/browser.mjs && node tests/browser-extended.mjs && node tests/profile-browser.mjs && node tests/appearance-browser.mjs && node tests/manual-activity-browser.mjs && node tests/basal-profile-browser.mjs && node tests/duo-browser.mjs && node tests/duo-demo-browser.mjs && node tests/app-icons-browser.mjs && node tests/private-duo-browser.mjs && node tests/food-picker-browser.mjs && node tests/custom-food-browser.mjs && node tests/meal-calculator-browser.mjs && node tests/shared-food-browser.mjs && node tests/unit-weight-browser.mjs && node tests/history-swipe-browser.mjs",
     "test:fit": "node tests/fit-service.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "build:fit": "node server/build.mjs",

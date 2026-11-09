@@ -7,6 +7,7 @@ import {
   HistoryList,
   num,
   HoldButton,
+  Confirm,
 } from "./ui";
 import {
   balance,
@@ -23,12 +24,14 @@ import {
   dailyBudget,
   ageOn,
   rollingWeight,
+  removeDay,
   type State,
 } from "./domain";
 import type { Sharing } from "./duo-model";
 import { BasalFields } from "./BasalFields";
 import { CalorieChart } from "./Charts";
 import { WeightTracking } from "./WeightTracking";
+import { SwipeActions } from "./SwipeActions";
 
 function BalanceAmount({
   value,
@@ -351,16 +354,18 @@ export function Global({
           <WeightTracking key={day} />
           <p className="section-label history-heading">Journées terminées</p>
           <p className="note">
-            Maintiens une journée appuyée pour afficher le bouton de
-            modification.
+            Glisse à gauche pour modifier une journée, à droite pour la
+            supprimer.
           </p>
           <section className="card history-card">
-            {allDays(state).filter((d) => d < dayKey()).length === 0 ? (
+            {allDays(state).filter(
+              (d) => d < dayKey() && !state.days[d]?.isDeleted,
+            ).length === 0 ? (
               "La journée apparaîtra ici une fois terminée."
             ) : (
               <HistoryList>
                 {allDays(state)
-                  .filter((d) => d < dayKey())
+                  .filter((d) => d < dayKey() && !state.days[d]?.isDeleted)
                   .map((d) => {
                     const es = entriesOn(state, d),
                       delta = sub(expense(state, d), consumed(state, d)),
@@ -372,50 +377,69 @@ export function Global({
                         basal(state, d) <= 0 ? "métabolisme absent" : "",
                       ].filter(Boolean);
                     return (
-                      <HoldButton
+                      <SwipeActions
                         key={d}
-                        label={`Journée du ${labelDay(d)} · maintenir pour les options`}
-                        onHold={() =>
+                        onEdit={() => editDay(d)}
+                        onDelete={() =>
                           modal(
-                            <Sheet title={`Journée du ${labelDay(d)}`}>
+                            <Confirm
+                              title={`Supprimer la journée du ${labelDay(d)} ?`}
+                              action={() => update((s) => removeDay(s, d))}
+                            >
                               <p>
-                                Ouvre cette journée pour consulter ou modifier
-                                ses données.
+                                Les repas, activités, pesées et mensurations de
+                                cette journée seront supprimés. Les autres
+                                journées seront conservées.
                               </p>
-                              <Button
-                                primary
-                                onClick={() => {
-                                  editDay(d);
-                                  close();
-                                }}
-                              >
-                                Modifier cette journée
-                              </Button>
-                            </Sheet>,
+                            </Confirm>,
                           )
                         }
                       >
-                        <time className="history-date" dateTime={d}>
-                          {labelDay(d)}
-                        </time>
-                        <span className="history-result">
-                          <span className="history-result-label">
-                            {basal(state, d) <= 0 || !es.length
-                              ? "Bilan indisponible"
-                              : `${delta >= 0 ? "Déficit" : "Surplus"} estimé`}
+                        <HoldButton
+                          key={d}
+                          label={`Journée du ${labelDay(d)} · maintenir pour les options`}
+                          onHold={() =>
+                            modal(
+                              <Sheet title={`Journée du ${labelDay(d)}`}>
+                                <p>
+                                  Ouvre cette journée pour consulter ou modifier
+                                  ses données.
+                                </p>
+                                <Button
+                                  primary
+                                  onClick={() => {
+                                    editDay(d);
+                                    close();
+                                  }}
+                                >
+                                  Modifier cette journée
+                                </Button>
+                              </Sheet>,
+                            )
+                          }
+                        >
+                          <time className="history-date" dateTime={d}>
+                            {labelDay(d)}
+                          </time>
+                          <span className="history-result">
+                            <span className="history-result-label">
+                              {basal(state, d) <= 0 || !es.length
+                                ? "Bilan indisponible"
+                                : `${delta >= 0 ? "Déficit" : "Surplus"} estimé`}
+                            </span>
+                            {basal(state, d) > 0 && es.length > 0 && (
+                              <strong
+                                className={`history-result-value ${why.length ? "yellow" : delta >= 0 ? "green" : "pink"}`}
+                              >
+                                {fmt(Math.abs(delta))} <span>kcal</span>
+                              </strong>
+                            )}
                           </span>
-                          {basal(state, d) > 0 && es.length > 0 && (
-                            <strong
-                              className={`history-result-value ${why.length ? "yellow" : delta >= 0 ? "green" : "pink"}`}
-                            >
-                              {fmt(Math.abs(delta))} <span>kcal</span>
-                            </strong>
+                          {why.length > 0 && (
+                            <small>À compléter : {why.join(", ")}</small>
                           )}
-                        </span>
-                        {why.length > 0 && (
-                          <small>À compléter : {why.join(", ")}</small>
-                        )}
-                      </HoldButton>
+                        </HoldButton>
+                      </SwipeActions>
                     );
                   })}
               </HistoryList>

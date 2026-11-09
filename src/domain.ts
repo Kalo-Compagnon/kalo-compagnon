@@ -112,6 +112,7 @@ export interface Meal {
   imagePath?: string;
 }
 export interface Day {
+  isDeleted?: boolean;
   weightKg?: number;
   basal?: number;
   target?: number;
@@ -168,6 +169,15 @@ export interface State {
   meals: Meal[];
   physical: Physical[];
   imports: FitImport[];
+}
+export function removeDay(state: State, date: string) {
+  state.entries = state.entries.filter(
+    (entry) => dayKey(entry.timestamp) !== date,
+  );
+  state.physical = state.physical.filter(
+    (record) => dayKey(record.timestamp) !== date,
+  );
+  state.days[date] = { isDeleted: true };
 }
 export const defaultSettings = (): Settings => ({
   first: dayKey(),

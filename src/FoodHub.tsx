@@ -125,6 +125,7 @@ export function FoodHub({
     [variable, setVariable] = useState(false),
     [overrides, setOverrides] = useState<Record<string, number>>({});
   const back = () => setPage("home");
+  const [pickerView, setPickerView] = useState<"foods" | "meals">("foods");
   async function logMeal(value: Meal, amounts: Record<string, number> = {}) {
     await update((s) => {
       s.entries.push(mealEntry(value, s.foods, day, amounts));
@@ -145,6 +146,7 @@ export function FoodHub({
     close();
   }
   function startComposer(value: Meal | null) {
+    setPickerView("foods");
     setMeal(value);
     setName(value?.name ?? "");
     setParts(structuredClone(value?.ingredients ?? []));
@@ -335,12 +337,17 @@ export function FoodHub({
   if (page === "foods")
     return (
       <Sheet
-        title="Ajouter un aliment"
+        title={
+          pickerView === "meals" ? "Catalogue des repas" : "Ajouter un aliment"
+        }
         back={() => setPage(picking ? "composer" : "home")}
       >
         <FoodPicker
           query={query}
           setQuery={setQuery}
+          onViewChange={setPickerView}
+          ingredientsOnly={picking}
+          createMeal={() => startComposer(null)}
           select={selectFood}
           create={() => {
             setFood(null);

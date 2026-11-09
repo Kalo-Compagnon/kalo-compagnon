@@ -61,6 +61,10 @@ export default function App() {
   useEffect(() => {
     const apply = () => {
       applyAppearance(state.settings);
+      if (editing)
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute("content", "#f1dfc4");
       updateApplicationIcons(
         ready && repository.scope !== "guest"
           ? state.settings.haloColor
@@ -71,7 +75,13 @@ export default function App() {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, [state.settings.theme, state.settings.haloColor, ready, repository.scope]);
+  }, [
+    state.settings.theme,
+    state.settings.haloColor,
+    ready,
+    repository.scope,
+    editing,
+  ]);
   useEffect(() => {
     let cancelled = false;
     let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null =
