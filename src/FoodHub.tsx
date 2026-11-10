@@ -1,4 +1,5 @@
 import FoodPicker from "./FoodPicker";
+import IngredientWeightBasis from "./IngredientWeightBasis";
 import { useState } from "react";
 import {
   useApp,
@@ -129,6 +130,7 @@ export function FoodHub({
   const [eaten, setEaten] = useState("1");
   const back = () => setPage("home");
   const [pickerView, setPickerView] = useState<"foods" | "meals">("foods");
+  const [weightBasis, setWeightBasis] = useState<Ingredient["weightBasis"]>();
   async function logMeal(value: Meal, amounts: Record<string, number> = {}) {
     try {
       await update((s) => {
@@ -172,6 +174,7 @@ export function FoodHub({
     setQuantity(v.referenceUnit === "unité" ? "1" : "100");
     setIndex(null);
     setVariable(false);
+    setWeightBasis(undefined);
     setPage(picking ? "ingredient" : "quantity");
   };
   async function saveMeal(log: boolean) {
@@ -202,6 +205,7 @@ export function FoodHub({
         name: name.trim(),
         ingredients: parts,
         portions: num(portions),
+        cookedWeightGrams: meal?.cookedWeightGrams,
         cachedCalories: totals[0],
         cachedProtein: totals[1],
         cachedCarbs: totals[2],
@@ -433,6 +437,7 @@ export function FoodHub({
                 foodId: food.id,
                 quantity: amount,
                 isVariable: variable,
+                weightBasis,
               };
               setParts(
                 index === null
@@ -483,6 +488,13 @@ export function FoodHub({
               ? `${fmt(nutrients(food, num(quantity))[0])} kcal · Macronutriments incomplets`
               : macro(nutrients(food, num(quantity)))}
           </p>
+          {page === "ingredient" && (
+            <IngredientWeightBasis
+              name={foodLabel(food)}
+              value={weightBasis}
+              onChange={setWeightBasis}
+            />
+          )}
           {page === "ingredient" && (
             <label className="check">
               <input
@@ -537,12 +549,18 @@ export function FoodHub({
                 setIndex(i);
                 setQuantity(String(p.quantity));
                 setVariable(p.isVariable);
+                setWeightBasis(p.weightBasis);
                 setPage("ingredient");
               }}
               onDelete={() => setParts(parts.filter((x) => x.id !== p.id))}
             >
               {food.name} · {fmt(p.quantity)} {food.referenceUnit}
               {p.isVariable ? " · VARIABLE" : ""}
+              {p.weightBasis === "raw"
+                ? " · Cru / sec"
+                : p.weightBasis === "cooked"
+                  ? " · Cuit"
+                  : ""}
             </ActionRow>
           );
         })}

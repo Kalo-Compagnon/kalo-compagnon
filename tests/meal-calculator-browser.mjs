@@ -49,6 +49,10 @@ try {
   await expect(calculator.getByLabel("Total du repas")).toHaveText("360 kcal");
   await add.click();
   await expect(calculator.getByLabel("Total du repas")).toHaveText("540 kcal");
+  await calculator
+    .getByLabel("État à la pesée de Assiette QA")
+    .first()
+    .selectOption("raw");
   await calculator.getByLabel("Nom du repas (facultatif)").fill("Déjeuner QA");
   await calculator
     .getByRole("button", { name: "Enregistrer le repas", exact: true })
@@ -259,6 +263,56 @@ try {
   await expect(
     page.locator(".meal-result").filter({ hasText: "Plat 4 portions" }),
   ).toContainText("2,5 portion(s)");
+  await page
+    .getByRole("button", {
+      name: "Choisir les portions de Plat 4 portions",
+      exact: true,
+    })
+    .click();
+  await dialog.getByLabel("Poids total du plat cuisiné (g)").fill("1000");
+  await dialog.getByLabel("Poids mangé, sans l’assiette (g)").fill("250");
+  await expect(dialog).toContainText("135 kcal mangées");
+  await expect(dialog).toContainText("Équivalent cru/sec dans cette assiette");
+  await expect(dialog).toContainText("375 g");
+  await dialog
+    .getByRole("button", { name: "Ajouter la quantité mangée" })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(
+    page.locator(".entry").filter({ hasText: "250 g" }),
+  ).toContainText("135 kcal");
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Choisir les portions de Plat 4 portions",
+      exact: true,
+    })
+    .click();
+  await expect(
+    dialog.getByLabel("Poids total du plat cuisiné (g)"),
+  ).toHaveValue("1000");
+  await expect(dialog).toContainText("375 g restants");
+  await dialog.getByLabel("Poids mangé, sans l’assiette (g)").fill("400");
+  await expect(
+    dialog.getByRole("button", { name: "Ajouter la quantité mangée" }),
+  ).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: "En portions", exact: true })
+    .click();
+  await dialog.getByRole("button", { name: "½ portion", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Ajouter la quantité mangée" })
+    .click();
+  await expect(
+    page.locator(".meal-result").filter({ hasText: "Plat 4 portions" }),
+  ).toContainText("1 portion(s)");
   console.log(
     "Meal calculator: quantities, units, removal, deferred journal entry, persistence and responsive layout OK",
   );

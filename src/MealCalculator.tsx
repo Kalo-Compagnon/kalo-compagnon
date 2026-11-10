@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Trash2 } from "lucide-react";
+import IngredientWeightBasis from "./IngredientWeightBasis";
 import { Button, Field, NumberField, num, useApp } from "./ui";
 import {
   fmt,
@@ -16,9 +17,15 @@ import {
   nutrients,
   type Food,
   type Meal,
+  type Ingredient,
 } from "./domain";
 
-export type DraftMealPart = { id: string; food: Food; quantity: string };
+export type DraftMealPart = {
+  id: string;
+  food: Food;
+  quantity: string;
+  weightBasis?: Ingredient["weightBasis"];
+};
 
 export default function MealCalculator({
   parts,
@@ -54,6 +61,7 @@ export default function MealCalculator({
     foodId: p.food.id,
     quantity: Math.max(0, num(p.quantity) || 0),
     isVariable: false,
+    weightBasis: p.weightBasis,
   }));
   const foods = parts.map((p) => p.food);
   const totals = mealTotals(ingredients, foods);
@@ -70,6 +78,7 @@ export default function MealCalculator({
         name: name.trim() || "Mon repas",
         ingredients,
         portions: num(portions),
+        cookedWeightGrams: newBatch ? undefined : loadedMeal?.cookedWeightGrams,
         cachedCalories: totals[0],
         cachedProtein: totals[1],
         cachedCarbs: totals[2],
@@ -149,6 +158,17 @@ export default function MealCalculator({
               <div key={part.id} className="meal-calculator-part">
                 <div className="meal-calculator-food">
                   <strong>{foodLabel(part.food)}</strong>
+                  <IngredientWeightBasis
+                    name={foodLabel(part.food)}
+                    value={part.weightBasis}
+                    onChange={(weightBasis) =>
+                      setParts((old) =>
+                        old.map((p) =>
+                          p.id === part.id ? { ...p, weightBasis } : p,
+                        ),
+                      )
+                    }
+                  />
                   <small>
                     {fmt(
                       nutrients(
@@ -185,6 +205,11 @@ export default function MealCalculator({
               </div>
             ))}
           </fieldset>
+          <p>
+            Pour les pâtes pesées sèches, utilise une fiche de pâtes
+            crues/sèches. Le poids de l’assiette cuite se renseigne avec le
+            bouton ½ du repas enregistré, à partir du poids total après cuisson.
+          </p>
           <NumberField
             label="Portions préparées (plat entier)"
             value={portions}

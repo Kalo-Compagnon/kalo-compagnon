@@ -14,6 +14,7 @@ import {
   type Meal,
 } from "./domain";
 import MealCalculator, { type DraftMealPart } from "./MealCalculator";
+import MealPortions from "./MealPortions";
 import { SwipeActions } from "./SwipeActions";
 import {
   internalFood,
@@ -138,6 +139,7 @@ export default function FoodPicker({
       id: crypto.randomUUID(),
       food: state.foods.find((f) => f.id === part.foodId),
       quantity: String(part.quantity),
+      weightBasis: part.weightBasis,
     }));
     if (!draft.length || draft.some((part) => !part.food)) {
       notify(
@@ -338,6 +340,8 @@ export default function FoodPicker({
                     {meal.name} ·{" "}
                     {fmt(remainingMealPortions(meal, state.entries))} portion(s)
                     restante(s)
+                    {meal.cookedWeightGrams != null &&
+                      ` · ${fmt((meal.cookedWeightGrams * remainingMealPortions(meal, state.entries)) / (meal.portions ?? 1))} g restants`}
                   </span>
                   <small>
                     Repas ·{" "}
@@ -373,6 +377,14 @@ export default function FoodPicker({
                   onClick={() => loadMeal(meal)}
                 >
                   <PlusCircle size={20} />
+                </button>
+                <button
+                  className="food-icon"
+                  aria-label={`Choisir les portions de ${meal.name}`}
+                  title="Portions ou poids de mon assiette"
+                  onClick={() => modal(<MealPortions meal={meal} />)}
+                >
+                  <span aria-hidden="true">½</span>
                 </button>
               </div>
             </div>

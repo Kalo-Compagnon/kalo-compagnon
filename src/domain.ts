@@ -93,12 +93,14 @@ export const foodLabel = (food: Pick<Food, "name" | "subtype">) =>
   food.subtype?.trim() ? `${food.name} · ${food.subtype.trim()}` : food.name;
 
 export interface Ingredient {
+  weightBasis?: "raw" | "cooked";
   id: string;
   foodId: string;
   quantity: number;
   isVariable: boolean;
 }
 export interface Meal {
+  cookedWeightGrams?: number;
   portions?: number;
   id: string;
   name: string;
@@ -463,7 +465,7 @@ export function mealEntry(
       ? parts
           .map((p) => {
             const food = foods.find((x) => x.id === p.foodId)!;
-            return `${foodLabel(food)} ${fmt(p.quantity)} ${food.referenceUnit}`;
+            return `${foodLabel(food)} ${fmt(p.quantity)} ${food.referenceUnit}${p.weightBasis === "raw" ? " (cru/sec)" : p.weightBasis === "cooked" ? " (cuit)" : ""}`;
           })
           .join(" · ")
       : meal.notes,
