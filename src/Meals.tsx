@@ -3,6 +3,8 @@ import { entriesOn, dailyBudget, consumed, expense, fmt, sub } from "./domain";
 import { FoodHub, ExtraEditor } from "./FoodHub";
 import { useState } from "react";
 import FoodPicker from "./FoodPicker";
+import { ActiveMealPortions } from "./MealPortions";
+import { recalculateMealServings } from "./cooking";
 import {
   Apple,
   Cookie,
@@ -140,6 +142,7 @@ export function Meals() {
             }
           />
         </section>
+        <ActiveMealPortions />
       </div>
       <section className="meals-history" aria-labelledby="meals-history-title">
         <h2 id="meals-history-title" className="timeline-heading">
@@ -162,6 +165,14 @@ export function Meals() {
                     action={() =>
                       update((s) => {
                         s.entries = s.entries.filter((x) => x.id !== e.id);
+                        const meal = s.meals.find((m) => m.id === e.mealId);
+                        if (
+                          meal?.portionTracking &&
+                          e.mealServingGrams != null
+                        ) {
+                          meal.portionTracking.finished = false;
+                          recalculateMealServings(s, meal);
+                        }
                       })
                     }
                   >
@@ -187,7 +198,7 @@ export function Meals() {
                   <b className={e.calories === null ? "yellow" : "pink"}>
                     {e.calories === null
                       ? "À estimer"
-                      : `${fmt(e.calories)} kcal`}
+                      : `${fmt(e.calories)} kcal${e.mealEstimate ? " estimées" : ""}`}
                   </b>
                   <small>
                     {e.proteinGrams != null

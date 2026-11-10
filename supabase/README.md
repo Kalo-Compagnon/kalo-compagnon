@@ -10,6 +10,8 @@ Les tests utilisent des identifiants fictifs et une base PostgreSQL locale via P
 
 ## Catalogue Kalo commun
 
+Pour les types de cuisson (pâtes sèches, riz sec), appliquer [20261110180000_food_cooking_type.sql](migrations/20261110180000_food_cooking_type.sql) après les migrations ci-dessous. Cette migration conserve le type dans le catalogue partagé. Les suivis de portions et les consommations restent des documents privés.
+
 Pour les suppressions par glissement, appliquer [20261109150000_food_soft_delete.sql](migrations/20261109150000_food_soft_delete.sql) apres les migrations ci-dessous. Les fiches sont archivees, sans suppression physique, pour conserver les anciens repas.
 
 La migration [20261109140000_food_unit_weight.sql](migrations/20261109140000_food_unit_weight.sql), a executer apres les deux migrations ci-dessous, ajoute le poids facultatif d'une unite aux fiches partagees. Les anciennes fiches par piece sans poids restent compatibles.

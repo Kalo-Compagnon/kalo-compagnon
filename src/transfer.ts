@@ -191,6 +191,11 @@ export function validateState(value: unknown): State {
   }
   for (const food of s.foods) {
     assert(
+      food.cookingType === undefined ||
+        ["pasta", "rice"].includes(food.cookingType),
+      "type de cuisson",
+    );
+    assert(
       food.unitWeightGrams === undefined ||
         (finite(food.unitWeightGrams) && food.unitWeightGrams > 0),
       "poids d’une unité",

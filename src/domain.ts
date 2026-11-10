@@ -50,6 +50,8 @@ export function timestamp(day: string) {
   return d.getTime();
 }
 export interface Entry {
+  mealServingGrams?: number;
+  mealEstimate?: boolean;
   mealId?: string;
   mealPortions?: number;
   id: string;
@@ -67,6 +69,7 @@ export interface Entry {
   fatGrams?: number;
 }
 export interface Food {
+  cookingType?: "pasta" | "rice";
   source?: "ciqual";
   sourceVersion?: string;
   externalId?: string;
@@ -100,6 +103,7 @@ export interface Ingredient {
   isVariable: boolean;
 }
 export interface Meal {
+  portionTracking?: { estimatedWeightGrams: number; finished?: boolean };
   cookedWeightGrams?: number;
   portions?: number;
   id: string;

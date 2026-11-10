@@ -1,5 +1,6 @@
 import FoodPicker from "./FoodPicker";
-import IngredientWeightBasis from "./IngredientWeightBasis";
+import MealPortions from "./MealPortions";
+import { cookingTypes } from "./cooking";
 import { useState } from "react";
 import {
   useApp,
@@ -124,23 +125,13 @@ export function FoodHub({
     [parts, setParts] = useState<Ingredient[]>([]),
     [picking, setPicking] = useState(false),
     [index, setIndex] = useState<number | null>(null),
-    [variable, setVariable] = useState(false),
-    [overrides, setOverrides] = useState<Record<string, number>>({});
-  const [portions, setPortions] = useState("1");
-  const [eaten, setEaten] = useState("1");
+    [variable, setVariable] = useState(false);
   const back = () => setPage("home");
   const [pickerView, setPickerView] = useState<"foods" | "meals">("foods");
-  const [weightBasis, setWeightBasis] = useState<Ingredient["weightBasis"]>();
   async function logMeal(value: Meal, amounts: Record<string, number> = {}) {
     try {
       await update((s) => {
-        if (
-          !Number.isFinite(num(eaten)) ||
-          num(eaten) <= 0 ||
-          num(eaten) > remainingMealPortions(value, s.entries)
-        )
-          throw new Error("Pas assez de portions restantes");
-        s.entries.push(mealEntry(value, s.foods, day, amounts, num(eaten)));
+        s.entries.push(mealEntry(value, s.foods, day, amounts));
         const m = s.meals.find((x) => x.id === value.id);
         if (m) {
           m.usageCount++;
@@ -163,8 +154,6 @@ export function FoodHub({
   function startComposer(value: Meal | null) {
     setPickerView("foods");
     setMeal(value);
-    setPortions(String(value?.portions ?? 1));
-    setEaten("1");
     setName(value?.name ?? "");
     setParts(structuredClone(value?.ingredients ?? []));
     setPage("composer");
@@ -174,21 +163,11 @@ export function FoodHub({
     setQuantity(v.referenceUnit === "unité" ? "1" : "100");
     setIndex(null);
     setVariable(false);
-    setWeightBasis(undefined);
     setPage(picking ? "ingredient" : "quantity");
   };
   async function saveMeal(log: boolean) {
-    if (!Number.isFinite(num(portions)) || num(portions) <= 0) {
-      notify("Nombre de portions invalide");
-      return;
-    }
-    if (
-      log &&
-      (!Number.isFinite(num(eaten)) ||
-        num(eaten) <= 0 ||
-        num(eaten) > num(portions))
-    ) {
-      notify("Nombre de portions mangées invalide");
+    if (meal?.portionTracking) {
+      notify("Utilise le menu Portions pour ce plat en suivi.");
       return;
     }
     if (!name.trim() || !parts.length) {
@@ -204,7 +183,7 @@ export function FoodHub({
         id: meal?.id ?? crypto.randomUUID(),
         name: name.trim(),
         ingredients: parts,
-        portions: num(portions),
+        portions: 1,
         cookedWeightGrams: meal?.cookedWeightGrams,
         cachedCalories: totals[0],
         cachedProtein: totals[1],
@@ -275,7 +254,7 @@ export function FoodHub({
     return (
       <Sheet
         title="Repas enregistrés"
-        subtitle="Un appui ajoute directement les repas sans quantité variable."
+        subtitle="Ouvre un repas pour enregistrer ton assiette."
         back={back}
       >
         {!sorted.length && (
@@ -298,12 +277,7 @@ export function FoodHub({
             <div key={m.id}>
               {show && <h3 className="group-title">{group}</h3>}
               <ActionRow
-                onClick={() => {
-                  setMeal(m);
-                  setEaten("1");
-                  setOverrides({});
-                  setPage("variable");
-                }}
+                onClick={() => modal(<MealPortions meal={m} />)}
                 onFavorite={() =>
                   void update((s) => {
                     const v = s.meals.find((x) => x.id === m.id)!;
@@ -335,49 +309,6 @@ export function FoodHub({
       </Sheet>
     );
   }
-  if (page === "variable" && meal)
-    return (
-      <Sheet
-        title={meal.name}
-        subtitle="Modifie uniquement les ingrédients variables."
-        back={() => setPage("meals")}
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void logMeal(meal, overrides);
-          }}
-        >
-          <NumberField
-            label="Portions mangées"
-            value={eaten}
-            min={0.01}
-            max={remainingMealPortions(meal, state.entries)}
-            required
-            onChange={setEaten}
-          />
-          <p>
-            {fmt(remainingMealPortions(meal, state.entries))} portion(s)
-            restante(s)
-          </p>
-          {meal.ingredients
-            .filter((p) => p.isVariable)
-            .map((p) => (
-              <NumberField
-                key={p.id}
-                label={`${state.foods.find((f) => f.id === p.foodId)?.name} (${state.foods.find((f) => f.id === p.foodId)?.referenceUnit})`}
-                min={0.0001}
-                required
-                value={overrides[p.id] ?? p.quantity}
-                onChange={(v) => setOverrides({ ...overrides, [p.id]: num(v) })}
-              />
-            ))}
-          <Button primary type="submit">
-            Ajouter à la journée
-          </Button>
-        </form>
-      </Sheet>
-    );
   if (page === "foods")
     return (
       <Sheet
@@ -437,7 +368,6 @@ export function FoodHub({
                 foodId: food.id,
                 quantity: amount,
                 isVariable: variable,
-                weightBasis,
               };
               setParts(
                 index === null
@@ -489,13 +419,6 @@ export function FoodHub({
               : macro(nutrients(food, num(quantity)))}
           </p>
           {page === "ingredient" && (
-            <IngredientWeightBasis
-              name={foodLabel(food)}
-              value={weightBasis}
-              onChange={setWeightBasis}
-            />
-          )}
-          {page === "ingredient" && (
             <label className="check">
               <input
                 type="checkbox"
@@ -523,21 +446,6 @@ export function FoodHub({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <NumberField
-          label="Portions préparées (plat entier)"
-          value={portions}
-          min={0.01}
-          required
-          onChange={setPortions}
-        />
-        {!meal && (
-          <NumberField
-            label="Portions mangées"
-            value={eaten}
-            min={0.01}
-            onChange={setEaten}
-          />
-        )}
         {!parts.length && <p>Aucun ingrédient pour l’instant.</p>}
         {parts.map((p, i) => {
           const food = state.foods.find((f) => f.id === p.foodId)!;
@@ -549,18 +457,12 @@ export function FoodHub({
                 setIndex(i);
                 setQuantity(String(p.quantity));
                 setVariable(p.isVariable);
-                setWeightBasis(p.weightBasis);
                 setPage("ingredient");
               }}
               onDelete={() => setParts(parts.filter((x) => x.id !== p.id))}
             >
               {food.name} · {fmt(p.quantity)} {food.referenceUnit}
               {p.isVariable ? " · VARIABLE" : ""}
-              {p.weightBasis === "raw"
-                ? " · Cru / sec"
-                : p.weightBasis === "cooked"
-                  ? " · Cuit"
-                  : ""}
             </ActionRow>
           );
         })}
@@ -596,6 +498,9 @@ export function FoodHub({
 }
 function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
   const { update, notify } = useApp();
+  const [cookingType, setCookingType] = useState<Food["cookingType"]>(
+    food?.cookingType,
+  );
   const [legacyUnitValues, setLegacyUnitValues] = useState(
     food?.referenceUnit === "unité" && !food.unitWeightGrams,
   );
@@ -650,6 +555,7 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
             subtype: subtype.trim(),
             category,
             referenceUnit: unit,
+            cookingType,
             unitWeightGrams:
               unit === "unité" && num(unitWeight) > 0
                 ? num(unitWeight)
@@ -698,6 +604,28 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
               <option key={c}>{c}</option>
             ))}
           </select>
+        </label>
+        <label className="field">
+          Type de cuisson
+          <select
+            value={cookingType ?? ""}
+            onChange={(e) =>
+              setCookingType(
+                (e.target.value || undefined) as Food["cookingType"],
+              )
+            }
+          >
+            <option value="">Pas de changement de poids particulier</option>
+            {Object.entries(cookingTypes).map(([key, type]) => (
+              <option key={key} value={key}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+          <small>
+            Pour les pâtes et le riz, recopie les calories du produit sec. Ce
+            type sert uniquement à estimer le poids cuit des repas.
+          </small>
         </label>
         {["kcal", "g protéines", "g glucides", "g lipides"].map((l, i) => (
           <NumberField

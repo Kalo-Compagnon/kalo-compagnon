@@ -44,6 +44,15 @@ export default function App() {
     [sheet, setSheet] = useState<ReactNode>(null),
     [message, setMessage] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
+  const [desktopBody, setDesktopBody] = useState(
+    () => window.matchMedia("(min-width: 1200px)").matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1200px)");
+    const change = () => setDesktopBody(media.matches);
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
   const handlePartnerAccent = useCallback(
     (accent: string | null, first: string | null = null) => {
       setPartnerAccent(accent);
@@ -225,7 +234,7 @@ export default function App() {
       </main>
     );
   const title =
-    screen === "body" && bodySection === "measurements"
+    screen === "body" && !desktopBody && bodySection === "measurements"
       ? "Mensurations"
       : screen === "body"
         ? "Corps"
@@ -334,7 +343,9 @@ export default function App() {
             <h1>{title}</h1>
             {screen !== "data" && (
               <p className="subtitle">
-                {screen === "body" && bodySection === "measurements"
+                {screen === "body" &&
+                !desktopBody &&
+                bodySection === "measurements"
                   ? "Fais glisser pour parcourir les groupes"
                   : titleDay(day)}
               </p>
@@ -349,7 +360,10 @@ export default function App() {
           {screen === "meals" && <Meals />}
           {screen === "body" && (
             <>
-              <div className="halo-presets" aria-label="Sections de Corps">
+              <div
+                className="halo-presets body-tabs"
+                aria-label="Sections de Corps"
+              >
                 <button
                   aria-pressed={bodySection === "activity"}
                   onClick={() => setBodySection("activity")}
@@ -363,11 +377,30 @@ export default function App() {
                   Mensurations
                 </button>
               </div>
-              {bodySection === "activity" ? (
-                <Activity key={day} />
-              ) : (
-                <Measurements key={day} />
-              )}
+              <div className="body-layout">
+                {(desktopBody || bodySection === "activity") && (
+                  <section
+                    className="body-panel body-activity"
+                    aria-label="Activité"
+                  >
+                    {desktopBody && (
+                      <h2 className="body-panel-title">Activité</h2>
+                    )}
+                    <Activity key={day} />
+                  </section>
+                )}
+                {(desktopBody || bodySection === "measurements") && (
+                  <section
+                    className="body-panel body-measurements"
+                    aria-label="Mensurations"
+                  >
+                    {desktopBody && (
+                      <h2 className="body-panel-title">Mensurations</h2>
+                    )}
+                    <Measurements key={day} />
+                  </section>
+                )}
+              </div>
             </>
           )}
           {screen === "duo" && (

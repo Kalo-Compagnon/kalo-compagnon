@@ -1,55 +1,70 @@
 import { useRef, useState } from "react";
 import { Button, NumberField, Sheet, num, useApp } from "./ui";
+import { fmt, type Meal } from "./domain";
 import {
-  fmt,
-  foodLabel,
-  mealEntry,
-  remainingMealPortions,
-  type Meal,
-} from "./domain";
+  addMealServing,
+  estimateCookedWeight,
+  finishMeal,
+  recalculateMealServings,
+  servedWeight,
+  trackingWeight,
+} from "./cooking";
 
 export default function MealPortions({ meal }: { meal: Meal }) {
-  const { state, day, update, notify, close } = useApp();
-  const [mode, setMode] = useState<"grams" | "portions">("grams");
-  const [weight, setWeight] = useState(String(meal.cookedWeightGrams ?? ""));
+  const { state, day, update, notify, close, modal } = useApp();
+  const current = state.meals.find((m) => m.id === meal.id) ?? meal;
+  const [weight, setWeight] = useState(String(current.cookedWeightGrams ?? ""));
   const [amount, setAmount] = useState("");
+  const [last, setLast] = useState(false);
   const [saving, setSaving] = useState(false);
   const submitting = useRef(false);
-  const current = state.meals.find((m) => m.id === meal.id) ?? meal;
-  const prepared = current.portions ?? 1;
-  const remaining = remainingMealPortions(current, state.entries);
-  const ratio =
-    mode === "grams" ? num(amount) / num(weight) : num(amount) / prepared;
+  const estimate =
+    current.portionTracking?.estimatedWeightGrams ??
+    estimateCookedWeight(current, state.foods);
+  const measured = weight.trim() ? num(weight) : undefined;
+  const eaten = servedWeight(current, state.entries);
+  const total = measured ?? Math.max(estimate ?? 0, eaten + (num(amount) || 0));
+  const validWeight =
+    measured === undefined ||
+    (Number.isFinite(measured) && measured > 0 && measured >= eaten);
   const valid =
-    Number.isFinite(ratio) &&
-    ratio > 0 &&
-    ratio * prepared <= remaining &&
-    (mode !== "grams" || (Number.isFinite(num(weight)) && num(weight) > 0));
-  const preview = valid
-    ? mealEntry(current, state.foods, day, {}, ratio * prepared)
-    : null;
-  async function save() {
-    if (!valid || submitting.current) return;
+    validWeight &&
+    (measured !== undefined || estimate != null) &&
+    total > 0 &&
+    Number.isFinite(num(amount)) &&
+    num(amount) > 0 &&
+    (measured === undefined || eaten + num(amount) <= measured + 0.001);
+  const finished = !!current.portionTracking?.finished;
+  const legacy =
+    !current.portionTracking && state.entries.some((e) => e.mealId === meal.id);
+  async function perform(action: "add" | "finish" | "weight") {
+    if (submitting.current) return;
     submitting.current = true;
     setSaving(true);
     try {
       await update((s) => {
         const saved = s.meals.find((m) => m.id === meal.id);
         if (!saved) throw new Error("Repas introuvable");
-        const portions = ratio * (saved.portions ?? 1);
-        if (portions > remainingMealPortions(saved, s.entries))
-          throw new Error("Quantité supérieure au reste disponible");
-        const entry = mealEntry(saved, s.foods, day, {}, portions);
-        if (mode === "grams") {
-          saved.cookedWeightGrams = num(weight);
-          entry.quantityGrams = num(amount);
-          entry.quantityUnit = "g";
+        if (action === "add")
+          addMealServing(s, saved, day, num(amount), measured, last);
+        else if (action === "finish") finishMeal(s, saved);
+        else {
+          if (!validWeight || !measured)
+            throw new Error("Poids total invalide");
+          if (measured < servedWeight(saved, s.entries))
+            throw new Error("Poids inférieur aux assiettes déjà mangées");
+          saved.cookedWeightGrams = measured;
+          saved.portionTracking ??= {
+            estimatedWeightGrams: estimate ?? measured,
+          };
+          recalculateMealServings(s, saved);
         }
-        s.entries.push(entry);
-        saved.usageCount++;
-        saved.lastUsedAt = Date.now();
       });
-      notify("Quantité mangée ajoutée, reste mis à jour");
+      notify(
+        action === "finish" || last
+          ? "Plat terminé : toutes les assiettes ont été recalculées"
+          : "Portions mises à jour",
+      );
       close();
     } catch (error) {
       notify((error as Error).message);
@@ -58,122 +73,166 @@ export default function MealPortions({ meal }: { meal: Meal }) {
       setSaving(false);
     }
   }
+  async function newPreparation() {
+    const next: Meal = {
+      ...current,
+      id: crypto.randomUUID(),
+      portionTracking: undefined,
+      cookedWeightGrams: undefined,
+      portions: 1,
+      usageCount: 0,
+      lastUsedAt: undefined,
+      createdAt: Date.now(),
+    };
+    await update((s) => {
+      s.meals.push(next);
+    });
+    modal(<MealPortions key={next.id} meal={next} />);
+  }
   return (
     <Sheet
-      title={`Portions · ${meal.name}`}
-      subtitle="Indique seulement ce que tu manges."
+      title={"Portions · " + meal.name}
+      subtitle="Pèse ton assiette, le reste est suivi automatiquement."
     >
-      <div className="meal-calculator-actions">
-        <Button
-          onClick={() => {
-            setMode("grams");
-            setAmount("");
-          }}
-          disabled={saving}
-          aria-pressed={mode === "grams"}
-        >
-          En grammes
-        </Button>
-        <Button
-          onClick={() => {
-            setMode("portions");
-            setAmount("");
-          }}
-          disabled={saving}
-          aria-pressed={mode === "portions"}
-        >
-          En portions
-        </Button>
-      </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void save();
-        }}
-      >
-        <fieldset disabled={saving}>
-          {mode === "grams" && (
-            <>
+      {finished || legacy ? (
+        <>
+          <p>
+            {finished
+              ? "Plat terminé. Le calcul définitif est enregistré."
+              : "Ce repas a déjà été consommé avec l’ancien suivi. Démarre une nouvelle préparation pour peser tes assiettes."}
+          </p>
+          <Button primary onClick={() => void newPreparation()}>
+            Cuisiner à nouveau ce plat
+          </Button>
+        </>
+      ) : (
+        <>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (valid) void perform("add");
+            }}
+          >
+            <fieldset disabled={saving}>
               <NumberField
-                label="Poids total du plat cuisiné (g)"
-                value={weight}
+                label="Poids de mon assiette (g, sans l’assiette vide)"
+                value={amount}
                 min={0.01}
                 required
-                onChange={setWeight}
+                onChange={setAmount}
               />
+              <details>
+                <summary>J’ai pesé le plat entier (facultatif)</summary>
+                <NumberField
+                  label="Poids total du plat cuit (g)"
+                  value={weight}
+                  min={0.01}
+                  onChange={setWeight}
+                />
+                {current.portionTracking && (
+                  <Button
+                    disabled={!validWeight || !measured || saving}
+                    onClick={() => void perform("weight")}
+                  >
+                    Corriger le poids total
+                  </Button>
+                )}
+              </details>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={last}
+                  onChange={(e) => setLast(e.target.checked)}
+                />
+                C’est la dernière assiette, tout le plat a été mangé
+              </label>
+            </fieldset>
+            <p>
+              {measured
+                ? "Poids total mesuré : " + fmt(measured) + " g"
+                : estimate
+                  ? "Poids total estimé : environ " + fmt(total) + " g"
+                  : "Indique le poids total : un ingrédient n’a pas de poids connu."}
+            </p>
+            {!measured && (
               <p>
-                Pèse tout le plat après cuisson, sans le récipient. Pour
-                l’assiette, retire aussi le poids de l’assiette vide.
+                Calories provisoires. Quand toutes les assiettes auront été
+                pesées, termine le plat : leurs poids seront additionnés et les
+                calories de chaque assiette recalculées, même les jours
+                précédents.
               </p>
+            )}
+            {valid && (
+              <p aria-live="polite">
+                {fmt(
+                  (current.cachedCalories * num(amount)) /
+                    (last ? eaten + num(amount) : total),
+                )}{" "}
+                kcal {last || measured ? "" : "estimées"} ·{" "}
+                {last
+                  ? "plat terminé après cette assiette"
+                  : "reste " +
+                    (measured ? "" : "estimé ") +
+                    ": " +
+                    fmt(Math.max(0, total - eaten - num(amount))) +
+                    " g"}
+              </p>
+            )}
+            <Button primary type="submit" disabled={!valid || saving}>
+              Ajouter mon assiette
+            </Button>
+          </form>
+          {current.portionTracking && eaten > 0 && (
+            <>
               <p>
-                Les ingrédients restent comptés dans leur état de saisie
-                (cru/sec ou cuit). Pour des pâtes : saisis leur poids sec avec
-                une fiche crue, puis pèse le plat cuit entier ici. Le calcul
-                utilise le rapport assiette cuite / plat cuit, sans coefficient
-                de cuisson approximatif.
+                {fmt(eaten)} g déjà mangés. Valide seulement si toutes les
+                assiettes du plat ont été enregistrées, y compris celles
+                partagées.
               </p>
+              <Button disabled={saving} onClick={() => void perform("finish")}>
+                Tout a été mangé : terminer le plat
+              </Button>
             </>
           )}
-          <NumberField
-            label={
-              mode === "grams"
-                ? "Poids mangé, sans l’assiette (g)"
-                : "Portions mangées"
-            }
-            value={amount}
-            min={0.0001}
-            required
-            onChange={setAmount}
-          />
-          {mode === "portions" && (
-            <div className="meal-calculator-actions">
-              <Button onClick={() => setAmount("0.5")}>½ portion</Button>
-              <Button onClick={() => setAmount("1")}>1 portion</Button>
-            </div>
-          )}
-        </fieldset>
-        <p>
-          {mode === "grams" && num(weight) > 0
-            ? `${fmt((num(weight) * remaining) / prepared)} g restants`
-            : `${fmt(remaining)} portion(s) restante(s)`}
-        </p>
-        {preview && (
-          <p aria-live="polite">
-            {fmt(preview.calories ?? 0)} kcal mangées · reste après :{" "}
-            {mode === "grams"
-              ? `${fmt(num(weight) * (remaining / prepared - ratio))} g`
-              : `${fmt(remaining - ratio * prepared)} portion(s)`}
-          </p>
-        )}
-        {preview &&
-          current.ingredients.some((p) => p.weightBasis === "raw") && (
-            <div>
-              <p>Équivalent cru/sec dans cette assiette :</p>
-              <ul>
-                {current.ingredients
-                  .filter((p) => p.weightBasis === "raw")
-                  .map((p) => {
-                    const food = state.foods.find((f) => f.id === p.foodId);
-                    return food ? (
-                      <li key={p.id}>
-                        {foodLabel(food)} : {fmt(p.quantity * ratio)}{" "}
-                        {food.referenceUnit} crus/secs
-                      </li>
-                    ) : null;
-                  })}
-              </ul>
-            </div>
-          )}
-        {!valid &&
-          num(amount) > 0 &&
-          Number.isFinite(ratio) &&
-          ratio * prepared > remaining && (
-            <p role="alert">Cette quantité dépasse le reste disponible.</p>
-          )}
-        <Button primary type="submit" disabled={!valid || saving}>
-          Ajouter la quantité mangée
-        </Button>
-      </form>
+        </>
+      )}
     </Sheet>
+  );
+}
+
+export function ActiveMealPortions() {
+  const { state, modal } = useApp();
+  const meals = state.meals.filter(
+    (m) => m.portionTracking && !m.portionTracking.finished,
+  );
+  if (!meals.length) return null;
+  return (
+    <section
+      className="card active-meal-portions"
+      aria-labelledby="active-portions-title"
+    >
+      <h2 id="active-portions-title">Portions en cours</h2>
+      {meals.map((meal) => (
+        <div key={meal.id} className="active-meal-portion">
+          <div>
+            <strong>{meal.name}</strong>
+            <p>
+              {fmt(
+                Math.max(
+                  0,
+                  trackingWeight(meal, state.entries) -
+                    servedWeight(meal, state.entries),
+                ),
+              )}{" "}
+              g restants
+              {!meal.cookedWeightGrams && " environ · calories provisoires"}
+            </p>
+          </div>
+          <Button onClick={() => modal(<MealPortions meal={meal} />)}>
+            ½ Portions
+          </Button>
+        </div>
+      ))}
+    </section>
   );
 }

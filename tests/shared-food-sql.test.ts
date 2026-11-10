@@ -35,6 +35,13 @@ const schema = readFileSync(
   new URL("../supabase/schema.sql", import.meta.url),
   "utf8",
 );
+const cookingMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20261110180000_food_cooking_type.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const a = "10000000-0000-4000-8000-000000000001",
   b = "10000000-0000-4000-8000-000000000002";
 const food = {
@@ -81,6 +88,22 @@ test("Catalogue SQL : partage entre comptes, champs privés exclus, RLS, validat
     await db.exec(subtypeMigration);
     await db.exec(weightMigration);
     await db.exec(deletionMigration);
+    await db.exec(cookingMigration);
+    const cookingPayload = (
+      await db.query<{ value: any }>(
+        "select public.logger_catalog_value($1,$2::jsonb) as value",
+        [food.id, JSON.stringify({ ...food, cookingType: "pasta" })],
+      )
+    ).rows[0].value;
+    assert.equal(cookingPayload.cookingType, "pasta");
+    assert.ok(!("usageCount" in cookingPayload));
+    await assert.rejects(
+      db.query("select public.logger_catalog_value($1,$2::jsonb)", [
+        food.id,
+        JSON.stringify({ ...food, cookingType: "invalid" }),
+      ]),
+      /Invalid cooking type/,
+    );
     const as = async (uid: string, sql: string, params: any[] = []) => {
       await db.exec("reset role");
       await db.query("select set_config('request.jwt.claim.sub',$1,false)", [

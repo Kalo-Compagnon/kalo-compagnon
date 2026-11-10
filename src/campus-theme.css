@@ -757,8 +757,21 @@ progress::-moz-progress-bar {
 .food-attribution a { color: inherit; }
 .meal-food-picker { padding: 20px 24px; margin-top: 18px; }
 .meal-food-picker > h2 { font-size: 18px; margin-bottom: 12px; }
+.active-meal-portions { padding: 20px; margin-top: 18px; }
+.active-meal-portions h2 { font-size: 18px; margin-bottom: 12px; }
+.active-meal-portion { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+.active-meal-portion > div { min-width: 0; overflow-wrap: anywhere; }
+.active-meal-portion p { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.active-meal-portion button { flex: 0 0 auto; width: auto; }
 .meals-preparation,
 .meals-history { min-width: 0; }
+.body-panel { min-width: 0; }
+@media (min-width: 1200px) {
+  .screen.body { max-width: 1600px; }
+  .screen.body .body-tabs { display: none; }
+  .body-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 32px; }
+  .body-panel-title { font-size: 22px; margin: 0 0 24px; }
+}
 @media (min-width: 1200px) {
   .screen.meals { max-width: 1600px; }
   .meals-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px; align-items: start; }

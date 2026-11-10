@@ -9,7 +9,6 @@ import {
   referenceAmount,
   normalize,
   mealTotals,
-  remainingMealPortions,
   type Food,
   type Meal,
 } from "./domain";
@@ -135,11 +134,14 @@ export default function FoodPicker({
         : a.name.localeCompare(b.name, "fr"),
     );
   function loadMeal(meal: Meal, scroll = false) {
+    if (meal.portionTracking) {
+      modal(<MealPortions meal={meal} />);
+      return;
+    }
     const draft = meal.ingredients.map((part) => ({
       id: crypto.randomUUID(),
       food: state.foods.find((f) => f.id === part.foodId),
       quantity: String(part.quantity),
-      weightBasis: part.weightBasis,
     }));
     if (!draft.length || draft.some((part) => !part.food)) {
       notify(
@@ -336,13 +338,7 @@ export default function FoodPicker({
                   onClick={() => loadMeal(meal)}
                   aria-label={`Préparer ${meal.name}`}
                 >
-                  <span>
-                    {meal.name} ·{" "}
-                    {fmt(remainingMealPortions(meal, state.entries))} portion(s)
-                    restante(s)
-                    {meal.cookedWeightGrams != null &&
-                      ` · ${fmt((meal.cookedWeightGrams * remainingMealPortions(meal, state.entries)) / (meal.portions ?? 1))} g restants`}
-                  </span>
+                  <span>{meal.name}</span>
                   <small>
                     Repas ·{" "}
                     {fmt(
