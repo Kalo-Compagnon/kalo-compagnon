@@ -41,6 +41,10 @@
   color: var(--accent);
   border-color: var(--accent);
 }
+:root .category-badge.gemini-badge {
+  background: color-mix(in srgb, var(--card) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
 :root .action-row {
   background: var(--pastel-purple);
   border-left-color: var(--accent);

@@ -68,6 +68,7 @@ function backend() {
               return this;
             },
             async range(first: number, last: number) {
+              if (table === "logger_meal_catalog") return { data: [], error: null };
               if (offline || (shared && !installed))
                 return { data: null, error: new Error("Unavailable") };
               const rows = [...(shared ? catalogue : personal)]

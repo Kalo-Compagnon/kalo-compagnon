@@ -14,7 +14,8 @@
     "build:fit": "node server/build.mjs",
     "serve": "node --env-file-if-exists=.env.local server/index.mjs",
     "format": "prettier --write src tests/*.ts server/*.mjs",
-    "prepare:ciqual": "node scripts/prepare-ciqual.mjs"
+    "prepare:ciqual": "node scripts/prepare-ciqual.mjs",
+    "test:browser:kermit": "node tests/kermit-browser.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",

@@ -1,0 +1,434 @@
+﻿.kermit-launcher {
+  position: fixed;
+  z-index: 40;
+  right: 20px;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  width: 58px;
+  height: 58px;
+  min-height: 58px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 30%, transparent);
+}
+:root .sheet.kermit-dialog {
+  inset: auto 20px 20px auto;
+  margin: 0;
+  padding: 0;
+  width: 400px;
+  height: min(640px, calc(100dvh - 40px));
+  max-width: calc(100vw - 40px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--card);
+  color: var(--text);
+  transform-origin: bottom right;
+  --kermit-origin-x: calc(100% - 33px);
+  --kermit-origin-y: calc(100% - 33px);
+}
+:root .sheet.kermit-dialog[open] {
+  animation: kermit-open 220ms ease-out;
+}
+.kermit-chat {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.kermit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.kermit-emblem {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--pastel-purple);
+  flex-shrink: 0;
+}
+.kermit-avatar {
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  flex-shrink: 0;
+}
+.kermit-welcome-avatar {
+  margin: 0 auto 16px;
+}
+.kermit-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.kermit-header > div {
+  flex: 1;
+  min-width: 0;
+}
+:root .kermit-header h2 {
+  font-size: 15px;
+  margin: 0 0 3px;
+}
+.kermit-header p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+.kermit-icon {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  flex-shrink: 0;
+}
+.kermit-icon:hover {
+  background: var(--pastel-purple);
+  color: var(--accent);
+}
+.kermit-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg);
+}
+.kermit-welcome {
+  margin: auto 0;
+  text-align: center;
+  padding: 32px 8px;
+  color: var(--muted);
+}
+.kermit-welcome > svg {
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.kermit-welcome h3 {
+  color: var(--text);
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.kermit-welcome p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+.kermit-bubble {
+  animation: kermit-message-in 360ms cubic-bezier(.22, 1, .36, 1) both;
+  max-width: 88%;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 18px 18px 18px 4px;
+  background: var(--card);
+  color: var(--text);
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.kermit-bubble > strong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.kermit-bubble-user {
+  align-self: flex-end;
+  border-radius: 18px 18px 4px 18px;
+  background: var(--pastel-purple);
+  border-color: transparent;
+}
+.kermit-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  line-height: 1.45;
+  font-size: 13px;
+}
+.kermit-photo {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+.kermit-bubble .meal-calorie-details {
+  animation: kermit-message-in 440ms cubic-bezier(.22, 1, .36, 1) 80ms both;
+  padding: 0;
+  margin-top: 10px;
+  background: transparent;
+  border: 0;
+}
+.kermit-bubble .meal-calorie-details h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.kermit-bubble .meal-calorie-details p {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.kermit-bubble .meal-calorie-details dl {
+  margin: 8px 0;
+}
+.kermit-bubble .meal-calorie-details dl > div {
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+.kermit-bubble .meal-calorie-details dt small {
+  font-size: 11px;
+  margin-top: 2px;
+}
+.kermit-bubble .meal-calorie-details .note {
+  font-size: 11px;
+}
+.kermit-bubble .meal-calorie-details button {
+  font-size: 13px;
+  padding: 10px;
+}
+.kermit-footer {
+  padding: 12px 14px 10px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+:root .kermit-composer {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 25px;
+  background: var(--bg);
+}
+:root .kermit-composer textarea {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  min-height: 40px;
+  max-height: 112px;
+  padding: 10px 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 20px;
+  resize: none;
+  outline: none;
+  box-shadow: none;
+}
+.kermit-composer:focus-within {
+  border-color: var(--accent);
+}
+:root .kermit-send {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.kermit-caption {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  text-align: center;
+}
+.kermit-attachments {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-bottom: 0;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    grid-template-rows 220ms ease,
+    margin-bottom 220ms ease,
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+.kermit-attachments.is-open {
+  grid-template-rows: 1fr;
+  margin-bottom: 10px;
+  opacity: 1;
+  transform: translateY(0);
+}
+.kermit-attachments-inner {
+  display: flex;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+.kermit-attachments .file-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 10px 6px;
+}
+.kermit-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.kermit-preview img {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.kermit-error {
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.kermit-confirm {
+  margin: auto 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.kermit-chat:has(.kermit-confirm) .kermit-messages,
+.kermit-chat:has(.kermit-confirm) .kermit-footer {
+  display: none;
+}
+.kermit-confirm p {
+  margin: 0 0 4px;
+}
+.kermit-confirm > button {
+  width: 100%;
+  margin: 0;
+  flex-shrink: 0;
+}
+.kermit-thinking {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: grid-template-rows 220ms ease, opacity 220ms ease;
+}
+.kermit-thinking.is-thinking {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  animation: kermit-message-in 320ms ease both;
+}
+.kermit-thinking-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.kermit-thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 18px 4px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 12px;
+}
+.kermit-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+}
+.kermit-thinking-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: kermit-dot 1200ms ease-in-out infinite;
+}
+.kermit-thinking-dots i:nth-child(2) { animation-delay: 150ms; }
+.kermit-thinking-dots i:nth-child(3) { animation-delay: 300ms; }
+.kermit-preview, .kermit-error, .kermit-confirm {
+  animation: kermit-message-in 240ms ease both;
+}
+.kermit-icon, .kermit-send, .kermit-launcher {
+  transition: background-color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+.kermit-icon:active, .kermit-send:active, .kermit-launcher:active {
+  transform: scale(.94);
+}
+@keyframes kermit-message-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes kermit-dot {
+  0%, 60%, 100% { opacity: .35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes kermit-open {
+  from {
+    opacity: 0;
+    clip-path: circle(29px at var(--kermit-origin-x) var(--kermit-origin-y));
+  }
+  to {
+    opacity: 1;
+    clip-path: circle(140% at var(--kermit-origin-x) var(--kermit-origin-y));
+  }
+}
+@media (min-width: 1200px) {
+  .kermit-launcher {
+    bottom: 24px;
+    right: 24px;
+  }
+}
+@media (max-width: 600px) {
+  :root .sheet.kermit-dialog {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    height: min(680px, calc(100dvh - 24px));
+    --kermit-origin-x: calc(100% - 37px);
+    --kermit-origin-y: calc(100% - 103px - env(safe-area-inset-bottom));
+  }
+  .kermit-footer {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root .kermit-chat *,
+  .kermit-launcher,
+  .kermit-attachments,
+  :root .sheet.kermit-dialog[open] {
+    animation: none;
+    transition: none;
+  }
+}

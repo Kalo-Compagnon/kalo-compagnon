@@ -4,6 +4,7 @@ import { cloud } from "./cloud";
 import { mergeImport } from "./transfer";
 import { initialState, type State, type Settings, seedFoods } from "./domain";
 import { sharedFood } from "./shared-food";
+import { sharedMeal, type SharedMeal } from "./shared-meal";
 export type Payload = unknown;
 export interface Doc {
   key: string;
@@ -65,6 +66,35 @@ export const docsToState = (docs: Doc[]): State => {
       isFavorite: personal?.isFavorite ?? false,
       usageCount: personal?.usageCount ?? 0,
       lastUsedAt: personal?.lastUsedAt,
+    });
+  }
+  for (const d of docs) {
+    if (!d.key.startsWith("recipe/")) continue;
+    const id = d.key.slice(7);
+    const personal = s.meals.find((m) => m.id === id);
+    // A personal batch is historical: shared edits must not change its servings.
+    if (personal?.portionTracking) continue;
+    s.meals = s.meals.filter((m) => m.id !== id);
+    if (!d.value) continue;
+    const recipe = d.value as SharedMeal;
+    for (const food of recipe.ingredientFoods) {
+      if (!s.foods.some((f) => f.id === food.id))
+        s.foods.push({
+          ...food,
+          isFavorite: false,
+          usageCount: 0,
+        } as State["foods"][number]);
+    }
+    const { ingredientFoods: _foods, ...definition } = recipe;
+    s.meals.push({
+      ...definition,
+      isFavorite: personal?.isFavorite ?? false,
+      usageCount: personal?.usageCount ?? 0,
+      lastUsedAt: personal?.lastUsedAt,
+      notes: personal?.notes,
+      imagePath: personal?.imagePath,
+      createdAt: personal?.createdAt ?? 0,
+      portions: 1,
     });
   }
   // New per-zone records override legacy values embedded in a day document.
@@ -147,12 +177,38 @@ export class Repository {
     return this.run(async () => {
       const s = this.state;
       const previous = new Map(s.foods.map((f) => [f.id, sharedFood(f)]));
+      const previousMeals = new Map(
+        s.meals.map((m) => [m.id, { meal: m, value: sharedMeal(m, s.foods) }]),
+      );
       change(s);
       const values = stateToValues(s),
         next = this.docs.map((d) => ({ ...d }));
       // Retain the shared documents alongside private ones, with separate RPCs.
       for (const d of this.docs)
-        if (d.key.startsWith("catalog/")) values.set(d.key, d.value);
+        if (d.key.startsWith("catalog/") || d.key.startsWith("recipe/"))
+          values.set(d.key, d.value);
+      for (const meal of s.meals) {
+        const value = sharedMeal(meal, s.foods);
+        const changed =
+          JSON.stringify(value) !==
+          JSON.stringify(previousMeals.get(meal.id)?.value);
+        if (value && changed && !meal.portionTracking)
+          values.set(`recipe/${meal.id}`, value);
+        if (
+          !changed &&
+          !meal.portionTracking &&
+          !meal.isFavorite &&
+          !meal.usageCount &&
+          !meal.lastUsedAt &&
+          !this.docs.some((d) => d.key === `meal/${meal.id}`) &&
+          this.docs.some((d) => d.key === `recipe/${meal.id}`)
+        )
+          values.delete(`meal/${meal.id}`);
+      }
+      for (const [id, previous] of previousMeals) {
+        if (!previous.meal.portionTracking && !s.meals.some((m) => m.id === id))
+          values.set(`recipe/${id}`, null);
+      }
       for (const food of s.foods) {
         const value = sharedFood(food);
         const changed =
@@ -310,19 +366,104 @@ export class Repository {
           this.docs = next;
           this.notify();
         });
+      let recipeError: unknown;
+      try {
+        const recipes: {
+          id: string;
+          value: SharedMeal | null;
+          revision: number;
+        }[] = [];
+        for (let offset = 0; ; offset += 500) {
+          const { data, error } = await client
+            .from("logger_meal_catalog")
+            .select("id,value,revision")
+            .order("id")
+            .range(offset, offset + 499);
+          if (error) throw error;
+          if (data.some((r: { id?: string }) => typeof r.id !== "string"))
+            throw new Error("Invalid shared recipes");
+          recipes.push(...data);
+          if (data.length < 500) break;
+        }
+        await this.run(async () => {
+          if (this.scope !== scope) return;
+          const next = structuredClone(this.docs);
+          // Preserve offline edits made before common recipes existed.
+          const localState = docsToState(structuredClone(next));
+          for (const d of this.docs) {
+            if (!d.pending || !d.key.startsWith("meal/") || !d.value) continue;
+            const meal = d.value as State["meals"][number];
+            const value = sharedMeal(meal, localState.foods);
+            if (
+              value &&
+              !meal.portionTracking &&
+              !next.some((r) => r.key === `recipe/${meal.id}`)
+            )
+              next.push({
+                key: `recipe/${meal.id}`,
+                value,
+                revision: 0,
+                pending: true,
+              });
+          }
+          for (const row of recipes) {
+            const remote = {
+              key: `recipe/${row.id}`,
+              value: row.value,
+              revision: row.revision,
+            };
+            const local = next.find((d) => d.key === remote.key);
+            if (!local) next.push({ ...remote, pending: false });
+            else if (row.revision > local.revision) {
+              if (
+                local.pending &&
+                JSON.stringify(local.value) !== JSON.stringify(row.value)
+              )
+                local.conflict = { value: row.value, revision: row.revision };
+              else
+                Object.assign(local, remote, {
+                  pending: false,
+                  conflict: undefined,
+                });
+            }
+          }
+          const state = docsToState(structuredClone(next));
+          for (const meal of state.meals) {
+            const value = sharedMeal(meal, state.foods);
+            if (value && !next.some((d) => d.key === `recipe/${meal.id}`))
+              next.push({
+                key: `recipe/${meal.id}`,
+                value,
+                revision: 0,
+                pending: true,
+              });
+          }
+          await (await db).put("documents", next, scope);
+          this.docs = next;
+          this.notify();
+        });
+      } catch (error) {
+        recipeError = error;
+      }
       for (const snapshot of structuredClone(this.docs).filter(
         (d) =>
           d.pending &&
           !d.conflict &&
-          (!catalogueError || !d.key.startsWith("catalog/")),
+          (!catalogueError || !d.key.startsWith("catalog/")) &&
+          (!recipeError || !d.key.startsWith("recipe/")),
       )) {
         if (this.scope !== scope) break;
         const shared = snapshot.key.startsWith("catalog/");
+        const recipe = snapshot.key.startsWith("recipe/");
         const { data, error } = await client.rpc(
-          shared ? "logger_catalog_put" : "logger_put",
+          recipe
+            ? "logger_meal_catalog_put"
+            : shared
+              ? "logger_catalog_put"
+              : "logger_put",
           {
-            ...(shared
-              ? { p_id: snapshot.key.slice(8) }
+            ...(shared || recipe
+              ? { p_id: snapshot.key.slice(recipe ? 7 : 8) }
               : { p_key: snapshot.key }),
             p_value: snapshot.value,
             p_revision: snapshot.revision,
@@ -347,6 +488,7 @@ export class Repository {
         });
       }
       if (catalogueError) throw catalogueError;
+      if (recipeError) throw recipeError;
       if (this.scope === scope)
         this.status = this.docs.some((d) => d.conflict)
           ? "Conflit à résoudre dans Synchronisation"

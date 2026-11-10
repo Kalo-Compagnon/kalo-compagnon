@@ -19,6 +19,7 @@ import {
 import { Context } from "./ui";
 import { Global } from "./Global";
 import { Meals } from "./Meals";
+import Kermit from "./Kermit";
 import { Measurements } from "./Measurements";
 import { Activity } from "./Activity";
 import { Duo } from "./Duo";
@@ -26,6 +27,7 @@ import { Account, DataScreen } from "./Settings";
 import { Profile } from "./Profile";
 import { Appearance, applyAppearance, defaultHaloColor } from "./Appearance";
 import { updateApplicationIcons } from "./app-icons";
+import { enableHorizontalWheel } from "./horizontal-scroll";
 const tabs = [
   ["global", "Accueil", "ic_home"],
   ["meals", "Repas", "ic_meat"],
@@ -33,6 +35,7 @@ const tabs = [
   ["duo", "Duo", "ic_heart"],
 ];
 export default function App() {
+  useEffect(() => enableHorizontalWheel(document.getElementById("root")!), []);
   const [, render] = useState(0),
     [ready, setReady] = useState(false),
     [fatal, setFatal] = useState(""),
@@ -46,6 +49,7 @@ export default function App() {
     [message, setMessage] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   const accountSheet = isValidElement(sheet) && sheet.type === Account;
+  const kermitSheet = isValidElement(sheet) && sheet.type === Kermit;
   const sheetOpener = useRef<HTMLElement | null>(null);
   const [desktopBody, setDesktopBody] = useState(
     () => window.matchMedia("(min-width: 1200px)").matches,
@@ -69,6 +73,14 @@ export default function App() {
     Object.entries(state.days).map(([d, v]) => [d, v.weightKg]),
   );
   const notify = (s: string) => setMessage(s);
+  const requestSheetClose = () => {
+    if (
+      window.dispatchEvent(
+        new Event("kermit:beforeclose", { cancelable: true }),
+      )
+    )
+      setSheet(null);
+  };
   useEffect(() => repository.subscribe(() => render((v) => v + 1)), []);
   useEffect(() => {
     const apply = () => {
@@ -265,7 +277,7 @@ export default function App() {
         day,
         editDay: setEditing,
         modal: setSheet,
-        close: () => setSheet(null),
+        close: requestSheetClose,
         notify,
         update,
       }}
@@ -461,14 +473,18 @@ export default function App() {
       )}
       <dialog
         ref={dialog}
-        className={`sheet${accountSheet ? " account-sheet" : ""}`}
+        className={`sheet${accountSheet ? " account-sheet" : ""}${kermitSheet ? " kermit-dialog" : ""}`}
+        aria-label={kermitSheet ? "Kermit Cuisto" : undefined}
         onKeyDown={(e) => {
           if (accountSheet && e.key === "Escape") {
             e.preventDefault();
             setSheet(null);
           }
         }}
-        onCancel={() => setSheet(null)}
+        onCancel={(e) => {
+          e.preventDefault();
+          requestSheetClose();
+        }}
         onClick={(e) => {
           if (e.target === dialog.current) {
             const r = dialog.current.getBoundingClientRect();
@@ -478,7 +494,7 @@ export default function App() {
               e.clientX < r.left ||
               e.clientX > r.right
             )
-              setSheet(null);
+              requestSheetClose();
           }
         }}
       >

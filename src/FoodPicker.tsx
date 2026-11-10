@@ -14,6 +14,7 @@ import {
 } from "./domain";
 import MealCalculator, { type DraftMealPart } from "./MealCalculator";
 import MealPortions from "./MealPortions";
+import { mealRecipeDraft } from "./meal-draft";
 import { SwipeActions } from "./SwipeActions";
 import {
   internalFood,
@@ -134,10 +135,6 @@ export default function FoodPicker({
         : a.name.localeCompare(b.name, "fr"),
     );
   function loadMeal(meal: Meal, scroll = false) {
-    if (meal.portionTracking) {
-      modal(<MealPortions meal={meal} />);
-      return;
-    }
     const draft = meal.ingredients.map((part) => ({
       id: crypto.randomUUID(),
       food: state.foods.find((f) => f.id === part.foodId),
@@ -151,7 +148,7 @@ export default function FoodPicker({
     }
     const load = () => {
       setParts(draft as DraftMealPart[]);
-      setLoadedMeal(meal);
+      setLoadedMeal(mealRecipeDraft(meal));
       if (scroll)
         requestAnimationFrame(() =>
           pickerRef.current?.querySelector(".meal-calculator")?.scrollIntoView({
@@ -324,14 +321,16 @@ export default function FoodPicker({
                   }}
                 >
                   <p>
-                    {meal.name} sera retiré de tes repas enregistrés. Les repas
-                    déjà ajoutés au journal seront conservés.
+                    {meal.portionTracking
+                      ? `${meal.name} sera retiré de tes préparations personnelles.`
+                      : `${meal.name} sera retiré du catalogue de repas commun pour tous les utilisateurs.`}{" "}
+                    Les repas déjà ajoutés au journal seront conservés.
                   </p>
                 </Confirm>,
               )
             }
           >
-            <div className="food-result meal-result">
+            <div className="food-result meal-result" data-meal-id={meal.id}>
               <div className="food-result-content">
                 <button
                   className="row-main"

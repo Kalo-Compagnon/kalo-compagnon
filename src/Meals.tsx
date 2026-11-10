@@ -6,7 +6,10 @@ import FoodPicker from "./FoodPicker";
 import { ActiveMealPortions } from "./MealPortions";
 import { recalculateMealServings } from "./cooking";
 import { fmtCalories } from "./meal-calorie-details";
+import Kermit from "./Kermit";
+import geminiLogo from "./assets/gemini.svg";
 import {
+  ChefHat,
   Apple,
   Cookie,
   CupSoda,
@@ -14,7 +17,24 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
-function EntryPictogram({ type }: { type: string }) {
+function EntryPictogram({
+  type,
+  gemini = false,
+}: {
+  type: string;
+  gemini?: boolean;
+}) {
+  if (gemini)
+    return (
+      <span
+        className="category-badge meal gemini-badge"
+        role="img"
+        aria-label="Estimation Gemini"
+        title="Estimation Gemini"
+      >
+        <img src={geminiLogo} width={24} height={24} alt="" />
+      </span>
+    );
   const { icon: Icon, label } =
     type === "extra"
       ? { icon: Sparkles, label: "Extra" }
@@ -144,6 +164,14 @@ export function Meals() {
           />
         </section>
         <ActiveMealPortions />
+        <button
+          className="kermit-launcher primary"
+          aria-label="Kermit Cuisto"
+          title="Kermit Cuisto"
+          onClick={() => modal(<Kermit />)}
+        >
+          <ChefHat size={27} strokeWidth={1.8} aria-hidden="true" />
+        </button>
       </div>
       <section className="meals-history" aria-labelledby="meals-history-title">
         <h2 id="meals-history-title" className="timeline-heading">
@@ -183,7 +211,10 @@ export function Meals() {
               }
             >
               <div className="entry">
-                <EntryPictogram type={e.type} />
+                <EntryPictogram
+                  type={e.type}
+                  gemini={e.id.startsWith("kermit-")}
+                />
                 <div className="entry-text">
                   <strong>
                     {e.foodName}
@@ -201,15 +232,17 @@ export function Meals() {
                       ? "À estimer"
                       : `${fmtCalories(e.calories)} kcal${e.mealEstimate ? " estimées" : ""}`}
                   </b>
-                  <small>
-                    {e.proteinGrams != null
-                      ? `P ${fmt(e.proteinGrams ?? 0)} g · G ${fmt(e.carbsGrams ?? 0)} g · L ${fmt(e.fatGrams ?? 0)} g · `
-                      : ""}
-                    {e.note ||
-                      (e.type === "extra"
+                  {(e.proteinGrams != null ||
+                    (e.type === "extra" && e.calories === null)) && (
+                    <small>
+                      {e.proteinGrams != null
+                        ? `P ${fmt(e.proteinGrams ?? 0)} g · G ${fmt(e.carbsGrams ?? 0)} g · L ${fmt(e.fatGrams ?? 0)} g`
+                        : ""}
+                      {e.type === "extra" && e.calories === null
                         ? "Touchez pour compléter"
-                        : "Ajouté en 1 clic")}
-                  </small>
+                        : ""}
+                    </small>
+                  )}
                 </div>
                 {e.imagePath?.startsWith("data:image/") && (
                   <img

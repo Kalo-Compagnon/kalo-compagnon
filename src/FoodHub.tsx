@@ -1,5 +1,5 @@
 import FoodPicker from "./FoodPicker";
-import MealPortions from "./MealPortions";
+import { mealRecipeDraft } from "./meal-draft";
 import { cookingTypes } from "./cooking";
 import {
   fmtCalories,
@@ -161,6 +161,9 @@ export function ExtraEditor({
             </p>
           </section>
         )}
+        {isMeal && entry?.id.startsWith("kermit-") && entry.note && (
+          <p className="note kermit-text">{entry.note}</p>
+        )}
         <NumberField
           label={
             isMeal
@@ -225,7 +228,7 @@ export function FoodHub({
   }
   function startComposer(value: Meal | null) {
     setPickerView("foods");
-    setMeal(value);
+    setMeal(value ? mealRecipeDraft(value) : null);
     setName(value?.name ?? "");
     setParts(structuredClone(value?.ingredients ?? []));
     setPage("composer");
@@ -350,7 +353,7 @@ export function FoodHub({
             <div key={m.id}>
               {show && <h3 className="group-title">{group}</h3>}
               <ActionRow
-                onClick={() => modal(<MealPortions meal={m} />)}
+                onClick={() => startComposer(m)}
                 onFavorite={() =>
                   void update((s) => {
                     const v = s.meals.find((x) => x.id === m.id)!;

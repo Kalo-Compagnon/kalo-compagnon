@@ -302,6 +302,43 @@ try {
     await expect(entry).toContainText("270 kcal");
     await expect(entry).not.toContainText("estimées");
   }
+  // A tracked/finished recipe loads into the normal calculator on row click.
+  // Only the explicit portions button opens the historical batch.
+  await page.getByRole("button", { name: "Afficher les repas enregistrés", exact: true }).click();
+  const trackedId = await page.evaluate(async () => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("logger-web-v2");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const rows = await new Promise((resolve, reject) => {
+      const request = database.transaction("documents").objectStore("documents").get("guest");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    database.close();
+    return rows.find(d => d.key.startsWith("meal/") && d.value?.portionTracking?.finished)?.value.id;
+  });
+  assert.ok(trackedId);
+  const trackedRow = page.locator(`.meal-result[data-meal-id="${trackedId}"]`);
+  await trackedRow.getByRole("button", { name: "Préparer Déjeuner QA", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(calculator.getByLabel("Nom du repas (facultatif)")).toHaveValue("Déjeuner QA");
+  await calculator.getByRole("spinbutton").first().fill("1");
+  await expect(calculator.getByLabel("Total du repas")).toHaveText("360 kcal");
+  await calculator.getByRole("button", { name: "Vider le repas" }).click();
+  await trackedRow.getByRole("button", { name: "Choisir les portions de Déjeuner QA", exact: true }).click();
+  await expect(dialog).toContainText("Plat terminé · calories définitives");
+  await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
+  await trackedRow.getByRole("button", { name: "Préparer Déjeuner QA", exact: true }).click();
+  await calculator.getByRole("spinbutton").first().fill("1");
+  await calculator.getByRole("button", { name: "Ajouter le repas", exact: true }).click();
+  await expect(calculator.getByLabel("Total du repas")).toHaveText("0 kcal");
+  await expect(page.locator(".entry").filter({ hasText: "100 g" })).toHaveCount(2);
+  for (const entry of await page.locator(".entry").filter({ hasText: "100 g" }).all()) {
+    await expect(entry).toContainText("270 kcal");
+  }
+  await expect(page.getByRole("region", { name: "Portions en cours" })).toHaveCount(0);
   console.log(
     "Meal calculator: quantities, units, removal, deferred journal entry, persistence and responsive layout OK",
   );

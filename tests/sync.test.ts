@@ -77,7 +77,7 @@ function backend() {
   };
   const client = {
     from: (table: string) =>
-      table === "logger_food_catalog"
+      table === "logger_food_catalog" || table === "logger_meal_catalog"
         ? {
             select() {
               return this;
