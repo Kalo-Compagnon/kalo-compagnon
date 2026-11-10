@@ -5,6 +5,7 @@ import { useState } from "react";
 import FoodPicker from "./FoodPicker";
 import { ActiveMealPortions } from "./MealPortions";
 import { recalculateMealServings } from "./cooking";
+import { fmtCalories } from "./meal-calorie-details";
 import {
   Apple,
   Cookie,
@@ -198,7 +199,7 @@ export function Meals() {
                   <b className={e.calories === null ? "yellow" : "pink"}>
                     {e.calories === null
                       ? "À estimer"
-                      : `${fmt(e.calories)} kcal${e.mealEstimate ? " estimées" : ""}`}
+                      : `${fmtCalories(e.calories)} kcal${e.mealEstimate ? " estimées" : ""}`}
                   </b>
                   <small>
                     {e.proteinGrams != null

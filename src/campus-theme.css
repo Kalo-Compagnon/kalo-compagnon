@@ -507,6 +507,8 @@ progress::-moz-progress-bar {
   background: #24213366;
   backdrop-filter: blur(4px);
 }
+.account-sheet-backdrop { position: fixed; inset: 0; z-index: 1100; background: #24213366; backdrop-filter: blur(4px); }
+.sheet.account-sheet { z-index: 1101; }
 .sheet-handle {
   background: #d4d0df;
 }
@@ -757,6 +759,32 @@ progress::-moz-progress-bar {
 .food-attribution a { color: inherit; }
 .meal-food-picker { padding: 20px 24px; margin-top: 18px; }
 .meal-food-picker > h2 { font-size: 18px; margin-bottom: 12px; }
+.portion-editor { display: grid; gap: 24px; padding-top: 8px; line-height: 1.5; }
+.sheet .portion-form { gap: 20px; }
+.portion-editor p { margin: 0; }
+.portion-fields { display: grid; gap: 20px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.portion-editor .portion-hint { color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.5; }
+.portion-total-option { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.portion-total-option summary { cursor: pointer; font-size: 14px; }
+.portion-total-fields { display: grid; gap: 12px; padding-top: 16px; }
+.portion-last { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 14px; }
+.portion-last input { flex: 0 0 auto; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+.portion-last small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.portion-summary { border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.portion-summary dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.portion-summary dt { color: var(--muted); font-size: 12px; }
+.portion-summary dd { margin: 6px 0 0; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.portion-calories { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 16px !important; font-size: 14px; }
+.portion-calories strong { color: var(--accent); font-size: 18px; }
+.portion-finish { display: grid; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px; }
+.portion-finish > p:first-child { font-size: 14px; }
+.portion-finish .portion-hint { margin-top: 0; text-align: center; }
+.meal-calorie-details { margin: 16px 0; }
+.meal-calorie-details dl { margin: 12px 0; }
+.meal-calorie-details dl > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.meal-calorie-details dt { min-width: 0; overflow-wrap: anywhere; }
+.meal-calorie-details dt small { display: block; color: var(--muted); margin-top: 4px; }
+.meal-calorie-details dd { margin: 0; flex: 0 0 auto; font-weight: 700; }
 .active-meal-portions { padding: 20px; margin-top: 18px; }
 .active-meal-portions h2 { font-size: 18px; margin-bottom: 12px; }
 .active-meal-portion { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }

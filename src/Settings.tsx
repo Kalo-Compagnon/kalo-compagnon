@@ -282,7 +282,8 @@ export function Account() {
             <Field
               label="Adresse e-mail"
               type="email"
-              autoComplete="email"
+              name="username"
+              autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -290,6 +291,7 @@ export function Account() {
             <Field
               label="Mot de passe"
               type="password"
+              name="password"
               autoComplete={signup ? "new-password" : "current-password"}
               minLength={8}
               required

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button, NumberField, Sheet, num, useApp } from "./ui";
 import { fmt, type Meal } from "./domain";
+import { fmtCalories } from "./meal-calorie-details";
 import {
   addMealServing,
   estimateCookedWeight,
@@ -90,112 +91,157 @@ export default function MealPortions({ meal }: { meal: Meal }) {
     modal(<MealPortions key={next.id} meal={next} />);
   }
   return (
-    <Sheet
-      title={"Portions · " + meal.name}
-      subtitle="Pèse ton assiette, le reste est suivi automatiquement."
-    >
-      {finished || legacy ? (
-        <>
-          <p>
-            {finished
-              ? "Plat terminé. Le calcul définitif est enregistré."
-              : "Ce repas a déjà été consommé avec l’ancien suivi. Démarre une nouvelle préparation pour peser tes assiettes."}
-          </p>
-          <Button primary onClick={() => void newPreparation()}>
-            Cuisiner à nouveau ce plat
-          </Button>
-        </>
-      ) : (
-        <>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (valid) void perform("add");
-            }}
-          >
-            <fieldset disabled={saving}>
-              <NumberField
-                label="Poids de mon assiette (g, sans l’assiette vide)"
-                value={amount}
-                min={0.01}
-                required
-                onChange={setAmount}
-              />
-              <details>
-                <summary>J’ai pesé le plat entier (facultatif)</summary>
-                <NumberField
-                  label="Poids total du plat cuit (g)"
-                  value={weight}
-                  min={0.01}
-                  onChange={setWeight}
-                />
-                {current.portionTracking && (
-                  <Button
-                    disabled={!validWeight || !measured || saving}
-                    onClick={() => void perform("weight")}
-                  >
-                    Corriger le poids total
-                  </Button>
-                )}
-              </details>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={last}
-                  onChange={(e) => setLast(e.target.checked)}
-                />
-                C’est la dernière assiette, tout le plat a été mangé
-              </label>
-            </fieldset>
-            <p>
-              {measured
-                ? "Poids total mesuré : " + fmt(measured) + " g"
-                : estimate
-                  ? "Poids total estimé : environ " + fmt(total) + " g"
-                  : "Indique le poids total : un ingrédient n’a pas de poids connu."}
+    <Sheet title={"Portions · " + meal.name}>
+      <div className="portion-editor">
+        {finished || legacy ? (
+          <>
+            <p className="portion-status">
+              {finished
+                ? "Plat terminé · calories définitives"
+                : "Ce plat utilise l’ancien suivi."}
             </p>
-            {!measured && (
-              <p>
-                Calories provisoires. Quand toutes les assiettes auront été
-                pesées, termine le plat : leurs poids seront additionnés et les
-                calories de chaque assiette recalculées, même les jours
-                précédents.
-              </p>
-            )}
-            {valid && (
-              <p aria-live="polite">
-                {fmt(
-                  (current.cachedCalories * num(amount)) /
-                    (last ? eaten + num(amount) : total),
-                )}{" "}
-                kcal {last || measured ? "" : "estimées"} ·{" "}
-                {last
-                  ? "plat terminé après cette assiette"
-                  : "reste " +
-                    (measured ? "" : "estimé ") +
-                    ": " +
-                    fmt(Math.max(0, total - eaten - num(amount))) +
-                    " g"}
-              </p>
-            )}
-            <Button primary type="submit" disabled={!valid || saving}>
-              Ajouter mon assiette
+            <Button primary onClick={() => void newPreparation()}>
+              Cuisiner à nouveau ce plat
             </Button>
-          </form>
-          {current.portionTracking && eaten > 0 && (
-            <>
-              <p>
-                {fmt(eaten)} g déjà mangés. Valide seulement si toutes les
-                assiettes du plat ont été enregistrées, y compris celles
-                partagées.
-              </p>
-              <Button disabled={saving} onClick={() => void perform("finish")}>
-                Tout a été mangé : terminer le plat
+          </>
+        ) : (
+          <>
+            <form
+              className="portion-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (valid) void perform("add");
+              }}
+            >
+              <fieldset className="portion-fields" disabled={saving}>
+                <div>
+                  <NumberField
+                    label="Poids mangé (g)"
+                    value={amount}
+                    min={0.01}
+                    required
+                    onChange={setAmount}
+                    placeholder="Ex. : 250"
+                  />
+                  <p className="portion-hint">Sans le poids de l’assiette.</p>
+                </div>
+                <details className="portion-total-option">
+                  <summary>J’ai pesé le plat entier</summary>
+                  <div className="portion-total-fields">
+                    <NumberField
+                      label="Poids total du plat cuit (g)"
+                      value={weight}
+                      min={0.01}
+                      onChange={setWeight}
+                    />
+                    {current.portionTracking && (
+                      <Button
+                        disabled={!validWeight || !measured || saving}
+                        onClick={() => void perform("weight")}
+                      >
+                        Corriger le poids total
+                      </Button>
+                    )}
+                  </div>
+                </details>
+                <label className="portion-last">
+                  <input
+                    type="checkbox"
+                    checked={last}
+                    onChange={(e) => setLast(e.target.checked)}
+                  />
+                  <span>
+                    Dernière assiette<small>Le plat sera terminé.</small>
+                  </span>
+                </label>
+              </fieldset>
+              <div className="portion-summary" aria-live="polite">
+                <dl>
+                  <div>
+                    <dt>
+                      {measured ? "Poids total mesuré" : "Poids total estimé"}
+                    </dt>
+                    <dd>
+                      {total > 0
+                        ? (measured ? "" : "≈ ") + fmt(total) + " g"
+                        : "À renseigner"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{last && valid ? "Après cette assiette" : "Reste"}</dt>
+                    <dd>
+                      {last && valid
+                        ? "Plat terminé"
+                        : total > 0
+                          ? (measured ? "" : "≈ ") +
+                            fmt(
+                              Math.max(0, total - eaten - (num(amount) || 0)),
+                            ) +
+                            " g"
+                          : "—"}
+                    </dd>
+                  </div>
+                </dl>
+                {valid && (
+                  <p className="portion-calories">
+                    <span>Cette assiette</span>
+                    <strong>
+                      {fmtCalories(
+                        (current.cachedCalories * num(amount)) /
+                          (last ? eaten + num(amount) : total),
+                      )}{" "}
+                      kcal
+                    </strong>
+                  </p>
+                )}
+                {!measured && estimate != null && !last && (
+                  <p className="portion-hint">
+                    <strong>Calories provisoires.</strong> Recalculées à la fin
+                    du plat, pour toutes les assiettes.
+                  </p>
+                )}
+                {estimate == null && !measured && (
+                  <p className="portion-hint">
+                    Renseigne le poids total pour ce plat.
+                  </p>
+                )}
+                {!validWeight && (
+                  <p role="alert">
+                    Le poids total doit couvrir les assiettes déjà mangées.
+                  </p>
+                )}
+                {measured != null &&
+                  validWeight &&
+                  num(amount) > 0 &&
+                  eaten + num(amount) > measured && (
+                    <p role="alert">
+                      Cette assiette dépasse le reste disponible.
+                    </p>
+                  )}
+              </div>
+              <Button primary type="submit" disabled={!valid || saving}>
+                Ajouter mon assiette
               </Button>
-            </>
-          )}
-        </>
-      )}
+            </form>
+            {current.portionTracking && eaten > 0 && (
+              <div className="portion-finish">
+                <p>
+                  <strong>{fmt(eaten)} g</strong> déjà mangés
+                </p>
+                <Button
+                  disabled={saving}
+                  onClick={() => void perform("finish")}
+                >
+                  Terminer le plat
+                </Button>
+                <p className="portion-hint">
+                  Toutes les assiettes doivent être enregistrées.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </Sheet>
   );
 }

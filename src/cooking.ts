@@ -1,4 +1,8 @@
 import { mealEntry, type Food, type Meal, type State } from "./domain";
+import {
+  recipeCalorieDetails,
+  scaleCalorieDetails,
+} from "./meal-calorie-details";
 
 // Approximate dry-to-cooked mass yields, not calorie multipliers.
 // Pasta: USDA Food Buying Guide, Section 4, Grains (spaghetti).
@@ -45,6 +49,11 @@ export function trackingWeight(meal: Meal, entries: State["entries"]): number {
 
 export function recalculateMealServings(state: State, meal: Meal) {
   const total = trackingWeight(meal, state.entries);
+  if (meal.portionTracking && !meal.portionTracking.calorieDetails)
+    meal.portionTracking.calorieDetails = recipeCalorieDetails(
+      meal,
+      state.foods,
+    );
   if (!(total > 0)) throw new Error("Poids total manquant");
   for (const entry of state.entries.filter(
     (e) => e.mealId === meal.id && e.mealServingGrams != null,
@@ -66,6 +75,22 @@ export function recalculateMealServings(state: State, meal: Meal) {
     entry.fatGrams = nutrition.fatGrams;
     entry.mealPortions = ratio * (meal.portions ?? 1);
     entry.mealEstimate = !meal.cookedWeightGrams;
+    if (meal.portionTracking?.calorieDetails)
+      entry.calorieDetails = scaleCalorieDetails(
+        meal.portionTracking.calorieDetails,
+        ratio,
+      );
+    if (entry.calorieDetails?.length) {
+      const detailTotal = entry.calorieDetails.reduce(
+        (n, p) => n + p.calories,
+        0,
+      );
+      if (detailTotal > 0 && entry.calories != null)
+        entry.calorieDetails = entry.calorieDetails.map((p) => ({
+          ...p,
+          calories: (p.calories * entry.calories!) / detailTotal,
+        }));
+    }
   }
 }
 

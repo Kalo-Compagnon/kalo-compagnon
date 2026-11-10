@@ -233,9 +233,7 @@ try {
   await dialog
     .getByRole("button", { name: "Cuisiner à nouveau ce plat" })
     .click();
-  await dialog
-    .getByLabel("Poids de mon assiette (g, sans l’assiette vide)")
-    .fill("100");
+  await dialog.getByLabel("Poids mangé (g)").fill("100");
   await expect(dialog).toContainText("Poids total estimé");
   await expect(dialog).toContainText("711 g");
   await dialog
@@ -247,6 +245,22 @@ try {
   await expect(
     page.locator(".entry").filter({ hasText: "100 g" }),
   ).toContainText("estimées");
+  await page.locator(".entry").filter({ hasText: "100 g" }).click();
+  await expect(dialog.getByLabel("Courte note (facultatif)")).toHaveCount(0);
+  await expect(
+    dialog.getByRole("region", { name: "Détail des calories" }),
+  ).toBeVisible();
+  await expect(dialog.getByLabel("Total des calories (kcal)")).toHaveValue(
+    "75.95",
+  );
+  await expect(dialog.locator(".meal-calorie-details dd")).toHaveCount(2);
+  for (const value of await dialog
+    .locator(".meal-calorie-details dd")
+    .allTextContents())
+    assert.match(value, /^\d+(?:,\d{1,2})? kcal$/);
+  await dialog
+    .getByRole("button", { name: "Enregistrer", exact: true })
+    .click();
   for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 });
     const pickerBox = await page.locator(".meal-food-picker").boundingBox();
@@ -268,11 +282,9 @@ try {
     page.getByRole("region", { name: "Portions en cours" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "½ Portions", exact: true }).click();
+  await dialog.getByLabel("Poids mangé (g)").fill("100");
   await dialog
-    .getByLabel("Poids de mon assiette (g, sans l’assiette vide)")
-    .fill("100");
-  await dialog
-    .getByLabel("C’est la dernière assiette, tout le plat a été mangé")
+    .getByRole("checkbox", { name: "Dernière assiette", exact: false })
     .check();
   await dialog
     .getByRole("button", { name: "Ajouter mon assiette", exact: true })

@@ -158,6 +158,7 @@ export function NumberField({
   max,
   required = false,
   step = "any",
+  placeholder,
 }: {
   label: string;
   value: number | string;
@@ -166,6 +167,7 @@ export function NumberField({
   max?: number;
   required?: boolean;
   step?: string | number;
+  placeholder?: string;
 }) {
   return (
     <Field
@@ -177,6 +179,7 @@ export function NumberField({
       step={step}
       required={required}
       value={value}
+      placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
     />
   );

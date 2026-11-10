@@ -1,5 +1,6 @@
 import {
   useCallback,
+  isValidElement,
   useEffect,
   useRef,
   useState,
@@ -44,6 +45,8 @@ export default function App() {
     [sheet, setSheet] = useState<ReactNode>(null),
     [message, setMessage] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
+  const accountSheet = isValidElement(sheet) && sheet.type === Account;
+  const sheetOpener = useRef<HTMLElement | null>(null);
   const [desktopBody, setDesktopBody] = useState(
     () => window.matchMedia("(min-width: 1200px)").matches,
   );
@@ -191,17 +194,26 @@ export default function App() {
     weightSignature,
   ]);
   useEffect(() => {
+    const element = dialog.current;
     if (sheet) {
-      dialog.current?.showModal();
+      if (!element?.open)
+        sheetOpener.current = document.activeElement as HTMLElement | null;
+      if (element?.open) element.close();
+      // Password-manager panels are injected outside this dialog. Native modal
+      // inertness would prevent clicking them, regardless of their z-index.
+      if (accountSheet) element?.show();
+      else element?.showModal();
       document.body.style.overflow = "hidden";
     } else {
-      dialog.current?.close();
+      element?.close();
       document.body.style.overflow = "";
+      sheetOpener.current?.focus();
+      sheetOpener.current = null;
     }
     return () => {
       document.body.style.overflow = "";
     };
-  }, [!!sheet]);
+  }, [!!sheet, accountSheet]);
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(""), 7000);
@@ -258,7 +270,10 @@ export default function App() {
         update,
       }}
     >
-      <div className={`app ${editing ? "editing" : ""}`}>
+      <div
+        className={`app ${editing ? "editing" : ""}`}
+        inert={!!sheet && accountSheet}
+      >
         <div
           className="ambient-halo"
           aria-hidden="true"
@@ -437,9 +452,22 @@ export default function App() {
           ))}
         </nav>
       </div>
+      {sheet && accountSheet && (
+        <div
+          className="account-sheet-backdrop"
+          onClick={() => setSheet(null)}
+          aria-hidden="true"
+        />
+      )}
       <dialog
         ref={dialog}
-        className="sheet"
+        className={`sheet${accountSheet ? " account-sheet" : ""}`}
+        onKeyDown={(e) => {
+          if (accountSheet && e.key === "Escape") {
+            e.preventDefault();
+            setSheet(null);
+          }
+        }}
         onCancel={() => setSheet(null)}
         onClick={(e) => {
           if (e.target === dialog.current) {

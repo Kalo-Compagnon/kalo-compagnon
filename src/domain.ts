@@ -49,7 +49,14 @@ export function timestamp(day: string) {
   d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
   return d.getTime();
 }
+export interface CalorieDetail {
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+}
 export interface Entry {
+  calorieDetails?: CalorieDetail[];
   mealServingGrams?: number;
   mealEstimate?: boolean;
   mealId?: string;
@@ -103,7 +110,12 @@ export interface Ingredient {
   isVariable: boolean;
 }
 export interface Meal {
-  portionTracking?: { estimatedWeightGrams: number; finished?: boolean };
+  calorieDetails?: CalorieDetail[];
+  portionTracking?: {
+    estimatedWeightGrams: number;
+    finished?: boolean;
+    calorieDetails?: CalorieDetail[];
+  };
   cookedWeightGrams?: number;
   portions?: number;
   id: string;
@@ -464,6 +476,17 @@ export function mealEntry(
     quantityGrams: portions,
     quantityUnit: "portion(s)",
     foodName: meal.name,
+    calorieDetails: parts.length
+      ? parts.map((p) => {
+          const food = foods.find((f) => f.id === p.foodId)!;
+          return {
+            name: foodLabel(food),
+            quantity: p.quantity,
+            unit: food.referenceUnit,
+            calories: nutrients(food, p.quantity)[0],
+          };
+        })
+      : undefined,
     imagePath: meal.imagePath,
     note: parts.length
       ? parts

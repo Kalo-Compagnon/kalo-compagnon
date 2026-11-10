@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Trash2 } from "lucide-react";
+import { recipeCalorieDetails } from "./meal-calorie-details";
 import { Button, Field, NumberField, num, useApp } from "./ui";
 import {
   fmt,
@@ -77,6 +78,10 @@ export default function MealCalculator({
         createdAt: loadedMeal?.createdAt ?? Date.now(),
       };
       await update((s) => {
+        meal.calorieDetails = recipeCalorieDetails(
+          { ...meal, calorieDetails: undefined },
+          foods,
+        );
         if (mode === "add") {
           s.entries.push(mealEntry(meal, foods, day));
           s.meals = s.meals.filter((m) => m.id !== meal.id);

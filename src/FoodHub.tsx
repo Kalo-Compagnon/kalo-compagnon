@@ -1,6 +1,11 @@
 import FoodPicker from "./FoodPicker";
 import MealPortions from "./MealPortions";
 import { cookingTypes } from "./cooking";
+import {
+  fmtCalories,
+  historicalCalorieDetails,
+  recipeCalorieDetails,
+} from "./meal-calorie-details";
 import { useState } from "react";
 import {
   useApp,
@@ -53,17 +58,29 @@ export function ExtraEditor({
   entry?: Entry;
   defaultName?: string;
 }) {
-  const { day, update, close, notify } = useApp();
+  const { state, day, update, close, notify } = useApp();
+  const isMeal = entry?.type === "meal";
+  const detail =
+    entry && isMeal
+      ? historicalCalorieDetails(entry, state.meals, state.foods)
+      : null;
+  const [calChanged, setCalChanged] = useState(false);
   const [name, setName] = useState(entry?.foodName ?? defaultName),
     [note, setNote] = useState(entry?.note ?? ""),
     [cal, setCal] = useState(
-      entry?.calories == null ? "" : String(entry.calories),
+      entry?.calories == null
+        ? ""
+        : String(Math.round(entry.calories * 100) / 100),
     ),
     [photo, setPhoto] = useState(entry?.imagePath ?? "");
   return (
     <Sheet
       title={entry ? `Modifier ${entry.foodName}` : "Ajouter un extra"}
-      subtitle="Tout peut être complété plus tard."
+      subtitle={
+        isMeal
+          ? "Détail des calories de cette assiette."
+          : "Tout peut être complété plus tard."
+      }
     >
       <form
         onSubmit={async (e) => {
@@ -75,8 +92,13 @@ export function ExtraEditor({
               timestamp: entry?.timestamp ?? timestamp(day),
               type: entry?.type ?? "extra",
               foodName: name.trim() || "Extra",
-              note: note.trim(),
-              calories: cal === "" ? null : num(cal),
+              note: isMeal ? entry?.note : note.trim(),
+              calories:
+                !calChanged && entry
+                  ? entry.calories
+                  : cal === ""
+                    ? null
+                    : Math.round(num(cal) * 100) / 100,
               imagePath: photo,
             };
             s.entries = s.entries.filter((x) => x.id !== value.id);
@@ -91,17 +113,67 @@ export function ExtraEditor({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <Field
-          label="Courte note (facultatif)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
+        {!isMeal && (
+          <Field
+            label="Courte note (facultatif)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        )}
+        {detail && (
+          <section
+            className="meal-calorie-details"
+            aria-label="Détail des calories"
+          >
+            <h3>Calories par ingrédient</h3>
+            {detail.reconstructed && (
+              <p className="note">
+                Détail reconstitué à partir de la recette actuelle.
+              </p>
+            )}
+            {detail.parts.length ? (
+              <dl>
+                {detail.parts.map((part, i) => (
+                  <div key={i}>
+                    <dt>
+                      {part.name}
+                      <small>
+                        {fmtCalories(part.quantity)} {part.unit}
+                      </small>
+                    </dt>
+                    <dd>{fmtCalories(part.calories)} kcal</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="note">
+                Le détail des ingrédients n’est pas disponible pour ce repas
+                ancien.
+              </p>
+            )}
+            <p>
+              <strong>
+                Total :{" "}
+                {entry?.calories == null
+                  ? "À estimer"
+                  : `${fmtCalories(entry.calories)} kcal${entry.mealEstimate ? " estimées" : ""}`}
+              </strong>
+            </p>
+          </section>
+        )}
         <NumberField
-          label="Calories estimées (facultatif)"
+          label={
+            isMeal
+              ? "Total des calories (kcal)"
+              : "Calories estimées (facultatif)"
+          }
           value={cal}
-          onChange={setCal}
+          onChange={(value) => {
+            setCal(value);
+            setCalChanged(true);
+          }}
         />
-        <PhotoInput value={photo} onChange={setPhoto} />
+        {!isMeal && <PhotoInput value={photo} onChange={setPhoto} />}
         <Button primary type="submit">
           {entry ? "Enregistrer" : "Ajouter"}
         </Button>
@@ -198,6 +270,7 @@ export function FoodHub({
       };
     await update((s) => {
       s.meals = s.meals.filter((m) => m.id !== value.id);
+      value.calorieDetails = recipeCalorieDetails(value, s.foods);
       s.meals.push(value);
     });
     if (log) await logMeal(value);
@@ -514,10 +587,10 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
     ),
     [values, setValues] = useState(
       [
-        food?.kcalPer100 ?? 0,
-        food?.proteinPer100 ?? 0,
-        food?.carbsPer100 ?? 0,
-        food?.fatPer100 ?? 0,
+        food?.kcalPer100 ?? "",
+        food?.proteinPer100 ?? "",
+        food?.carbsPer100 ?? "",
+        food?.fatPer100 ?? "",
       ].map(String),
     );
   return (
@@ -632,7 +705,7 @@ function FoodForm({ food, done }: { food: Food | null; done: () => void }) {
             key={l}
             label={l}
             value={values[i]}
-            required
+            placeholder="0"
             onChange={(v) => setValues(values.map((x, j) => (i === j ? v : x)))}
           />
         ))}
