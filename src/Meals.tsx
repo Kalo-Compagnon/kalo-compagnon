@@ -45,164 +45,172 @@ export function Meals() {
     spent = expense(state, day),
     delta = sub(spent, food);
   return (
-    <>
-      <button
-        className="card calorie-summary"
-        onClick={() =>
-          modal(
-            <ValueDialog
-              title="Objectif de déficit quotidien"
-              initial={state.settings.deficitGoal}
-              min={1}
-              max={3000}
-              onSave={(v) =>
-                update((s) => {
-                  s.settings.deficitGoal = v;
-                })
-              }
-            />,
-          )
-        }
-      >
-        <span className="label">CALORIES DU JOUR</span>
-        <span className="consumed-row">
-          <strong className="pink">{fmt(food)}</strong>
-          <b className={remaining >= 0 ? "green" : "pink"}>
-            {!budget
-              ? "Budget à calculer"
-              : !budget.possible
-                ? "Déficit à ajuster"
-                : remaining >= 0
-                  ? `${fmt(remaining)} kcal restantes`
-                  : `${fmt(-remaining)} kcal au-dessus du budget`}
-          </b>
-        </span>
-        {budget && budget.possible && (
-          <progress
-            value={Math.min(
-              100,
-              Math.max(0, Math.trunc((food * 100) / Math.max(1, goal))),
-            )}
-            max={100}
-          />
-        )}
-        <span className="target">
-          {budget
-            ? `Budget dynamique : ${fmt(goal)} kcal`
-            : "Renseigne ton métabolisme pour calculer le budget"}
-        </span>
-        <span className="target">
-          Déficit choisi : {fmt(state.settings.deficitGoal)} kcal · modifier
-        </span>
-        {budget && (
-          <span className="target">
-            {fmt(spent)} kcal de dépense estimée −{" "}
-            {fmt(state.settings.deficitGoal)} kcal de déficit
-          </span>
-        )}
-        {budget && !budget.possible && (
-          <span className="target">
-            Le déficit choisi dépasse la dépense estimée de cette journée.
-          </span>
-        )}
-        {budget?.partial && (
-          <span className="target">
-            Estimation partielle · des calories restent à renseigner.
-          </span>
-        )}
-        <b className={`theoretical ${delta >= 0 ? "green" : "pink"}`}>
-          {budget
-            ? `${delta >= 0 ? "Déficit" : "Surplus"} théorique estimé : ${fmt(Math.abs(delta))} kcal`
-            : "Déficit théorique estimé : —"}
-        </b>
-      </button>
-      <section
-        className="card meal-food-picker"
-        aria-labelledby="meal-food-picker-title"
-      >
-        <h2 id="meal-food-picker-title">
-          {pickerView === "meals"
-            ? "Catalogue des repas"
-            : "Ajouter un aliment"}
-        </h2>
-        <FoodPicker
-          query={query}
-          setQuery={setQuery}
-          onViewChange={setPickerView}
-          createMeal={() => modal(<FoodHub initialPage="composer" />)}
-          select={(food) =>
-            modal(<FoodHub initialFood={food} initialPage="quantity" />)
+    <div className="meals-layout">
+      <div className="meals-preparation">
+        <button
+          className="card calorie-summary"
+          onClick={() =>
+            modal(
+              <ValueDialog
+                title="Objectif de déficit quotidien"
+                initial={state.settings.deficitGoal}
+                min={1}
+                max={3000}
+                onSave={(v) =>
+                  update((s) => {
+                    s.settings.deficitGoal = v;
+                  })
+                }
+              />,
+            )
           }
-          create={() => modal(<FoodHub initialPage="food-form" />)}
-          edit={(food) =>
-            modal(<FoodHub initialFood={food} initialPage="food-form" />)
-          }
-        />
-      </section>
-      <h2 className="timeline-heading">Chronologie</h2>
-      {entries.length === 0 ? (
-        <p className="empty">Rien pour l’instant. Ajoute ton premier repas.</p>
-      ) : (
-        entries.map((e) => (
-          <ActionRow
-            key={e.id}
-            onClick={() => modal(<ExtraEditor entry={e} />)}
-            onEdit={() => modal(<ExtraEditor entry={e} />)}
-            onDelete={() =>
-              modal(
-                <Confirm
-                  title="Supprimer cette entrée ?"
-                  action={() =>
-                    update((s) => {
-                      s.entries = s.entries.filter((x) => x.id !== e.id);
-                    })
-                  }
-                >
-                  {e.foodName}
-                </Confirm>,
-              )
-            }
-          >
-            <div className="entry">
-              <EntryPictogram type={e.type} />
-              <div className="entry-text">
-                <strong>
-                  {e.foodName}
-                  {e.quantityGrams != null
-                    ? ` · ${fmt(e.quantityGrams)} ${e.quantityUnit ?? "g"}`
-                    : ""}{" "}
-                  ·{" "}
-                  {new Date(e.timestamp).toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </strong>
-                <b className={e.calories === null ? "yellow" : "pink"}>
-                  {e.calories === null
-                    ? "À estimer"
-                    : `${fmt(e.calories)} kcal`}
-                </b>
-                <small>
-                  {e.proteinGrams != null
-                    ? `P ${fmt(e.proteinGrams ?? 0)} g · G ${fmt(e.carbsGrams ?? 0)} g · L ${fmt(e.fatGrams ?? 0)} g · `
-                    : ""}
-                  {e.note ||
-                    (e.type === "extra"
-                      ? "Touchez pour compléter"
-                      : "Ajouté en 1 clic")}
-                </small>
-              </div>
-              {e.imagePath?.startsWith("data:image/") && (
-                <img
-                  className="entry-photo"
-                  src={e.imagePath}
-                  alt="Photo du repas"
-                />
+        >
+          <span className="label">CALORIES DU JOUR</span>
+          <span className="consumed-row">
+            <strong className="pink">{fmt(food)}</strong>
+            <b className={remaining >= 0 ? "green" : "pink"}>
+              {!budget
+                ? "Budget à calculer"
+                : !budget.possible
+                  ? "Déficit à ajuster"
+                  : remaining >= 0
+                    ? `${fmt(remaining)} kcal restantes`
+                    : `${fmt(-remaining)} kcal au-dessus du budget`}
+            </b>
+          </span>
+          {budget && budget.possible && (
+            <progress
+              value={Math.min(
+                100,
+                Math.max(0, Math.trunc((food * 100) / Math.max(1, goal))),
               )}
-            </div>
-          </ActionRow>
-        ))
-      )}
-    </>
+              max={100}
+            />
+          )}
+          <span className="target">
+            {budget
+              ? `Budget dynamique : ${fmt(goal)} kcal`
+              : "Renseigne ton métabolisme pour calculer le budget"}
+          </span>
+          <span className="target">
+            Déficit choisi : {fmt(state.settings.deficitGoal)} kcal · modifier
+          </span>
+          {budget && (
+            <span className="target">
+              {fmt(spent)} kcal de dépense estimée −{" "}
+              {fmt(state.settings.deficitGoal)} kcal de déficit
+            </span>
+          )}
+          {budget && !budget.possible && (
+            <span className="target">
+              Le déficit choisi dépasse la dépense estimée de cette journée.
+            </span>
+          )}
+          {budget?.partial && (
+            <span className="target">
+              Estimation partielle · des calories restent à renseigner.
+            </span>
+          )}
+          <b className={`theoretical ${delta >= 0 ? "green" : "pink"}`}>
+            {budget
+              ? `${delta >= 0 ? "Déficit" : "Surplus"} théorique estimé : ${fmt(Math.abs(delta))} kcal`
+              : "Déficit théorique estimé : —"}
+          </b>
+        </button>
+        <section
+          className="card meal-food-picker"
+          aria-labelledby="meal-food-picker-title"
+        >
+          <h2 id="meal-food-picker-title">
+            {pickerView === "meals"
+              ? "Catalogue des repas"
+              : "Ajouter un aliment"}
+          </h2>
+          <FoodPicker
+            query={query}
+            setQuery={setQuery}
+            onViewChange={setPickerView}
+            createMeal={() => modal(<FoodHub initialPage="composer" />)}
+            select={(food) =>
+              modal(<FoodHub initialFood={food} initialPage="quantity" />)
+            }
+            create={() => modal(<FoodHub initialPage="food-form" />)}
+            edit={(food) =>
+              modal(<FoodHub initialFood={food} initialPage="food-form" />)
+            }
+          />
+        </section>
+      </div>
+      <section className="meals-history" aria-labelledby="meals-history-title">
+        <h2 id="meals-history-title" className="timeline-heading">
+          Chronologie
+        </h2>
+        {entries.length === 0 ? (
+          <p className="empty">
+            Rien pour l’instant. Ajoute ton premier repas.
+          </p>
+        ) : (
+          entries.map((e) => (
+            <ActionRow
+              key={e.id}
+              onClick={() => modal(<ExtraEditor entry={e} />)}
+              onEdit={() => modal(<ExtraEditor entry={e} />)}
+              onDelete={() =>
+                modal(
+                  <Confirm
+                    title="Supprimer cette entrée ?"
+                    action={() =>
+                      update((s) => {
+                        s.entries = s.entries.filter((x) => x.id !== e.id);
+                      })
+                    }
+                  >
+                    {e.foodName}
+                  </Confirm>,
+                )
+              }
+            >
+              <div className="entry">
+                <EntryPictogram type={e.type} />
+                <div className="entry-text">
+                  <strong>
+                    {e.foodName}
+                    {e.quantityGrams != null
+                      ? ` · ${fmt(e.quantityGrams)} ${e.quantityUnit ?? "g"}`
+                      : ""}{" "}
+                    ·{" "}
+                    {new Date(e.timestamp).toLocaleTimeString("fr-FR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </strong>
+                  <b className={e.calories === null ? "yellow" : "pink"}>
+                    {e.calories === null
+                      ? "À estimer"
+                      : `${fmt(e.calories)} kcal`}
+                  </b>
+                  <small>
+                    {e.proteinGrams != null
+                      ? `P ${fmt(e.proteinGrams ?? 0)} g · G ${fmt(e.carbsGrams ?? 0)} g · L ${fmt(e.fatGrams ?? 0)} g · `
+                      : ""}
+                    {e.note ||
+                      (e.type === "extra"
+                        ? "Touchez pour compléter"
+                        : "Ajouté en 1 clic")}
+                  </small>
+                </div>
+                {e.imagePath?.startsWith("data:image/") && (
+                  <img
+                    className="entry-photo"
+                    src={e.imagePath}
+                    alt="Photo du repas"
+                  />
+                )}
+              </div>
+            </ActionRow>
+          ))
+        )}
+      </section>
+    </div>
   );
 }
