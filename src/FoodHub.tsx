@@ -18,6 +18,7 @@ import {
   type Entry,
   nutrients,
   mealTotals,
+  remainingMealPortions,
   mealEntry,
   fmt,
   mul,
@@ -124,30 +125,44 @@ export function FoodHub({
     [index, setIndex] = useState<number | null>(null),
     [variable, setVariable] = useState(false),
     [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [portions, setPortions] = useState("1");
+  const [eaten, setEaten] = useState("1");
   const back = () => setPage("home");
   const [pickerView, setPickerView] = useState<"foods" | "meals">("foods");
   async function logMeal(value: Meal, amounts: Record<string, number> = {}) {
-    await update((s) => {
-      s.entries.push(mealEntry(value, s.foods, day, amounts));
-      const m = s.meals.find((x) => x.id === value.id);
-      if (m) {
-        m.usageCount++;
-        m.lastUsedAt = timestamp(day);
-      }
-      value.ingredients.forEach((p) => {
-        const food = s.foods.find((x) => x.id === p.foodId);
-        if (food) {
-          food.usageCount++;
-          food.lastUsedAt = Date.now();
+    try {
+      await update((s) => {
+        if (
+          !Number.isFinite(num(eaten)) ||
+          num(eaten) <= 0 ||
+          num(eaten) > remainingMealPortions(value, s.entries)
+        )
+          throw new Error("Pas assez de portions restantes");
+        s.entries.push(mealEntry(value, s.foods, day, amounts, num(eaten)));
+        const m = s.meals.find((x) => x.id === value.id);
+        if (m) {
+          m.usageCount++;
+          m.lastUsedAt = timestamp(day);
         }
+        value.ingredients.forEach((p) => {
+          const food = s.foods.find((x) => x.id === p.foodId);
+          if (food) {
+            food.usageCount++;
+            food.lastUsedAt = Date.now();
+          }
+        });
       });
-    });
-    notify(`${value.name} ajouté`);
-    close();
+      notify(`${value.name} ajouté`);
+      close();
+    } catch (error) {
+      notify((error as Error).message);
+    }
   }
   function startComposer(value: Meal | null) {
     setPickerView("foods");
     setMeal(value);
+    setPortions(String(value?.portions ?? 1));
+    setEaten("1");
     setName(value?.name ?? "");
     setParts(structuredClone(value?.ingredients ?? []));
     setPage("composer");
@@ -160,6 +175,19 @@ export function FoodHub({
     setPage(picking ? "ingredient" : "quantity");
   };
   async function saveMeal(log: boolean) {
+    if (!Number.isFinite(num(portions)) || num(portions) <= 0) {
+      notify("Nombre de portions invalide");
+      return;
+    }
+    if (
+      log &&
+      (!Number.isFinite(num(eaten)) ||
+        num(eaten) <= 0 ||
+        num(eaten) > num(portions))
+    ) {
+      notify("Nombre de portions mangées invalide");
+      return;
+    }
     if (!name.trim() || !parts.length) {
       notify(
         !name.trim()
@@ -173,6 +201,7 @@ export function FoodHub({
         id: meal?.id ?? crypto.randomUUID(),
         name: name.trim(),
         ingredients: parts,
+        portions: num(portions),
         cachedCalories: totals[0],
         cachedProtein: totals[1],
         cachedCarbs: totals[2],
@@ -266,11 +295,10 @@ export function FoodHub({
               {show && <h3 className="group-title">{group}</h3>}
               <ActionRow
                 onClick={() => {
-                  if (m.ingredients.some((p) => p.isVariable)) {
-                    setMeal(m);
-                    setOverrides({});
-                    setPage("variable");
-                  } else void logMeal(m);
+                  setMeal(m);
+                  setEaten("1");
+                  setOverrides({});
+                  setPage("variable");
                 }}
                 onFavorite={() =>
                   void update((s) => {
@@ -316,6 +344,18 @@ export function FoodHub({
             void logMeal(meal, overrides);
           }}
         >
+          <NumberField
+            label="Portions mangées"
+            value={eaten}
+            min={0.01}
+            max={remainingMealPortions(meal, state.entries)}
+            required
+            onChange={setEaten}
+          />
+          <p>
+            {fmt(remainingMealPortions(meal, state.entries))} portion(s)
+            restante(s)
+          </p>
           {meal.ingredients
             .filter((p) => p.isVariable)
             .map((p) => (
@@ -471,6 +511,21 @@ export function FoodHub({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        <NumberField
+          label="Portions préparées (plat entier)"
+          value={portions}
+          min={0.01}
+          required
+          onChange={setPortions}
+        />
+        {!meal && (
+          <NumberField
+            label="Portions mangées"
+            value={eaten}
+            min={0.01}
+            onChange={setEaten}
+          />
+        )}
         {!parts.length && <p>Aucun ingrédient pour l’instant.</p>}
         {parts.map((p, i) => {
           const food = state.foods.find((f) => f.id === p.foodId)!;

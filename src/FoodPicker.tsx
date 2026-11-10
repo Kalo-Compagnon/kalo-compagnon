@@ -9,6 +9,7 @@ import {
   referenceAmount,
   normalize,
   mealTotals,
+  remainingMealPortions,
   type Food,
   type Meal,
 } from "./domain";
@@ -333,7 +334,11 @@ export default function FoodPicker({
                   onClick={() => loadMeal(meal)}
                   aria-label={`Préparer ${meal.name}`}
                 >
-                  <span>{meal.name}</span>
+                  <span>
+                    {meal.name} ·{" "}
+                    {fmt(remainingMealPortions(meal, state.entries))} portion(s)
+                    restante(s)
+                  </span>
                   <small>
                     Repas ·{" "}
                     {fmt(

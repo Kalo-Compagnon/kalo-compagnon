@@ -151,14 +151,12 @@ try {
   await expect(dialog).not.toBeVisible();
   await expect(page.locator(".meal-result")).toHaveCount(2);
   await expect(page.locator(".entry")).toHaveCount(1);
-  let mealRow = page
-    .locator(".meal-swipe")
-    .filter({
-      has: page.getByRole("button", {
-        name: "Préparer Second repas QA",
-        exact: true,
-      }),
-    });
+  let mealRow = page.locator(".meal-swipe").filter({
+    has: page.getByRole("button", {
+      name: "Préparer Second repas QA",
+      exact: true,
+    }),
+  });
   const offset = () =>
     mealRow
       .locator(".swipe-content")
@@ -184,19 +182,20 @@ try {
   await calculator
     .getByLabel("Nom du repas (facultatif)")
     .fill("Second repas modifié");
-  await calculator.getByRole("spinbutton").fill("2");
+  await calculator
+    .locator(".meal-calculator-parts")
+    .getByRole("spinbutton")
+    .fill("2");
   await calculator
     .getByRole("button", { name: "Enregistrer le repas", exact: true })
     .click();
   await expect(page.locator(".meal-result")).toHaveCount(2);
-  mealRow = page
-    .locator(".meal-swipe")
-    .filter({
-      has: page.getByRole("button", {
-        name: "Préparer Second repas modifié",
-        exact: true,
-      }),
-    });
+  mealRow = page.locator(".meal-swipe").filter({
+    has: page.getByRole("button", {
+      name: "Préparer Second repas modifié",
+      exact: true,
+    }),
+  });
   await expect(mealRow).toContainText("360 kcal");
   await dragMeal(100);
   await page.mouse.up();
@@ -219,6 +218,47 @@ try {
   await expect(page.locator(".meal-result")).toHaveCount(1);
   await expect(page.locator(".meal-result")).not.toContainText("Second repas");
   await expect(page.locator(".entry")).toContainText("540 kcal");
+  await page
+    .getByRole("button", { name: "Préparer Déjeuner QA", exact: true })
+    .click();
+  await calculator
+    .getByRole("button", { name: "Cuisiner à nouveau ce plat" })
+    .click();
+  await calculator
+    .getByLabel("Nom du repas (facultatif)")
+    .fill("Plat 4 portions");
+  await calculator.getByLabel("Portions préparées (plat entier)").fill("4");
+  await calculator.getByLabel("Portions mangées", { exact: true }).fill("1");
+  await calculator
+    .getByRole("button", { name: "Ajouter le repas", exact: true })
+    .click();
+  await expect(
+    page.locator(".entry").filter({ hasText: "Plat 4 portions" }),
+  ).toContainText("135 kcal");
+  await expect(
+    page.locator(".meal-result").filter({ hasText: "Plat 4 portions" }),
+  ).toContainText("3 portion(s)");
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Afficher les repas enregistrés",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.locator(".meal-result").filter({ hasText: "Plat 4 portions" }),
+  ).toContainText("3 portion(s)");
+  await page
+    .getByRole("button", { name: "Préparer Plat 4 portions", exact: true })
+    .click();
+  await calculator.getByLabel("Portions mangées", { exact: true }).fill("0.5");
+  await calculator
+    .getByRole("button", { name: "Ajouter le repas", exact: true })
+    .click();
+  await expect(
+    page.locator(".meal-result").filter({ hasText: "Plat 4 portions" }),
+  ).toContainText("2,5 portion(s)");
   console.log(
     "Meal calculator: quantities, units, removal, deferred journal entry, persistence and responsive layout OK",
   );

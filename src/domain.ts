@@ -50,6 +50,8 @@ export function timestamp(day: string) {
   return d.getTime();
 }
 export interface Entry {
+  mealId?: string;
+  mealPortions?: number;
   id: string;
   timestamp: number;
   type: string;
@@ -97,6 +99,7 @@ export interface Ingredient {
   isVariable: boolean;
 }
 export interface Meal {
+  portions?: number;
   id: string;
   name: string;
   ingredients: Ingredient[];
@@ -405,28 +408,55 @@ export function mealTotals(parts: Ingredient[], foods: Food[]): number[] {
   }
   return totals;
 }
+export function remainingMealPortions(
+  meal: Pick<Meal, "id" | "portions">,
+  entries: Entry[],
+): number {
+  return Math.max(
+    0,
+    (meal.portions ?? 1) -
+      entries
+        .filter((e) => e.mealId === meal.id)
+        .reduce((n, e) => n + (e.mealPortions ?? 0), 0),
+  );
+}
 export function mealEntry(
   meal: Meal,
   foods: Food[],
   day: string,
   overrides: Record<string, number> = {},
+  portions = 1,
 ): Entry {
+  const prepared = meal.portions ?? 1;
+  if (
+    !Number.isFinite(portions) ||
+    portions <= 0 ||
+    !Number.isFinite(prepared) ||
+    prepared <= 0 ||
+    portions > prepared
+  )
+    throw new Error("Nombre de portions invalide");
+  const ratio = portions / prepared;
   const parts = meal.ingredients.map((p) => ({
     ...p,
-    quantity: overrides[p.id] ?? p.quantity,
+    quantity: (overrides[p.id] ?? p.quantity) * ratio,
   }));
   const v = parts.length
     ? mealTotals(parts, foods)
     : [
-        meal.cachedCalories,
-        meal.cachedProtein,
-        meal.cachedCarbs,
-        meal.cachedFat,
+        meal.cachedCalories * ratio,
+        meal.cachedProtein * ratio,
+        meal.cachedCarbs * ratio,
+        meal.cachedFat * ratio,
       ];
   return {
     id: crypto.randomUUID(),
     timestamp: timestamp(day),
     type: "meal",
+    mealId: meal.id,
+    mealPortions: portions,
+    quantityGrams: portions,
+    quantityUnit: "portion(s)",
     foodName: meal.name,
     imagePath: meal.imagePath,
     note: parts.length

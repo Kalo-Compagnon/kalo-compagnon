@@ -12,6 +12,7 @@ import {
   foodLabel,
   mealEntry,
   mealTotals,
+  remainingMealPortions,
   nutrients,
   type Food,
   type Meal,
@@ -30,14 +31,22 @@ export default function MealCalculator({
   loadedMeal?: Meal | null;
   onReset?: () => void;
 }) {
-  const { day, update, notify } = useApp();
+  const { state, day, update, notify } = useApp();
+  const [newBatch, setNewBatch] = useState(false);
+  const [portions, setPortions] = useState("1");
+  const [eaten, setEaten] = useState("1");
   const [name, setName] = useState("");
   useEffect(() => {
+    setNewBatch(false);
     setName(loadedMeal?.name ?? "");
+    setPortions(String(loadedMeal?.portions ?? 1));
+    setEaten("1");
   }, [loadedMeal]);
   const [saving, setSaving] = useState(false);
   const submitting = useRef(false);
   const valid =
+    Number.isFinite(num(portions)) &&
+    num(portions) > 0 &&
     parts.length > 0 &&
     parts.every((p) => Number.isFinite(num(p.quantity)) && num(p.quantity) > 0);
   const ingredients = parts.map((p) => ({
@@ -50,14 +59,17 @@ export default function MealCalculator({
   const totals = mealTotals(ingredients, foods);
   async function save(mode: "add" | "save") {
     if (!valid || submitting.current) return;
+    if (mode === "add" && (!Number.isFinite(num(eaten)) || num(eaten) <= 0))
+      return;
     submitting.current = true;
     setSaving(true);
     try {
       const meal: Meal = {
         ...loadedMeal,
-        id: loadedMeal?.id ?? crypto.randomUUID(),
+        id: !newBatch && loadedMeal ? loadedMeal.id : crypto.randomUUID(),
         name: name.trim() || "Mon repas",
         ingredients,
+        portions: num(portions),
         cachedCalories: totals[0],
         cachedProtein: totals[1],
         cachedCarbs: totals[2],
@@ -68,7 +80,11 @@ export default function MealCalculator({
       };
       await update((s) => {
         if (mode === "add") {
-          s.entries.push(mealEntry(meal, foods, day));
+          if (num(eaten) > remainingMealPortions(meal, s.entries))
+            throw new Error("Pas assez de portions restantes");
+          s.entries.push(mealEntry(meal, foods, day, {}, num(eaten)));
+          s.meals = s.meals.filter((m) => m.id !== meal.id);
+          s.meals.push(meal);
           const savedMeal = s.meals.find((m) => m.id === meal.id);
           if (savedMeal) {
             savedMeal.usageCount++;
@@ -92,6 +108,9 @@ export default function MealCalculator({
       });
       setParts([]);
       setName("");
+      setPortions("1");
+      setEaten("1");
+      setNewBatch(false);
       onReset?.();
       notify(mode === "add" ? "Repas ajouté à la journée" : "Repas enregistré");
     } catch (e) {
@@ -166,6 +185,54 @@ export default function MealCalculator({
               </div>
             ))}
           </fieldset>
+          <NumberField
+            label="Portions préparées (plat entier)"
+            value={portions}
+            min={0.01}
+            required
+            onChange={setPortions}
+          />
+          <NumberField
+            label="Portions mangées"
+            value={eaten}
+            min={0.01}
+            max={remainingMealPortions(
+              {
+                id: !newBatch ? (loadedMeal?.id ?? "") : "",
+                portions: num(portions),
+              },
+              state.entries,
+            )}
+            onChange={setEaten}
+          />
+          <p>
+            Quantité mangée :{" "}
+            {fmt((totals[0] * (num(eaten) || 0)) / (num(portions) || 1))} kcal
+          </p>
+          <p>
+            {fmt(totals[0] / (num(portions) || 1))} kcal par portion ·{" "}
+            {fmt(
+              remainingMealPortions(
+                {
+                  id: !newBatch ? (loadedMeal?.id ?? "") : "",
+                  portions: num(portions),
+                },
+                state.entries,
+              ),
+            )}{" "}
+            portion(s) restante(s).
+          </p>
+          {loadedMeal && !newBatch && (
+            <Button disabled={saving} onClick={() => setNewBatch(true)}>
+              Cuisiner à nouveau ce plat
+            </Button>
+          )}
+          {newBatch && (
+            <p>
+              Nouvelle préparation : les portions du plat précédent sont
+              conservées séparément.
+            </p>
+          )}
           <p>Le repas reste en préparation jusqu’à ta validation.</p>
           <div className="meal-calculator-actions">
             <Button primary type="submit" disabled={!valid || saving}>
@@ -183,6 +250,9 @@ export default function MealCalculator({
             onClick={() => {
               setParts([]);
               setName("");
+              setPortions("1");
+              setEaten("1");
+              setNewBatch(false);
               onReset?.();
             }}
           >
