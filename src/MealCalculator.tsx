@@ -160,7 +160,8 @@ export default function MealCalculator({
                 <NumberField
                   label={`Quantité de ${foodLabel(part.food)} (${part.food.referenceUnit})`}
                   value={part.quantity}
-                  min={0.0001}
+                  min={part.food.referenceUnit === "unité" ? 0.5 : 0.0001}
+                  step={part.food.referenceUnit === "unité" ? 0.5 : "any"}
                   required
                   onChange={(quantity) =>
                     setParts((old) =>

@@ -23,25 +23,28 @@ export function BasalFields({
   const age = ageOn(birthDate, day);
   return (
     <>
-      <div className="radio-row">
-        <label>
-          <input
-            type="radio"
-            name="basal-sex"
-            checked={sex === "male"}
-            onChange={() => setSex("male")}
-          />
-          Homme
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="basal-sex"
-            checked={sex === "female"}
-            onChange={() => setSex("female")}
-          />
-          Femme
-        </label>
+      <div role="group" aria-label="Sexe">
+        <p className="field-label">Sexe</p>
+        <div className="radio-row">
+          <label>
+            <input
+              type="radio"
+              name="basal-sex"
+              checked={sex === "male"}
+              onChange={() => setSex("male")}
+            />
+            Homme
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="basal-sex"
+              checked={sex === "female"}
+              onChange={() => setSex("female")}
+            />
+            Femme
+          </label>
+        </div>
       </div>
       <Field
         label="Date de naissance"

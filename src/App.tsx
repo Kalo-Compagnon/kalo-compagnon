@@ -1,11 +1,6 @@
-import {
-  useCallback,
-  isValidElement,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, isValidElement, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { useInlineActions } from "./inline-actions";
 import { repository, supabase } from "./persistence";
 import {
   dayKey,
@@ -45,12 +40,14 @@ export default function App() {
     [demoAccent, setDemoAccent] = useState<string | null>(null),
     [editing, setEditing] = useState<string | null>(null),
     [today, setToday] = useState(dayKey()),
-    [sheet, setSheet] = useState<ReactNode>(null),
     [message, setMessage] = useState("");
-  const dialog = useRef<HTMLDialogElement>(null);
-  const accountSheet = isValidElement(sheet) && sheet.type === Account;
+  const {
+    content: sheet,
+    host: inlineHost,
+    open: setSheet,
+    clear: clearAction,
+  } = useInlineActions();
   const kermitSheet = isValidElement(sheet) && sheet.type === Kermit;
-  const sheetOpener = useRef<HTMLElement | null>(null);
   const [desktopBody, setDesktopBody] = useState(
     () => window.matchMedia("(min-width: 1200px)").matches,
   );
@@ -206,26 +203,8 @@ export default function App() {
     weightSignature,
   ]);
   useEffect(() => {
-    const element = dialog.current;
-    if (sheet) {
-      if (!element?.open)
-        sheetOpener.current = document.activeElement as HTMLElement | null;
-      if (element?.open) element.close();
-      // Password-manager panels are injected outside this dialog. Native modal
-      // inertness would prevent clicking them, regardless of their z-index.
-      if (accountSheet) element?.show();
-      else element?.showModal();
-      document.body.style.overflow = "hidden";
-    } else {
-      element?.close();
-      document.body.style.overflow = "";
-      sheetOpener.current?.focus();
-      sheetOpener.current = null;
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [!!sheet, accountSheet]);
+    clearAction();
+  }, [screen, bodySection, editing, clearAction]);
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(""), 7000);
@@ -282,10 +261,7 @@ export default function App() {
         update,
       }}
     >
-      <div
-        className={`app ${editing ? "editing" : ""}`}
-        inert={!!sheet && accountSheet}
-      >
+      <div className={`app ${editing ? "editing" : ""}`}>
         <div
           className="ambient-halo"
           aria-hidden="true"
@@ -464,42 +440,26 @@ export default function App() {
           ))}
         </nav>
       </div>
-      {sheet && accountSheet && (
-        <div
-          className="account-sheet-backdrop"
-          onClick={() => setSheet(null)}
-          aria-hidden="true"
-        />
-      )}
-      <dialog
-        ref={dialog}
-        className={`sheet${accountSheet ? " account-sheet" : ""}${kermitSheet ? " kermit-dialog" : ""}`}
-        aria-label={kermitSheet ? "Kermit Cuisto" : undefined}
-        onKeyDown={(e) => {
-          if (accountSheet && e.key === "Escape") {
-            e.preventDefault();
-            setSheet(null);
-          }
-        }}
-        onCancel={(e) => {
-          e.preventDefault();
-          requestSheetClose();
-        }}
-        onClick={(e) => {
-          if (e.target === dialog.current) {
-            const r = dialog.current.getBoundingClientRect();
-            if (
-              e.clientY < r.top ||
-              e.clientY > r.bottom ||
-              e.clientX < r.left ||
-              e.clientX > r.right
-            )
-              requestSheetClose();
-          }
-        }}
-      >
-        {sheet}
-      </dialog>
+      {sheet &&
+        inlineHost &&
+        createPortal(
+          <section
+            className={`inline-action${kermitSheet ? " inline-kermit" : ""}`}
+            role="region"
+            aria-label={kermitSheet ? "Kermit Cuisto" : "Action en cours"}
+            tabIndex={-1}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !event.defaultPrevented) {
+                event.preventDefault();
+                event.stopPropagation();
+                requestSheetClose();
+              }
+            }}
+          >
+            {sheet}
+          </section>,
+          inlineHost,
+        )}
       {message && (
         <div className="toast" role="status" onClick={() => setMessage("")}>
           {message}

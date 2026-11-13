@@ -74,6 +74,10 @@ export function Profile({ inline = false }: { inline?: boolean }) {
         day={dayKey()}
       />
       <p className="note">
+        Le sexe sélectionné adapte aussi la silhouette et les zones disponibles
+        dans les mensurations. Tes anciens relevés sont conservés.
+      </p>
+      <p className="note">
         Le budget alimentaire est calculé chaque jour : dépense estimée moins
         ton objectif de déficit.
       </p>

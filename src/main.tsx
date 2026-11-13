@@ -7,6 +7,9 @@ import "./campus-theme.css";
 import "./appearance.css";
 import "./accent.css";
 import App from "./App";
+import { installDisclosureMotion } from "./disclosure-motion";
+const stopDisclosureMotion = installDisclosureMotion();
+import.meta.hot?.dispose(stopDisclosureMotion);
 // Replace the previous prototype's cache-first worker, which otherwise serves stale HTML.
 if ("serviceWorker" in navigator)
   void navigator.serviceWorker

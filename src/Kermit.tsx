@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./kermit.css";
 import kermitAvatar from "./assets/kermit-avatar.jpg";
 import { Button, useApp } from "./ui";
-import {
-  X,
-  Plus,
-  ArrowUp,
-  Camera,
-  ImagePlus,
-  Square,
-} from "lucide-react";
+import { X, Plus, ArrowUp, Camera, ImagePlus, Square } from "lucide-react";
 import { kermitEntry } from "./kermit-entry";
 import { repository, supabase } from "./persistence";
 import { askKermit, prepareKermitPhoto } from "./kermit-client";
@@ -103,7 +96,9 @@ export default function Kermit() {
   useEffect(() => {
     end.current?.scrollIntoView({
       block: "nearest",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
     });
   }, [messages, busy]);
   useEffect(() => {
@@ -125,11 +120,10 @@ export default function Kermit() {
   }, [confirm]);
   useEffect(() => {
     const viewport = window.visualViewport;
-    const dialog = end.current?.closest("dialog");
+    const dialog = end.current?.closest<HTMLElement>(".inline-kermit");
     const resize = () => {
       if (dialog && viewport) {
         dialog.style.maxHeight = `${Math.floor(viewport.height - 24)}px`;
-        dialog.style.bottom = `${Math.max(12, window.innerHeight - viewport.height - viewport.offsetTop + 12)}px`;
       }
     };
     resize();
@@ -137,7 +131,6 @@ export default function Kermit() {
     return () => {
       viewport?.removeEventListener("resize", resize);
       dialog?.style.removeProperty("max-height");
-      dialog?.style.removeProperty("bottom");
     };
   }, []);
   async function photo(file?: File) {
@@ -231,7 +224,13 @@ export default function Kermit() {
     <div className="kermit-chat">
       <header className="kermit-header">
         <span className="kermit-emblem">
-          <img className="kermit-avatar" src={kermitAvatar} alt="" width={44} height={44} />
+          <img
+            className="kermit-avatar"
+            src={kermitAvatar}
+            alt=""
+            width={44}
+            height={44}
+          />
         </span>
         <div>
           <h2>Kermit Cuisto</h2>
@@ -282,7 +281,13 @@ export default function Kermit() {
       >
         {!messages.length && (
           <div className="kermit-welcome">
-            <img className="kermit-avatar kermit-welcome-avatar" src={kermitAvatar} alt="" width={80} height={80} />
+            <img
+              className="kermit-avatar kermit-welcome-avatar"
+              src={kermitAvatar}
+              alt=""
+              width={80}
+              height={80}
+            />
             <h3>Qu’est-ce qu’on mange ?</h3>
             <p>
               Décris ton assiette ou envoie une photo.
@@ -299,7 +304,13 @@ export default function Kermit() {
             <strong>{m.role === "user" ? "Toi" : "Kermit Cuisto"}</strong>
             {m.role === "model" && (
               <div className="kermit-author" aria-hidden="true">
-                <img className="kermit-avatar" src={kermitAvatar} alt="" width={28} height={28} />
+                <img
+                  className="kermit-avatar"
+                  src={kermitAvatar}
+                  alt=""
+                  width={28}
+                  height={28}
+                />
                 <span>Kermit Cuisto</span>
               </div>
             )}
@@ -370,10 +381,25 @@ export default function Kermit() {
         {thinkingVisible && (
           <div className={`kermit-thinking${busy ? " is-thinking" : ""}`}>
             <div className="kermit-thinking-inner">
-              <div className="kermit-thinking-bubble" role="status" aria-label="Kermit réfléchit" aria-hidden={!busy}>
-                <img className="kermit-avatar" src={kermitAvatar} alt="" width={28} height={28} />
+              <div
+                className="kermit-thinking-bubble"
+                role="status"
+                aria-label="Kermit réfléchit"
+                aria-hidden={!busy}
+              >
+                <img
+                  className="kermit-avatar"
+                  src={kermitAvatar}
+                  alt=""
+                  width={28}
+                  height={28}
+                />
                 <span>Kermit réfléchit</span>
-                <span className="kermit-thinking-dots" aria-hidden="true"><i /><i /><i /></span>
+                <span className="kermit-thinking-dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
               </div>
             </div>
           </div>

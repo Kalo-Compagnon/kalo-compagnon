@@ -349,16 +349,18 @@ function WeightRecord({
             }}
           />
         </label>
-        <Button primary type="submit" disabled={busy}>
-          Enregistrer la modification
-        </Button>
-        <Button
-          disabled={busy}
-          className="danger"
-          onClick={() => void save(true)}
-        >
-          Supprimer cette pesée
-        </Button>
+        <div className="weight-record-actions">
+          <Button primary type="submit" disabled={busy}>
+            Enregistrer la modification
+          </Button>
+          <Button
+            disabled={busy}
+            className="danger"
+            onClick={() => void save(true)}
+          >
+            Supprimer cette pesée
+          </Button>
+        </div>
       </form>
     </Sheet>
   );

@@ -9,8 +9,16 @@ import {
   Confirm,
   num,
 } from "./ui";
-import { groups, zones, fmt, timestamp, type Physical } from "./domain";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  measurementGroups,
+  allMeasurementZones,
+  fmt,
+  timestamp,
+  type Physical,
+  type Settings,
+  initialState,
+} from "./domain";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import {
   currentMeasurements,
   measurementRecords,
@@ -19,11 +27,14 @@ import {
   type MeasurementRecord,
 } from "./measurement-history";
 import { Account } from "./Settings";
+import { frenchBraSize } from "./bra-size";
+import { docsToState } from "./persistence";
+import { duoRequest, type DuoSnapshot } from "./duo-client";
 
 function MeasurementComparison({
   records,
   index,
-  allowed = zones,
+  allowed = allMeasurementZones,
 }: {
   records: MeasurementRecord[];
   index: number;
@@ -134,21 +145,60 @@ function MeasurementInput({
 }
 
 const positions = [0.215, 0.255, 0.315, 0.39, 0.42, 0.452, 0.55, 0.755];
+function zoneLabel(zone: string, female: boolean) {
+  if (female && zone === "Poitrine") return "Tour de poitrine";
+  return zone;
+}
+const measurementInstructions: Record<string, string> = {
+  "Sous-poitrine":
+    "Place le mètre juste sous les seins, bien horizontal autour du thorax. Mesure après une expiration normale, sans serrer.",
+  "Bassin / petites hanches":
+    "Passe le mètre autour du haut du bassin, au niveau des os des hanches, au-dessus de la partie la plus large des fesses. Garde les pieds joints et le mètre horizontal.",
+  "Cuisse haute":
+    "Passe le mètre tout en haut de la cuisse, juste sous le pli de la fesse. Garde la jambe détendue et utilise toujours le même côté.",
+  Épaules:
+    "Passe le mètre autour des épaules, à leur point le plus large, en gardant les bras détendus le long du corps.",
+  Poitrine:
+    "Passe le mètre autour de la poitrine à la hauteur des mamelons. Garde les bras relâchés et mesure après une expiration normale.",
+  Bras: "Mesure le tour du bras à son endroit le plus large, le bras relâché le long du corps. Utilise toujours le même côté.",
+  Taille:
+    "Mesure le tour de taille à son endroit le plus étroit, entre les dernières côtes et le haut des hanches, sans rentrer le ventre.",
+  Ventre:
+    "Passe le mètre autour du ventre à la hauteur du nombril, puis mesure après une expiration normale, sans contracter les abdominaux.",
+  Hanches:
+    "Pieds joints, passe le mètre autour des hanches et des fesses à leur endroit le plus large.",
+  Cuisse:
+    "Debout, poids réparti sur les deux jambes, mesure le tour de la cuisse à son endroit le plus large, sous le pli de la fesse. Utilise toujours le même côté.",
+  Mollet:
+    "Mesure le tour du mollet à son endroit le plus large, debout et le muscle relâché. Utilise toujours le même côté.",
+  Longueur:
+    "Dans les mêmes conditions à chaque relevé, place une règle sur le dessus, de la base au niveau du pubis jusqu’à l’extrémité, sans forcer.",
+  Circonférence:
+    "Dans les mêmes conditions à chaque relevé, entoure le milieu avec un mètre souple, au contact de la peau sans serrer.",
+};
 const labelsOverview = [0.17, 0.22, 0.29, 0.36, 0.44, 0.51, 0.65, 0.72],
   labelsDetail = [0.195, 0.255, 0.325, 0.335, 0.425, 0.515, 0.59, 0.755];
 function Body({
+  sex,
   slide,
   selected,
   values,
   onSelect,
   onSlide,
 }: {
+  sex: Settings["sex"];
   slide: number;
   selected: string;
   values: Record<string, number>;
   onSelect: (s: string) => void;
   onSlide: (d: number) => void;
 }) {
+  const female = sex === "female",
+    groups = measurementGroups(sex);
+  const bodyZones = allMeasurementZones;
+  const bodyPositions = female
+    ? [0.2, 0.265, 0.31, 0.365, 0.4, 0.455, 0.55, 0.755, 0.305, 0.425, 0.505]
+    : positions;
   const ref = useRef<HTMLCanvasElement>(null),
     bounds = useRef<
       { zone: string; x: number; y: number; w: number; h: number }[]
@@ -158,10 +208,12 @@ function Body({
   useEffect(() => {
     const canvas = ref.current!,
       img = new Image(),
-      secret = slide === 4;
+      secret = slide === 4 && !female;
     img.src = secret
       ? `${import.meta.env.BASE_URL}assets/measurement_secret_anatomy.png`
-      : `${import.meta.env.BASE_URL}assets/body_measurement_simple.png`;
+      : female && slide === 4
+        ? `${import.meta.env.BASE_URL}assets/measurement_female_anatomy.png`
+        : `${import.meta.env.BASE_URL}assets/${female ? "body_measurement_female.png" : "body_measurement_simple.png"}`;
     let gone = false;
     function draw() {
       if (gone || !img.complete || !img.naturalWidth) return;
@@ -170,6 +222,7 @@ function Body({
       const w = canvas.parentElement!.clientWidth - 2,
         h = slide === 0 ? 430 : 490,
         dpr = devicePixelRatio || 1;
+      if (w <= 0) return;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       canvas.style.width = `${w}px`;
@@ -187,28 +240,110 @@ function Body({
         x = (w - iw) / 2,
         y = (h - ih) / 2;
       bodyRect.current = { x, y, w: iw, h: ih };
+      let labelLeftEdge = x + iw * 0.2,
+        labelRightEdge = x + iw * 0.8;
+      const labelText = (zone: string) =>
+        zone === "Bassin / petites hanches"
+          ? "Petites hanches"
+          : zoneLabel(zone, female);
+      const columnWidth = Math.max(
+        ...groups[slide].map(
+          (zone) =>
+            Math.max(
+              c.measureText(labelText(zone)).width,
+              c.measureText(values[zone] ? `${fmt(values[zone])} cm` : "—")
+                .width,
+            ) + 20,
+        ),
+      );
       function label(zone: string, lx: number, ly: number) {
-        const value = values[zone] ? `${fmt(values[zone])} cm` : "—",
-          bw =
-            Math.max(c.measureText(zone).width, c.measureText(value).width) +
-            20,
+        const text = labelText(zone),
+          value = values[zone] ? `${fmt(values[zone])} cm` : "—",
+          bw = columnWidth,
           active = slide > 0 && selected === zone;
-        let top = Math.max(y, Math.min(y + ih - 54, ly - 25));
+        let top =
+          female && slide === 4
+            ? Math.max(8, Math.min(h - 58, ly - 25))
+            : Math.max(y, Math.min(y + ih - 54, ly - 25));
+        if (female && slide === 0 && lx < w / 2) {
+          // Reserve space for all six labels in the shorter overview.
+          const placed = bounds.current.filter(
+            (b) => b.x + b.w / 2 < w / 2,
+          ).length;
+          top = Math.min(top, h - 58 - (5 - placed) * 58);
+        }
         for (const b of bounds.current.filter(
           (b) => b.x + b.w / 2 >= w / 2 === lx >= w / 2,
         ))
           top = Math.max(top, b.y + b.h + 8);
-        const left = lx >= w / 2 ? lx - bw : lx;
+        const left = Math.max(
+          12,
+          Math.min(
+            w - bw - 12,
+            secret
+              ? lx >= w / 2
+                ? lx - bw
+                : lx
+              : lx >= w / 2
+                ? labelRightEdge + 14
+                : labelLeftEdge - 14 - bw,
+          ),
+        );
         c.fillStyle = active ? color("--brand") : color("--canvas-label");
         c.beginPath();
         c.roundRect(left, top, bw, 50, 7);
         c.fill();
         c.textAlign = "center";
         c.fillStyle = active ? color("--on-brand") : color("--text");
-        c.fillText(zone, left + bw / 2, top + 19);
+        c.fillText(text, left + bw / 2, top + 19);
         c.fillStyle = active ? color("--on-brand") : color("--accent");
         c.fillText(value, left + bw / 2, top + 40);
         bounds.current.push({ zone, x: left, y: top, w: bw, h: 50 });
+      }
+      if (female && slide === 4) {
+        const sx = img.naturalWidth * 0.13,
+          sy = img.naturalHeight * 0.11,
+          sw = img.naturalWidth * 0.77,
+          sh = img.naturalHeight * 0.83,
+          zoom = Math.min(
+            (w < 520 ? w - 40 : w - columnWidth * 2 - 56) / sw,
+            (h - 160) / sh,
+          ),
+          ww = sw * zoom,
+          hh = sh * zoom,
+          xx = (w - ww) / 2,
+          yy = (h - hh) / 2;
+        labelLeftEdge = xx;
+        labelRightEdge = xx + ww;
+        function chestRing(zone: string, front: boolean) {
+          const cy = yy + hh * (zone === "Poitrine" ? 0.5 : 0.71);
+          c.strokeStyle =
+            zone === selected ? color("--accent") : color("--muted");
+          c.lineWidth = zone === selected ? 3 : 1.5;
+          c.beginPath();
+          c.ellipse(
+            w / 2,
+            cy,
+            ww * (zone === "Poitrine" ? 0.285 : 0.26),
+            Math.max(5, hh * 0.035),
+            0,
+            front ? 0 : Math.PI,
+            front ? Math.PI : Math.PI * 2,
+          );
+          c.stroke();
+        }
+        groups[slide].forEach((zone) => chestRing(zone, false));
+        c.drawImage(img, sx, sy, sw, sh, xx, yy, ww, hh);
+        groups[slide].forEach((zone) => chestRing(zone, true));
+        for (const zone of groups[slide]) {
+          const cy = yy + hh * (zone === "Poitrine" ? 0.5 : 0.71);
+          label(
+            zone,
+            zone === "Poitrine" ? 0 : w,
+            w < 520 ? (zone === "Poitrine" ? yy - 36 : yy + hh + 36) : cy,
+          );
+        }
+        return;
       }
       if (secret) {
         const sx = img.naturalWidth * 0.25,
@@ -240,14 +375,15 @@ function Body({
       const pixels = sc.getImageData(0, 0, source.width, source.height).data;
       function ring(zone: string, front: boolean) {
         if (slide > 0 && selected !== zone) return;
-        const idx = zones.indexOf(zone),
-          cy = y + ih * positions[idx];
+        const idx = bodyZones.indexOf(zone),
+          shapeIdx = idx < 8 ? idx : idx === 8 ? 1 : idx === 9 ? 5 : 6,
+          cy = y + ih * bodyPositions[idx];
         let cx = x + iw * 0.5,
-          rx = iw * [0.205, 0.15, 0, 0.12, 0.135, 0.155, 0, 0][idx],
-          ry = ih * [0.02, 0.016, 0, 0.014, 0.016, 0.019, 0, 0][idx];
-        if ([2, 6, 7].includes(idx)) {
-          const tx = idx === 2 ? 0.67 : idx === 6 ? 0.41 : 0.405,
-            row = Math.floor(img.naturalHeight * positions[idx]);
+          rx = iw * [0.205, 0.15, 0, 0.12, 0.135, 0.155, 0, 0][shapeIdx],
+          ry = ih * [0.02, 0.016, 0, 0.014, 0.016, 0.019, 0, 0][shapeIdx];
+        if ([2, 6, 7].includes(shapeIdx)) {
+          const tx = shapeIdx === 2 ? 0.67 : shapeIdx === 6 ? 0.41 : 0.405,
+            row = Math.floor(img.naturalHeight * bodyPositions[idx]);
           let center = Math.floor(img.naturalWidth * tx);
           const opaque = (p: number) =>
             p >= 0 &&
@@ -305,15 +441,34 @@ function Body({
       groups[slide].forEach((z) => ring(z, false));
       c.drawImage(img, x, y, iw, ih);
       groups[slide].forEach((z) => ring(z, true));
-      groups[slide].forEach((zone) => {
-        const i = zones.indexOf(zone),
-          right = ["Épaules", "Bras", "Ventre", "Mollet"].includes(zone);
-        label(
-          zone,
-          right ? x + iw : x,
-          y + ih * (slide === 0 ? labelsOverview[i] : labelsDetail[i]),
-        );
-      });
+      [...groups[slide]]
+        .sort((a, b) =>
+          female
+            ? bodyPositions[bodyZones.indexOf(a)] -
+              bodyPositions[bodyZones.indexOf(b)]
+            : 0,
+        )
+        .forEach((zone) => {
+          const i = bodyZones.indexOf(zone),
+            right = [
+              "Épaules",
+              "Bras",
+              "Ventre",
+              "Mollet",
+              "Sous-poitrine",
+            ].includes(zone);
+          label(
+            zone,
+            right ? x + iw : x,
+            y +
+              ih *
+                (female
+                  ? bodyPositions[i]
+                  : slide === 0
+                    ? labelsOverview[i]
+                    : labelsDetail[i]),
+          );
+        });
     }
     img.onload = draw;
     const ro = new ResizeObserver(draw);
@@ -324,7 +479,7 @@ function Body({
       window.removeEventListener("kalo-appearance-change", draw);
       ro.disconnect();
     };
-  }, [slide, selected, values]);
+  }, [slide, selected, values, sex]);
   return (
     <>
       <canvas
@@ -359,8 +514,8 @@ function Body({
             nx = Math.max(0, Math.min(1, (x - body.x) / body.w)),
             ny = Math.max(0, Math.min(1, (y - body.y) / body.h)),
             nearest = groups[slide].reduce((a, b) =>
-              Math.abs(positions[zones.indexOf(a)] - ny) <=
-              Math.abs(positions[zones.indexOf(b)] - ny)
+              Math.abs(bodyPositions[bodyZones.indexOf(a)] - ny) <=
+              Math.abs(bodyPositions[bodyZones.indexOf(b)] - ny)
                 ? a
                 : b,
             ),
@@ -382,13 +537,19 @@ function Body({
                             : ny >= 0.7 && ny <= 0.86
                               ? "Mollet"
                               : nearest;
-          onSelect(groups[slide].includes(candidate) ? candidate : nearest);
+          onSelect(
+            female
+              ? nearest
+              : groups[slide].includes(candidate)
+                ? candidate
+                : nearest,
+          );
         }}
       />
       <div className="sr-only">
         {groups[slide].map((z) => (
           <button key={z} onClick={() => onSelect(z)}>
-            {z}
+            {zoneLabel(z, female)}
           </button>
         ))}
       </div>
@@ -396,12 +557,112 @@ function Body({
   );
 }
 export function Measurements() {
-  const { state, day, update, modal, notify, repo } = useApp();
-  const [slide, setSlide] = useState(0),
+  const { state: ownState, day, update, modal, notify, repo } = useApp();
+  const [viewPartner, setViewPartner] = useState(false);
+  const [duo, setDuo] = useState<{
+    scope: string;
+    snapshot: DuoSnapshot;
+  } | null>(null);
+  const [duoError, setDuoError] = useState("");
+  const scope = repo.scope;
+  useEffect(() => {
+    let generation = 0,
+      disposed = false;
+    setViewPartner(false);
+    setDuo(null);
+    setDuoError("");
+    if (scope === "guest") return;
+    async function refresh() {
+      const request = ++generation;
+      try {
+        const snapshot = await duoRequest();
+        if (!disposed && request === generation && repo.scope === scope) {
+          setDuo({ scope, snapshot });
+          setDuoError("");
+        }
+      } catch (error) {
+        if (!disposed && request === generation) {
+          setDuo(null);
+          setDuoError((error as Error).message);
+        }
+      }
+    }
+    const clear = () => {
+      ++generation;
+      setDuo(null);
+    };
+    const visibility = () => {
+      if (document.hidden) clear();
+      else void refresh();
+    };
+    void refresh();
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 30000);
+    window.addEventListener("duo-changed", refresh);
+    window.addEventListener("online", refresh);
+    window.addEventListener("offline", clear);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      disposed = true;
+      ++generation;
+      clearInterval(timer);
+      window.removeEventListener("duo-changed", refresh);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("offline", clear);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [scope]);
+  const snapshot = duo?.scope === scope ? duo.snapshot : null;
+  const partnerAvailable =
+    snapshot?.status === "active" &&
+    snapshot.partnerSharing?.measurements === true &&
+    !!snapshot.documents;
+  const partnerName = snapshot?.partner?.name || "Partenaire";
+  const partnerState = partnerAvailable
+    ? docsToState(
+        snapshot.documents!.map((doc) => ({
+          ...doc,
+          revision: 0,
+          pending: false,
+        })),
+      )
+    : initialState();
+  // The current Duo projection omits profile settings; use the two known profiles
+  // for the illustration, without inferring or changing their saved preferences.
+  if (!snapshot?.documents?.some((doc) => doc.key === "settings/sex")) {
+    partnerState.settings.sex =
+      partnerName.toLocaleLowerCase("fr") === "coralie" ? "female" : "male";
+  }
+  const readOnly = viewPartner && scope !== "guest";
+  const state = readOnly ? partnerState : ownState;
+  const female = state.settings.sex === "female",
+    groups = measurementGroups(state.settings.sex);
+  const [storedSlide, setSlide] = useState(0),
+    [showInstructions, setShowInstructions] = useState(false),
     [selected, setSelected] = useState("Poitrine");
+  const slide = storedSlide;
+  useEffect(() => {
+    if (!groups[slide].includes(selected)) setSelected(groups[slide][0]);
+  }, [female, slide, selected]);
   const values = currentMeasurements(state, day),
     records = measurementRecords(state, day);
   const [saving, setSaving] = useState(0);
+  const figureContent = useRef<HTMLDivElement>(null);
+  const [figureHeight, setFigureHeight] = useState(430);
+  useEffect(() => {
+    const panel = figureContent.current?.querySelector<HTMLElement>(
+      '[data-active="true"]',
+    );
+    if (!panel) return;
+    const observer = new ResizeObserver(() =>
+      setFigureHeight(panel.offsetHeight),
+    );
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [showInstructions]);
   function changeSlide(n: number) {
     const v = Math.max(0, Math.min(3, n));
     setSlide(v);
@@ -413,6 +674,7 @@ export function Measurements() {
       setSlide(groups.findIndex((g, i) => i > 0 && g.includes(z)));
   }
   async function measure(v: number | ((current: number) => number)) {
+    if (readOnly) return;
     setSaving((n) => n + 1);
     try {
       await update((s) => {
@@ -435,6 +697,7 @@ export function Measurements() {
     }
   }
   async function saveRecord() {
+    if (readOnly) return;
     if (!Object.values(values).some((v) => v > 0)) {
       notify("Renseigne au moins une mesure");
       return;
@@ -499,7 +762,7 @@ export function Measurements() {
           onClick={() => {
             if (slide === 3) {
               setSlide(4);
-              setSelected("Longueur");
+              setSelected(female ? "Poitrine" : "Longueur");
             }
           }}
         >
@@ -509,7 +772,7 @@ export function Measurements() {
               "Haut du corps",
               "Zone centrale",
               "Bas du corps",
-              "Mesure secrète",
+              female ? "Poitrine en détail" : "Mesure secrète",
             ][slide]
           }
         </button>
@@ -525,41 +788,160 @@ export function Measurements() {
         {slide !== 4 &&
           [0, 1, 2, 3].map((i) => (i === slide ? "●" : "○")).join("  ")}
       </p>
-      <div className="card body-figure">
-        <Body
-          slide={slide}
-          selected={selected}
-          values={values}
-          onSelect={select}
-          onSlide={(d) => changeSlide(slide + d)}
-        />
+      {scope !== "guest" &&
+        ((!partnerAvailable && (readOnly || snapshot)) || duoError) && (
+          <p className="measurement-partner-status" role="status">
+            {readOnly && partnerAvailable
+              ? `${partnerName} · Consultation`
+              : duoError ||
+                "Mensurations du partenaire indisponibles ou non partagées."}
+          </p>
+        )}
+      <div
+        className={`card body-figure${scope !== "guest" && showInstructions ? " has-profile-switch" : ""}`}
+      >
+        {readOnly && partnerAvailable && (
+          <p className="measurement-consultation" role="status">
+            {partnerName} · Consultation
+          </p>
+        )}
+        {scope !== "guest" && showInstructions && (
+          <div
+            className="measurement-profile-switch"
+            role="group"
+            aria-label="Profil des mensurations"
+          >
+            <button
+              type="button"
+              aria-pressed={!readOnly}
+              onClick={() => setViewPartner(false)}
+            >
+              {ownState.settings.displayName || "Moi"}
+            </button>
+            <button
+              type="button"
+              aria-pressed={readOnly}
+              disabled={!partnerAvailable && !readOnly}
+              onClick={() => setViewPartner(true)}
+            >
+              {partnerName}
+            </button>
+          </div>
+        )}
+        {female && slide === 4 && !showInstructions && (
+          <div
+            className="measurement-bra-size"
+            aria-live="polite"
+            title="Estimation selon le tableau français Chantelle. Les mesures sont arrondies au centimètre. L’ajustement varie selon le modèle."
+          >
+            <span>Soutien-gorge · FR</span>
+            <strong>
+              {values.Poitrine > 0 && values["Sous-poitrine"] > 0
+                ? (frenchBraSize(values.Poitrine, values["Sous-poitrine"]) ??
+                  "Hors tableau")
+                : "Deux mesures à renseigner"}
+            </strong>
+            <small>Taille estimée</small>
+          </div>
+        )}
+        <button
+          type="button"
+          className="measurement-info-toggle"
+          aria-label="Afficher les conseils de mesure"
+          aria-pressed={showInstructions}
+          aria-controls="measurement-figure-content"
+          title={
+            showInstructions
+              ? "Afficher les mensurations"
+              : "Comment prendre les mesures"
+          }
+          onClick={() => setShowInstructions((shown) => !shown)}
+        >
+          <Info size={22} aria-hidden="true" />
+        </button>
+        <div
+          id="measurement-figure-content"
+          ref={figureContent}
+          style={{ height: figureHeight }}
+        >
+          <div
+            className={`measurement-figure-panel${scope !== "guest" ? " has-profile-switch" : ""}`}
+            data-active={showInstructions}
+            inert={!showInstructions}
+            aria-hidden={!showInstructions}
+          >
+            <section
+              className="measurement-instructions"
+              aria-label="Conseils de mesure"
+            >
+              <h2>Comment prendre les mesures</h2>
+              <p>
+                Utilise un mètre souple, au contact de la peau sans serrer. Pour
+                les tours du tronc, garde-le horizontal. Reprends tes mesures
+                dans les mêmes conditions.
+              </p>
+              <dl>
+                {groups[slide].map((zone) => (
+                  <div key={zone}>
+                    <dt>{zoneLabel(zone, female)}</dt>
+                    <dd>{measurementInstructions[zone]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          </div>
+          <div
+            className="measurement-figure-panel"
+            data-active={!showInstructions}
+            inert={showInstructions}
+            aria-hidden={showInstructions}
+          >
+            <Body
+              sex={state.settings.sex}
+              slide={slide}
+              selected={selected}
+              values={values}
+              onSelect={select}
+              onSlide={(d) => changeSlide(slide + d)}
+            />
+          </div>
+        </div>
       </div>
       {slide > 0 ? (
         <>
-          <div className="card measure-editor">
-            <button
-              aria-label="Diminuer de 0,5 centimètre"
-              onClick={() => void measure((v) => v - 0.5)}
-            >
-              −
-            </button>
-            <MeasurementInput
-              key={selected}
-              aria-label={`${selected} en centimètres`}
-              label={`${selected} en centimètres`}
-              value={values[selected] || 0}
-              onChange={(value) => void measure(value)}
-            />
-            <span>cm</span>
-            <button
-              aria-label="Augmenter de 0,5 centimètre"
-              onClick={() => void measure((v) => v + 0.5)}
-            >
-              +
-            </button>
-          </div>
+          {readOnly ? (
+            <p className="measurement-current-delta">
+              {zoneLabel(selected, female)} :{" "}
+              {values[selected]
+                ? `${fmt(values[selected])} cm`
+                : "Non renseigné"}
+            </p>
+          ) : (
+            <div className="card measure-editor">
+              <button
+                aria-label="Diminuer de 0,5 centimètre"
+                onClick={() => void measure((v) => v - 0.5)}
+              >
+                −
+              </button>
+              <MeasurementInput
+                key={selected}
+                aria-label={`${selected} en centimètres`}
+                label={`${selected} en centimètres`}
+                value={values[selected] || 0}
+                onChange={(value) => void measure(value)}
+              />
+              <span>cm</span>
+              <button
+                aria-label="Augmenter de 0,5 centimètre"
+                onClick={() => void measure((v) => v + 0.5)}
+              >
+                +
+              </button>
+            </div>
+          )}
           <div className="measurement-current-delta">
-            <strong>{selected}</strong> ·{" "}
+            <strong>{zoneLabel(selected, female)}</strong> ·{" "}
             {measurementDelta(
               values[selected] ?? 0,
               previousMeasurement(
@@ -571,21 +953,25 @@ export function Measurements() {
               ),
             )}
           </div>
-          <Button
-            className="measurement-history"
-            onClick={() => void saveRecord()}
-          >
-            Enregistrer un relevé
-          </Button>
+          {!readOnly && (
+            <Button
+              className="measurement-history"
+              onClick={() => void saveRecord()}
+            >
+              Enregistrer un relevé
+            </Button>
+          )}
         </>
       ) : (
         <>
-          <Button
-            className="measurement-history"
-            onClick={() => void saveRecord()}
-          >
-            Enregistrer un relevé
-          </Button>
+          {!readOnly && (
+            <Button
+              className="measurement-history"
+              onClick={() => void saveRecord()}
+            >
+              Enregistrer un relevé
+            </Button>
+          )}
           <Button
             primary
             className="measurement-history"

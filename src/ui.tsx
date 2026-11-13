@@ -52,7 +52,6 @@ export function HoldButton({
       type="button"
       className={`history-day${holding ? " holding" : ""}`}
       aria-label={label}
-      aria-haspopup="dialog"
       onPointerDown={(e) => {
         if (e.button !== 0 || !e.isPrimary) return;
         cancel();
@@ -200,7 +199,6 @@ export function Sheet({
   const { close } = useApp();
   return (
     <>
-      <div className="sheet-handle" />
       <div className="sheet-toolbar">
         {back ? (
           <button className="text-button" onClick={back}>
@@ -317,30 +315,37 @@ export function ActionRow({
       <button
         className="row-menu"
         aria-label="Actions"
+        aria-expanded={show}
         onClick={() => setShow(!show)}
       >
         ⋮
       </button>
-      {show && (
-        <div className="row-actions">
-          {onFavorite && (
-            <button
-              onClick={onFavorite}
-              aria-label={
-                favorite ? "Retirer des favoris" : "Ajouter aux favoris"
-              }
-            >
-              {favorite ? "★" : "☆"}
-            </button>
-          )}
-          {onEdit && <button onClick={onEdit}>Modifier</button>}
-          {onDelete && (
-            <button className="danger" onClick={onDelete}>
-              Supprimer
-            </button>
-          )}
+      <div
+        className={`row-actions-collapse${show ? " is-open" : ""}`}
+        inert={!show}
+        aria-hidden={!show}
+      >
+        <div className="row-actions-clip">
+          <div className="row-actions">
+            {onFavorite && (
+              <button
+                onClick={onFavorite}
+                aria-label={
+                  favorite ? "Retirer des favoris" : "Ajouter aux favoris"
+                }
+              >
+                {favorite ? "★" : "☆"}
+              </button>
+            )}
+            {onEdit && <button onClick={onEdit}>Modifier</button>}
+            {onDelete && (
+              <button className="danger" onClick={onDelete}>
+                Supprimer
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

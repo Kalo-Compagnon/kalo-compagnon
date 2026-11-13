@@ -251,6 +251,28 @@ export const groups = [
   zones.slice(6),
   ["Longueur", "Circonférence"],
 ];
+export const femaleZones = [
+  ...zones,
+  "Sous-poitrine",
+  "Bassin / petites hanches",
+  "Cuisse haute",
+];
+export const allMeasurementZones = [
+  ...femaleZones,
+  "Longueur",
+  "Circonférence",
+];
+export function measurementGroups(sex: Settings["sex"]) {
+  return sex === "female"
+    ? [
+        femaleZones,
+        [...zones.slice(0, 3), "Sous-poitrine"],
+        [...zones.slice(3, 6), "Bassin / petites hanches"],
+        [...zones.slice(6), "Cuisse haute"],
+        ["Poitrine", "Sous-poitrine"],
+      ]
+    : groups;
+}
 export function ageOn(birthDate: string, on = dayKey()): number | null {
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(birthDate) ||

@@ -486,7 +486,8 @@ export function FoodHub({
             label={`Quantité (${food.referenceUnit})`}
             value={quantity}
             onChange={setQuantity}
-            min={0.0001}
+            min={food.referenceUnit === "unité" ? 0.5 : 0.0001}
+            step={food.referenceUnit === "unité" ? 0.5 : "any"}
             required
           />
           <p className="card padded">
