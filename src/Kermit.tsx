@@ -120,10 +120,11 @@ export default function Kermit() {
   }, [confirm]);
   useEffect(() => {
     const viewport = window.visualViewport;
-    const dialog = end.current?.closest<HTMLElement>(".inline-kermit");
+    const dialog = end.current?.closest<HTMLElement>("dialog");
     const resize = () => {
       if (dialog && viewport) {
         dialog.style.maxHeight = `${Math.floor(viewport.height - 24)}px`;
+        dialog.style.bottom = `${Math.max(12, window.innerHeight - viewport.height - viewport.offsetTop + 12)}px`;
       }
     };
     resize();
@@ -131,6 +132,7 @@ export default function Kermit() {
     return () => {
       viewport?.removeEventListener("resize", resize);
       dialog?.style.removeProperty("max-height");
+      dialog?.style.removeProperty("bottom");
     };
   }, []);
   async function photo(file?: File) {

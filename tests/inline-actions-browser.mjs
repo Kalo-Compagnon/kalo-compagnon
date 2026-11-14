@@ -65,7 +65,9 @@ try {
     "data-motion",
     "open",
   );
-  expect(Math.abs(await page.evaluate(() => scrollY) - scrollBeforeOpen)).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs((await page.evaluate(() => scrollY)) - scrollBeforeOpen),
+  ).toBeLessThanOrEqual(1);
   await row.click();
   await expect(page.locator(".inline-action-host")).toHaveAttribute(
     "data-motion",
@@ -142,15 +144,26 @@ try {
   await page
     .getByRole("button", { name: "Kermit Cuisto", exact: true })
     .click();
-  const kermit = page.getByRole("region", {
+  const kermit = page.getByRole("dialog", {
     name: "Kermit Cuisto",
     exact: true,
   });
   await expect(kermit).toBeVisible();
-  expect(
-    await kermit.evaluate((el) => !!el.closest(".meals-preparation")),
-  ).toBe(true);
+  expect(await kermit.evaluate((el) => el.matches(":modal"))).toBe(true);
+  await expect(page.locator(".inline-action-host")).toHaveCount(0);
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe(
+    "hidden",
+  );
   await kermit.getByRole("button", { name: "Fermer", exact: true }).click();
+  await expect(kermit).toHaveCount(0);
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page
+    .getByRole("button", { name: "Kermit Cuisto", exact: true })
+    .click();
+  await expect(kermit).toBeVisible();
+  await expect(kermit).toHaveCSS("width", "400px");
+  await page.keyboard.press("Escape");
   await expect(kermit).toHaveCount(0);
   expect(errors).toEqual([]);
   console.log(

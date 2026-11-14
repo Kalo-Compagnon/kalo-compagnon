@@ -1,4 +1,11 @@
-import { useCallback, isValidElement, useEffect, useState } from "react";
+import {
+  useCallback,
+  isValidElement,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useInlineActions } from "./inline-actions";
 import { repository, supabase } from "./persistence";
@@ -44,10 +51,40 @@ export default function App() {
   const {
     content: sheet,
     host: inlineHost,
-    open: setSheet,
-    clear: clearAction,
+    open: openInline,
+    clear: clearInline,
   } = useInlineActions();
-  const kermitSheet = isValidElement(sheet) && sheet.type === Kermit;
+  const [kermit, setKermit] = useState<ReactNode>(null);
+  const kermitDialog = useRef<HTMLDialogElement>(null);
+  const setSheet = useCallback(
+    (node: ReactNode) => {
+      if (isValidElement(node) && node.type === Kermit) {
+        clearInline();
+        setKermit(node);
+      } else {
+        setKermit(null);
+        openInline(node);
+      }
+    },
+    [clearInline, openInline],
+  );
+  const clearAction = useCallback(() => {
+    clearInline();
+    setKermit(null);
+  }, [clearInline]);
+  useEffect(() => {
+    if (!kermit) return;
+    const dialog = kermitDialog.current;
+    const opener = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [!!kermit]);
   const [desktopBody, setDesktopBody] = useState(
     () => window.matchMedia("(min-width: 1200px)").matches,
   );
@@ -444,9 +481,9 @@ export default function App() {
         inlineHost &&
         createPortal(
           <section
-            className={`inline-action${kermitSheet ? " inline-kermit" : ""}`}
+            className="inline-action"
             role="region"
-            aria-label={kermitSheet ? "Kermit Cuisto" : "Action en cours"}
+            aria-label="Action en cours"
             tabIndex={-1}
             onKeyDown={(event) => {
               if (event.key === "Escape" && !event.defaultPrevented) {
@@ -460,6 +497,28 @@ export default function App() {
           </section>,
           inlineHost,
         )}
+      <dialog
+        ref={kermitDialog}
+        className="sheet kermit-dialog"
+        aria-label="Kermit Cuisto"
+        onCancel={(event) => {
+          event.preventDefault();
+          requestSheetClose();
+        }}
+        onClick={(event) => {
+          if (event.target !== kermitDialog.current) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (
+            event.clientX < rect.left ||
+            event.clientX > rect.right ||
+            event.clientY < rect.top ||
+            event.clientY > rect.bottom
+          )
+            requestSheetClose();
+        }}
+      >
+        {kermit}
+      </dialog>
       {message && (
         <div className="toast" role="status" onClick={() => setMessage("")}>
           {message}
