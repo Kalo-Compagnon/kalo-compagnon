@@ -15,7 +15,7 @@ try {
       exact: true,
     })
     .click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("region", { name: "Action en cours", exact: true });
   await dialog.getByLabel("Nom", { exact: true }).fill("Assiette QA");
   await dialog.getByLabel("Type de cuisson").selectOption("pasta");
   await dialog.getByLabel("Unité", { exact: true }).selectOption("unité");
@@ -339,6 +339,38 @@ try {
     await expect(entry).toContainText("270 kcal");
   }
   await expect(page.getByRole("region", { name: "Portions en cours" })).toHaveCount(0);
+  // Adding a fresh meal must only create a journal entry, including after reload.
+  const catalogCount = await page.locator(".meal-result").count();
+  const entryCount = await page.locator(".entry").count();
+  await page.getByRole("button", { name: "Tous", exact: true }).click();
+  await page.getByLabel("Rechercher", { exact: true }).fill("Assiette QA");
+  await add.click();
+  await calculator.getByLabel("Nom du repas (facultatif)").fill("Repas historique uniquement");
+  await calculator.getByRole("button", { name: "Ajouter le repas", exact: true }).click();
+  await expect(page.locator(".entry")).toHaveCount(entryCount + 1);
+  await expect(page.locator(".entry").filter({ hasText: "Repas historique uniquement" })).toHaveCount(1);
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page.getByRole("button", { name: "Afficher les repas enregistrés", exact: true }).click();
+  await expect(page.locator(".meal-result")).toHaveCount(catalogCount);
+  await expect(page.locator(".meal-result").filter({ hasText: "Repas historique uniquement" })).toHaveCount(0);
+  await expect(page.locator(".entry")).toHaveCount(entryCount + 1);
+
+  await page.getByRole("button", { name: "Créer un repas", exact: true }).click();
+  await dialog.getByLabel("Nom du repas", { exact: true }).fill("Composition historique uniquement");
+  await dialog.getByRole("button", { name: "＋ Ajouter un ingrédient", exact: true }).click();
+  await dialog.getByLabel("Rechercher", { exact: true }).fill("Assiette QA");
+  await dialog.locator(".food-result .row-main").click();
+  await dialog.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await dialog.getByRole("button", { name: "Ajouter le repas", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator(".entry")).toHaveCount(entryCount + 2);
+  await expect(page.locator(".meal-result")).toHaveCount(catalogCount);
+  await page.reload();
+  await page.getByRole("button", { name: "Repas", exact: true }).click();
+  await page.getByRole("button", { name: "Afficher les repas enregistrés", exact: true }).click();
+  await expect(page.locator(".meal-result")).toHaveCount(catalogCount);
+  await expect(page.locator(".entry").filter({ hasText: "Composition historique uniquement" })).toHaveCount(1);
   console.log(
     "Meal calculator: quantities, units, removal, deferred journal entry, persistence and responsive layout OK",
   );

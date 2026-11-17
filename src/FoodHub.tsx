@@ -272,9 +272,11 @@ export function FoodHub({
         imagePath: meal?.imagePath,
       };
     await update((s) => {
-      s.meals = s.meals.filter((m) => m.id !== value.id);
       value.calorieDetails = recipeCalorieDetails(value, s.foods);
-      s.meals.push(value);
+      if (!log) {
+        s.meals = s.meals.filter((m) => m.id !== value.id);
+        s.meals.push(value);
+      }
     });
     if (log) await logMeal(value);
     else {
@@ -562,7 +564,7 @@ export function FoodHub({
         ) : (
           <>
             <Button primary onClick={() => void saveMeal(true)}>
-              Enregistrer comme repas et ajouter
+              Ajouter le repas
             </Button>
             <Button onClick={() => void saveMeal(false)}>
               Enregistrer sans ajouter

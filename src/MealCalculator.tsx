@@ -84,8 +84,6 @@ export default function MealCalculator({
         );
         if (mode === "add") {
           s.entries.push(mealEntry(meal, foods, day));
-          s.meals = s.meals.filter((m) => m.id !== meal.id);
-          s.meals.push(meal);
           const savedMeal = s.meals.find((m) => m.id === meal.id);
           if (savedMeal) {
             savedMeal.usageCount++;
