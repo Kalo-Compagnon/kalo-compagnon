@@ -17,7 +17,7 @@ export const cookingTypes = {
 export function estimateCookedWeight(meal: Meal, foods: Food[]): number | null {
   let total = 0;
   for (const part of meal.ingredients) {
-    const food = foods.find((f) => f.id === part.foodId);
+    const food = part.temporaryFood ?? foods.find((f) => f.id === part.foodId);
     if (!food) return null;
     const grams =
       food.referenceUnit === "unité"

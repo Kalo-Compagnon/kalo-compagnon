@@ -20,11 +20,13 @@ export function recipeCalorieDetails(
   if (meal.calorieDetails?.length) return meal.calorieDetails;
   if (
     !meal.ingredients.length ||
-    meal.ingredients.some((p) => !foods.some((f) => f.id === p.foodId))
+    meal.ingredients.some(
+      (p) => !p.temporaryFood && !foods.some((f) => f.id === p.foodId),
+    )
   )
     return undefined;
   return meal.ingredients.map((p) => {
-    const food = foods.find((f) => f.id === p.foodId)!;
+    const food = p.temporaryFood ?? foods.find((f) => f.id === p.foodId)!;
     return {
       name: foodLabel(food),
       quantity: p.quantity,

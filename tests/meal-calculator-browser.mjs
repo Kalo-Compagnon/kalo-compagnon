@@ -33,7 +33,7 @@ try {
   await add.click();
   await add.click();
   const calculator = page.getByRole("region", { name: "Calculateur de repas" });
-  const quantities = calculator.getByRole("spinbutton");
+  const quantities = calculator.locator(".meal-calculator-parts").getByRole("spinbutton");
   await quantities.nth(0).fill("2");
   await quantities.nth(1).fill("3");
   await expect(calculator.getByLabel("Total du repas")).toHaveText("900 kcal");
@@ -324,14 +324,14 @@ try {
   await trackedRow.getByRole("button", { name: "Préparer Déjeuner QA", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(calculator.getByLabel("Nom du repas (facultatif)")).toHaveValue("Déjeuner QA");
-  await calculator.getByRole("spinbutton").first().fill("1");
+  await calculator.locator(".meal-calculator-parts").getByRole("spinbutton").first().fill("1");
   await expect(calculator.getByLabel("Total du repas")).toHaveText("360 kcal");
   await calculator.getByRole("button", { name: "Vider le repas" }).click();
   await trackedRow.getByRole("button", { name: "Choisir les portions de Déjeuner QA", exact: true }).click();
   await expect(dialog).toContainText("Plat terminé · calories définitives");
   await dialog.getByRole("button", { name: "Fermer", exact: true }).click();
   await trackedRow.getByRole("button", { name: "Préparer Déjeuner QA", exact: true }).click();
-  await calculator.getByRole("spinbutton").first().fill("1");
+  await calculator.locator(".meal-calculator-parts").getByRole("spinbutton").first().fill("1");
   await calculator.getByRole("button", { name: "Ajouter le repas", exact: true }).click();
   await expect(calculator.getByLabel("Total du repas")).toHaveText("0 kcal");
   await expect(page.locator(".entry").filter({ hasText: "100 g" })).toHaveCount(2);

@@ -13,6 +13,7 @@ export interface SharedMeal {
 }
 
 export function sharedMeal(meal: Meal, foods: Food[]): SharedMeal | null {
+  if (meal.ingredients.some((p) => p.temporaryFood)) return null;
   if (!meal.ingredients.length) return null;
   const ingredientFoods: Partial<Food>[] = [];
   for (const part of meal.ingredients) {

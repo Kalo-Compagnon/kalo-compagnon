@@ -865,6 +865,11 @@ progress::-moz-progress-bar {
 .meal-calculator-heading h3 { margin: 0; font-size: 17px; }
 .meal-calculator-heading output { color: var(--accent); font-weight: 700; white-space: nowrap; }
 .meal-calculator p { color: var(--muted); font-size: 13px; }
+.temporary-meal-foods { display: grid; gap: 8px; margin: 12px 0; min-width: 0; }
+.temporary-meal-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(76px, 110px) 28px; align-items: center; gap: 8px; }
+.temporary-meal-row input { width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; }
+.temporary-meal-row input::placeholder { color: var(--muted); }
+.temporary-meal-row .food-icon { width: 28px; }
 .meal-calculator-parts { padding: 0; margin: 0; border: 0; min-width: 0; }
 .meal-calculator-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .meal-calculator-actions button { min-width: 0; padding: 10px 6px; font-size: 12px; margin: 0; }

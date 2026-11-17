@@ -73,7 +73,11 @@ export const docsToState = (docs: Doc[]): State => {
     const id = d.key.slice(7);
     const personal = s.meals.find((m) => m.id === id);
     // A personal batch is historical: shared edits must not change its servings.
-    if (personal?.portionTracking) continue;
+    if (
+      personal?.portionTracking ||
+      personal?.ingredients.some((p) => p.temporaryFood)
+    )
+      continue;
     s.meals = s.meals.filter((m) => m.id !== id);
     if (!d.value) continue;
     const recipe = d.value as SharedMeal;

@@ -1,4 +1,5 @@
 import FoodPicker from "./FoodPicker";
+import TemporaryMealFood from "./TemporaryMealFood";
 import { mealRecipeDraft } from "./meal-draft";
 import { cookingTypes } from "./cooking";
 import {
@@ -203,6 +204,7 @@ export function FoodHub({
     [variable, setVariable] = useState(false);
   const back = () => setPage("home");
   const [pickerView, setPickerView] = useState<"foods" | "meals">("foods");
+  const [temporaryValid, setTemporaryValid] = useState(true);
   async function logMeal(value: Meal, amounts: Record<string, number> = {}) {
     try {
       await update((s) => {
@@ -241,6 +243,10 @@ export function FoodHub({
     setPage(picking ? "ingredient" : "quantity");
   };
   async function saveMeal(log: boolean) {
+    if (!temporaryValid) {
+      notify("Complète le nom et les calories de chaque aliment.");
+      return;
+    }
     if (meal?.portionTracking) {
       notify("Utilise le menu Portions pour ce plat en suivi.");
       return;
@@ -442,6 +448,9 @@ export function FoodHub({
             if (!(amount > 0)) return;
             if (page === "ingredient") {
               const part = {
+                ...(index !== null && parts[index].temporaryFood
+                  ? { temporaryFood: food }
+                  : {}),
                 id: index === null ? crypto.randomUUID() : parts[index].id,
                 foodId: food.id,
                 quantity: amount,
@@ -527,7 +536,9 @@ export function FoodHub({
         />
         {!parts.length && <p>Aucun ingrédient pour l’instant.</p>}
         {parts.map((p, i) => {
-          const food = state.foods.find((f) => f.id === p.foodId)!;
+          if (p.temporaryFood) return null;
+          const food =
+            p.temporaryFood ?? state.foods.find((f) => f.id === p.foodId)!;
           return (
             <ActionRow
               key={p.id}
@@ -557,6 +568,27 @@ export function FoodHub({
         <p className="card padded">
           Total : {macro(mealTotals(parts, state.foods))}
         </p>
+        <TemporaryMealFood
+          initialFoods={parts
+            .filter((p) => p.temporaryFood)
+            .map((p) => ({
+              ...p.temporaryFood!,
+              kcalPer100: nutrients(p.temporaryFood!, p.quantity)[0],
+            }))}
+          onChange={(foods, valid) => {
+            setTemporaryValid(valid);
+            setParts((old) => [
+              ...old.filter((p) => !p.temporaryFood),
+              ...foods.map((food) => ({
+                id: food.id,
+                foodId: food.id,
+                temporaryFood: food,
+                quantity: 1,
+                isVariable: false,
+              })),
+            ]);
+          }}
+        />
         {meal ? (
           <Button primary onClick={() => void saveMeal(false)}>
             Enregistrer les modifications

@@ -137,7 +137,8 @@ export default function FoodPicker({
   function loadMeal(meal: Meal, scroll = false) {
     const draft = meal.ingredients.map((part) => ({
       id: crypto.randomUUID(),
-      food: state.foods.find((f) => f.id === part.foodId),
+      food: part.temporaryFood ?? state.foods.find((f) => f.id === part.foodId),
+      temporary: !!part.temporaryFood,
       quantity: String(part.quantity),
     }));
     if (!draft.length || draft.some((part) => !part.food)) {

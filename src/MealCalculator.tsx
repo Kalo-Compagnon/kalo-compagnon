@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Trash2 } from "lucide-react";
+import TemporaryMealFood from "./TemporaryMealFood";
 import { recipeCalorieDetails } from "./meal-calorie-details";
 import { Button, Field, NumberField, num, useApp } from "./ui";
 import {
@@ -19,6 +20,7 @@ import {
 } from "./domain";
 
 export type DraftMealPart = {
+  temporary?: boolean;
   id: string;
   food: Food;
   quantity: string;
@@ -39,13 +41,19 @@ export default function MealCalculator({
   const [name, setName] = useState("");
   useEffect(() => {
     setName(loadedMeal?.name ?? "");
+    setTemporaryValid(true);
+    setTemporaryReset((v) => v + 1);
   }, [loadedMeal]);
   const [saving, setSaving] = useState(false);
+  const [temporaryValid, setTemporaryValid] = useState(true);
+  const [temporaryReset, setTemporaryReset] = useState(0);
   const submitting = useRef(false);
   const valid =
+    temporaryValid &&
     parts.length > 0 &&
     parts.every((p) => Number.isFinite(num(p.quantity)) && num(p.quantity) > 0);
   const ingredients = parts.map((p) => ({
+    ...(p.temporary ? { temporaryFood: p.food } : {}),
     id: p.id,
     foodId: p.food.id,
     quantity: Math.max(0, num(p.quantity) || 0),
@@ -94,6 +102,7 @@ export default function MealCalculator({
           s.meals.push(meal);
         }
         for (const food of foods) {
+          if (parts.some((p) => p.temporary && p.food.id === food.id)) continue;
           let saved = s.foods.find((f) => f.id === food.id);
           if (!saved) {
             saved = { ...food };
@@ -106,6 +115,8 @@ export default function MealCalculator({
         }
       });
       setParts([]);
+      setTemporaryReset((v) => v + 1);
+      setTemporaryValid(true);
       setName("");
       onReset?.();
       notify(mode === "add" ? "Repas ajouté à la journée" : "Repas enregistré");
@@ -124,9 +135,29 @@ export default function MealCalculator({
           {fmt(totals[0])} kcal
         </output>
       </div>
-      {!parts.length ? (
-        <p>Utilise l’assiette d’un aliment pour composer ton repas.</p>
-      ) : (
+      <TemporaryMealFood
+        key={`${loadedMeal?.id ?? "new"}-${temporaryReset}`}
+        initialFoods={parts
+          .filter((p) => p.temporary)
+          .map((p) => ({
+            ...p.food,
+            kcalPer100: nutrients(p.food, num(p.quantity))[0],
+          }))}
+        disabled={saving}
+        onChange={(foods, valid) => {
+          setTemporaryValid(valid);
+          setParts((old) => [
+            ...old.filter((p) => !p.temporary),
+            ...foods.map((food) => ({
+              id: food.id,
+              food,
+              quantity: "1",
+              temporary: true,
+            })),
+          ]);
+        }}
+      />
+      {!!parts.length && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -141,46 +172,48 @@ export default function MealCalculator({
             onChange={(e) => setName(e.target.value)}
           />
           <fieldset disabled={saving} className="meal-calculator-parts">
-            {parts.map((part) => (
-              <div key={part.id} className="meal-calculator-part">
-                <div className="meal-calculator-food">
-                  <strong>{foodLabel(part.food)}</strong>
-                  <small>
-                    {fmt(
-                      nutrients(
-                        part.food,
-                        Math.max(0, num(part.quantity) || 0),
-                      )[0],
-                    )}{" "}
-                    kcal
-                  </small>
+            {parts
+              .filter((part) => !part.temporary)
+              .map((part) => (
+                <div key={part.id} className="meal-calculator-part">
+                  <div className="meal-calculator-food">
+                    <strong>{foodLabel(part.food)}</strong>
+                    <small>
+                      {fmt(
+                        nutrients(
+                          part.food,
+                          Math.max(0, num(part.quantity) || 0),
+                        )[0],
+                      )}{" "}
+                      kcal
+                    </small>
+                  </div>
+                  <NumberField
+                    label={`Quantité de ${foodLabel(part.food)} (${part.food.referenceUnit})`}
+                    value={part.quantity}
+                    min={part.food.referenceUnit === "unité" ? 0.5 : 0.0001}
+                    step={part.food.referenceUnit === "unité" ? 0.5 : "any"}
+                    required
+                    onChange={(quantity) =>
+                      setParts((old) =>
+                        old.map((p) =>
+                          p.id === part.id ? { ...p, quantity } : p,
+                        ),
+                      )
+                    }
+                  />
+                  <button
+                    className="food-icon"
+                    type="button"
+                    aria-label={`Retirer ${foodLabel(part.food)} du repas`}
+                    onClick={() =>
+                      setParts((old) => old.filter((p) => p.id !== part.id))
+                    }
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
-                <NumberField
-                  label={`Quantité de ${foodLabel(part.food)} (${part.food.referenceUnit})`}
-                  value={part.quantity}
-                  min={part.food.referenceUnit === "unité" ? 0.5 : 0.0001}
-                  step={part.food.referenceUnit === "unité" ? 0.5 : "any"}
-                  required
-                  onChange={(quantity) =>
-                    setParts((old) =>
-                      old.map((p) =>
-                        p.id === part.id ? { ...p, quantity } : p,
-                      ),
-                    )
-                  }
-                />
-                <button
-                  className="food-icon"
-                  type="button"
-                  aria-label={`Retirer ${foodLabel(part.food)} du repas`}
-                  onClick={() =>
-                    setParts((old) => old.filter((p) => p.id !== part.id))
-                  }
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
+              ))}
           </fieldset>
           <p>Le repas reste en préparation jusqu’à ta validation.</p>
           <div className="meal-calculator-actions">
@@ -198,6 +231,8 @@ export default function MealCalculator({
             disabled={saving}
             onClick={() => {
               setParts([]);
+              setTemporaryReset((v) => v + 1);
+              setTemporaryValid(true);
               setName("");
               onReset?.();
             }}

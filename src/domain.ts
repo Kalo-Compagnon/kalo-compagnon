@@ -103,6 +103,7 @@ export const foodLabel = (food: Pick<Food, "name" | "subtype">) =>
   food.subtype?.trim() ? `${food.name} · ${food.subtype.trim()}` : food.name;
 
 export interface Ingredient {
+  temporaryFood?: Food;
   weightBasis?: "raw" | "cooked";
   id: string;
   foodId: string;
@@ -440,7 +441,7 @@ export function nutrients(food: Food, quantity: number): number[] {
 export function mealTotals(parts: Ingredient[], foods: Food[]): number[] {
   const totals = [0, 0, 0, 0];
   for (const part of parts) {
-    const food = foods.find((x) => x.id === part.foodId);
+    const food = part.temporaryFood ?? foods.find((x) => x.id === part.foodId);
     if (!food) throw new Error("Aliment introuvable dans le repas");
     nutrients(food, part.quantity).forEach(
       (v, i) => (totals[i] = add(totals[i], v)),
@@ -500,7 +501,7 @@ export function mealEntry(
     foodName: meal.name,
     calorieDetails: parts.length
       ? parts.map((p) => {
-          const food = foods.find((f) => f.id === p.foodId)!;
+          const food = p.temporaryFood ?? foods.find((f) => f.id === p.foodId)!;
           return {
             name: foodLabel(food),
             quantity: p.quantity,
@@ -513,30 +514,31 @@ export function mealEntry(
     note: parts.length
       ? parts
           .map((p) => {
-            const food = foods.find((x) => x.id === p.foodId)!;
+            const food =
+              p.temporaryFood ?? foods.find((x) => x.id === p.foodId)!;
             return `${foodLabel(food)} ${fmt(p.quantity)} ${food.referenceUnit}${p.weightBasis === "raw" ? " (cru/sec)" : p.weightBasis === "cooked" ? " (cuit)" : ""}`;
           })
           .join(" · ")
       : meal.notes,
     calories: v[0],
     proteinGrams: parts.some((p) =>
-      foods
-        .find((f) => f.id === p.foodId)
-        ?.missingNutrients?.includes("proteinPer100"),
+      (
+        p.temporaryFood ?? foods.find((f) => f.id === p.foodId)
+      )?.missingNutrients?.includes("proteinPer100"),
     )
       ? undefined
       : v[1],
     carbsGrams: parts.some((p) =>
-      foods
-        .find((f) => f.id === p.foodId)
-        ?.missingNutrients?.includes("carbsPer100"),
+      (
+        p.temporaryFood ?? foods.find((f) => f.id === p.foodId)
+      )?.missingNutrients?.includes("carbsPer100"),
     )
       ? undefined
       : v[2],
     fatGrams: parts.some((p) =>
-      foods
-        .find((f) => f.id === p.foodId)
-        ?.missingNutrients?.includes("fatPer100"),
+      (
+        p.temporaryFood ?? foods.find((f) => f.id === p.foodId)
+      )?.missingNutrients?.includes("fatPer100"),
     )
       ? undefined
       : v[3],

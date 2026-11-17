@@ -232,7 +232,16 @@ export function validateState(value: unknown): State {
     for (const p of m.ingredients)
       assert(
         str(p.id) &&
-          foods.has(p.foodId) &&
+          (foods.has(p.foodId) ||
+            (p.temporaryFood?.id === p.foodId &&
+              str(p.temporaryFood.name) &&
+              p.temporaryFood.referenceUnit === "unité" &&
+              [
+                p.temporaryFood.kcalPer100,
+                p.temporaryFood.proteinPer100,
+                p.temporaryFood.carbsPer100,
+                p.temporaryFood.fatPer100,
+              ].every((v) => finite(v) && v >= 0))) &&
           finite(p.quantity) &&
           p.quantity > 0 &&
           typeof p.isVariable === "boolean",
@@ -355,7 +364,7 @@ export function exportCSV(s: State) {
       payload_json: JSON.stringify(m),
     });
     for (const p of m.ingredients) {
-      const food = s.foods.find((f) => f.id === p.foodId)!,
+      const food = p.temporaryFood ?? s.foods.find((f) => f.id === p.foodId)!,
         v = nutrients(food, p.quantity);
       rows.push({
         record_type: "MEAL_INGREDIENT",
