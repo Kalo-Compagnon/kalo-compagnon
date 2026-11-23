@@ -1,6 +1,7 @@
 import {
   computeWeeklyMetrics,
   latestRecapWeek,
+  weekCutoff,
   type WeeklyMetrics,
   type WeeklySource,
 } from "./weekly-metrics.ts";
@@ -30,6 +31,7 @@ export class WeeklyGenerationError extends Error {
 export interface WeeklyBackend {
   now(): Date;
   enabled(user: string): Promise<boolean>;
+  scheduleDelay(user: string): Promise<number>;
   setEnabled(user: string, enabled: boolean): Promise<void>;
   list(user: string): Promise<WeeklyReport[]>;
   report(user: string, start: string): Promise<WeeklyReport | null>;
@@ -135,6 +137,7 @@ export function createWeeklyService(b: WeeklyBackend) {
       if (body.action === "weekly-list")
         return {
           enabled: await b.enabled(user),
+          scheduledTime: `21:${String(await b.scheduleDelay(user)).padStart(2, "0")}`,
           latestWeek: latestRecapWeek(b.now()),
           reports: [await latestReport(user)]
             .filter((r): r is WeeklyReport => r !== null)
@@ -167,6 +170,11 @@ export function createWeeklyService(b: WeeklyBackend) {
       // One Gemini call per cron invocation keeps delivery of other reminders responsive.
       let generated = false;
       for (const user of await b.users()) {
+        if (
+          b.now().getTime() <
+          weekCutoff(start).getTime() + (await b.scheduleDelay(user)) * 60_000
+        )
+          continue;
         let report = await b.report(user, start);
         if (
           !generated &&

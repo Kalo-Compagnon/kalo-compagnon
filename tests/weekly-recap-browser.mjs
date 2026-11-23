@@ -91,6 +91,7 @@ try {
             json: {
               enabled,
               latestWeek: latest,
+              scheduledTime: "21:05",
               reports: [...reports.values()]
                 .map(({ week_start, status, generated_at }) => ({
                   week_start,
@@ -154,6 +155,7 @@ try {
       }),
     ).toBeVisible();
     assert.equal(calls.filter((c) => c.action === "weekly-generate").length, 0);
+    await expect(page.getByText("Le dimanche à 21 h 05", {exact:true})).toBeVisible();
     await page
       .getByLabel("Activer mon récap automatique", { exact: true })
       .check();

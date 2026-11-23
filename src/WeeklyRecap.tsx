@@ -19,6 +19,7 @@ import "./weekly-recap.css";
 
 interface WeeklyList {
   enabled: boolean;
+  scheduledTime?: string;
   latestWeek: string;
   reports: Pick<WeeklyReport, "week_start" | "status" | "generated_at">[];
 }
@@ -36,10 +37,12 @@ export function WeeklyRecapCard({ onOpen }: { onOpen: () => void }) {
   const { repo } = useApp(),
     scope = repo.scope;
   const [latest, setLatest] = useState<string | null>(null);
+  const [scheduledTime, setScheduledTime] = useState("21:00");
   useEffect(() => {
     let active = true;
     void notificationApi<WeeklyList>("weekly-list", {}, scope)
       .then((result) => {
+        if (active) setScheduledTime(result.scheduledTime ?? "21:00");
         if (active)
           setLatest(
             result.reports?.find((r) => r.status === "ready")?.week_start ??
@@ -61,7 +64,7 @@ export function WeeklyRecapCard({ onOpen }: { onOpen: () => void }) {
       <p>
         {latest
           ? recapPeriod(latest)
-          : "Chaque dimanche à 21 h, un bilan de tes sept derniers jours."}
+          : `Chaque dimanche à ${scheduledTime.replace(":", " h ")}, un bilan de tes sept derniers jours.`}
       </p>
       <button className="account-recap-open" onClick={onOpen}>
         <BookOpen size={18} />
@@ -374,7 +377,10 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
         <section className="recap-schedule">
           <CalendarRange size={23} />
           <div>
-            <strong>Le dimanche à 21 h</strong>
+            <strong>
+              Le dimanche à{" "}
+              {(list?.scheduledTime ?? "21:00").replace(":", " h ")}
+            </strong>
             <p>
               Retrouve ici ton dernier bilan disponible, actualisé chaque
               semaine.

@@ -44,6 +44,16 @@ export function createWeeklyBackend(
     );
   return {
     now: () => new Date(),
+    scheduleDelay: async (user) =>
+      (
+        await result<{ generation_delay_minutes: number } | null>(
+          db
+            .from("logger_weekly_preferences")
+            .select("generation_delay_minutes")
+            .eq("user_id", user)
+            .maybeSingle(),
+        )
+      )?.generation_delay_minutes ?? 0,
     enabled: async (user) =>
       (
         await result<{ enabled: boolean } | null>(

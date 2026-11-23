@@ -20,6 +20,8 @@ Les conseils restent généraux : pas de diagnostic, de carence inventée, de pr
 
 ## Serveur
 
+`weekly-recap-schedule.sql` ajoute un décalage administré par compte : Coralie à 21 h et Loric à 21 h 05 le dimanche, heure de Paris (été et hiver). Le cron ne génère pas un bilan avant son créneau et le lecteur affiche l’heure du compte connecté. Les données des deux bilans restent arrêtées à 21 h.
+
 Schéma installé sur `rlatjredsjvgjsbrqmtm` le 23 novembre 2026 via la migration `weekly_recaps`, depuis `weekly-recaps.sql`. Le CLI Windows était bloqué par le contrôle d’application ; le fichier SQL source a donc été appliqué par l’outil de migration Supabase, sans inventer de fichier de migration daté local.
 
 Les tables `logger_weekly_preferences` et `logger_weekly_reports` sont sous RLS : lecture limitée à leur propriétaire, écritures exclusivement serveur. Les RPC `logger_weekly_claim` et `logger_weekly_source` sont réservées au rôle service et utilisent les droits de l’appelant.

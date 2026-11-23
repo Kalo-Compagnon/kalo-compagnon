@@ -96,6 +96,7 @@ function serviceSetup() {
   const backend: WeeklyBackend = {
     now: () => new Date("2026-11-23T10:00:00+01:00"),
     enabled: async () => enabled,
+    scheduleDelay: async () => 0,
     setEnabled: async (_, v) => {
       enabled = v;
     },
@@ -254,4 +255,33 @@ test("récap : seul le dernier bilan prêt est accessible, même depuis un ancie
     "2026-11-09",
   );
   assert.equal(s.calls(), 1);
+});
+
+test("récap : Coralie à 21 h, Loric à 21 h 05, heure de Paris été comme hiver", async () => {
+  for (const [week, utc] of [
+    ["2026-11-16", "2026-11-22T20:"],
+    ["2026-06-29", "2026-07-05T19:"],
+  ]) {
+    const s = serviceSetup();
+    s.backend.scheduleDelay = async (user) => (user === "a" ? 0 : 5);
+    s.backend.users = async () => ["a", "b"];
+    const generated: string[] = [];
+    s.backend.source = async (user) => {
+      generated.push(user);
+      return { settings: {}, days: { [week]: { weightKg: 70 } }, entries: [] };
+    };
+    s.backend.now = () => new Date(utc + "00:00Z");
+    await s.service.dispatch();
+    assert.deepEqual(generated, ["a"]);
+    s.backend.now = () => new Date(utc + "04:59Z");
+    await s.service.dispatch();
+    assert.deepEqual(generated, ["a"]);
+    s.backend.now = () => new Date(utc + "05:00Z");
+    await s.service.dispatch();
+    assert.deepEqual(generated, ["a", "b"]);
+    assert.equal(
+      (await s.service.request("b", { action: "weekly-list" })).scheduledTime,
+      "21:05",
+    );
+  }
 });

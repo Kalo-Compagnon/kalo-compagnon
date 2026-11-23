@@ -13,6 +13,7 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
       create table public.kermit_users(user_id uuid primary key references auth.users(id));`);
     await db.exec(readFileSync("supabase/schema.sql", "utf8"));
     await db.exec(readFileSync("supabase/weekly-recaps.sql", "utf8"));
+    await db.exec(readFileSync("supabase/weekly-recap-schedule.sql", "utf8"));
     await db.exec(readFileSync("supabase/weekly-recap-jobs.sql", "utf8"));
     await db.exec(
       readFileSync("supabase/weekly-recap-job-notifications.sql", "utf8"),
