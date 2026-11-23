@@ -10,10 +10,29 @@ import {
 } from "../supabase/functions/_shared/weekly-metrics";
 import {
   createWeeklyService,
+  googleFailureReason,
   type WeeklyBackend,
   type WeeklyReport,
 } from "../supabase/functions/_shared/weekly-service";
 const start = "2026-11-16";
+test("diagnostic Google : catégorie fixe sans conserver la réponse du fournisseur", () => {
+  assert.equal(
+    googleFailureReason(
+      503,
+      "The model is overloaded. Please try again later.",
+    ),
+    "google_503_overloaded",
+  );
+  assert.equal(
+    googleFailureReason(503, "This model is experiencing high demand."),
+    "google_503_high_demand",
+  );
+  assert.equal(
+    googleFailureReason(503, "private content"),
+    "google_503_unknown",
+  );
+  assert.equal(googleFailureReason(429, "quota"), "google_429");
+});
 const source = (): WeeklySource => ({
   settings: { basal: 1500, deficitGoal: 300 },
   days: {},

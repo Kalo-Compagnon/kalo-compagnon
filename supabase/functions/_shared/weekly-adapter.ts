@@ -13,6 +13,7 @@ import {
   weeklyResponseSchema,
   validateWeeklyNarrative,
   WeeklyGenerationError,
+  googleFailureReason,
   type WeeklyBackend,
   type WeeklyReport,
 } from "./weekly-service.ts";
@@ -147,8 +148,10 @@ export function createWeeklyBackend(
       }
       if (!response.ok) {
         let code = "UNKNOWN";
+        let reason = googleFailureReason(response.status, null);
         try {
           const body = await response.json();
+          reason = googleFailureReason(response.status, body.error?.message);
           if (
             [
               "INVALID_ARGUMENT",
@@ -167,9 +170,11 @@ export function createWeeklyBackend(
             event: "weekly_google_error",
             status: response.status,
             code,
+            model,
+            reason,
           }),
         );
-        throw new WeeklyGenerationError(`google_${response.status}`);
+        throw new WeeklyGenerationError(reason);
       }
       const payload = await response.json(),
         candidate = payload.candidates?.[0];

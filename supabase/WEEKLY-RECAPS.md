@@ -40,6 +40,8 @@ Le cron existant traite une demande pour la dernière semaine terminée uniqueme
 
 `weekly-recap-diagnostics.sql` ajoute un diagnostic réservé au serveur : codes HTTP Google, dépassement de délai ou réponse structurée invalide. Les codes proviennent d’une liste contrôlée et ne contiennent aucun texte du modèle, secret ou donnée du journal. Le navigateur conserve un message d’indisponibilité sans exposer ces détails.
 
+`weekly-recap-provider-diagnostics.sql` distingue les motifs des erreurs 503 : forte demande, surcharge, capacité ou indisponibilité. Seule une catégorie fixe est conservée, jamais le message brut de Google. Le diagnostic `google_503_high_demand` confirme une forte demande signalée par le fournisseur ; décaler les deux comptes ne garantit pas la disponibilité globale de Gemini.
+
 ## Tests
 
 `npm test` vérifie les périodes (dont les changements d’heure), calculs, données absentes, immutabilité, baux et droits SQL. `npm run test:browser:recap` vérifie à 390 et 1440 px la zone sous la synchronisation, l’ouverture du dernier bilan uniquement, l’activation, la génération et l’ouverture depuis une notification, avec des données fictives. Aucun test automatisé n’envoie de données réelles à Gemini ni de notification à un téléphone.

@@ -21,6 +21,9 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
     await db.exec(
       readFileSync("supabase/weekly-recap-diagnostics.sql", "utf8"),
     );
+    await db.exec(
+      readFileSync("supabase/weekly-recap-provider-diagnostics.sql", "utf8"),
+    );
     await db.query("insert into auth.users values($1),($2)", [a, b]);
     for (const [user, weight] of [
       [a, 70],

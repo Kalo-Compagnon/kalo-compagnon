@@ -56,6 +56,20 @@ export interface WeeklyBackend {
   users(): Promise<string[]>;
   notify(user: string, start: string): Promise<void>;
 }
+export function googleFailureReason(status: number, message: unknown): string {
+  if (status !== 503) return `google_${status}`;
+  const text = typeof message === "string" ? message.toLowerCase() : "";
+  const cause = /high demand|high traffic/.test(text)
+    ? "high_demand"
+    : /overload/.test(text)
+      ? "overloaded"
+      : /capacity|resource/.test(text)
+        ? "capacity"
+        : /unavailable/.test(text)
+          ? "unavailable"
+          : "unknown";
+  return `google_503_${cause}`;
+}
 export function validateWeeklyNarrative(value: unknown): WeeklyNarrative {
   const v = value as WeeklyNarrative;
   const text = (s: unknown, max: number): s is string =>
