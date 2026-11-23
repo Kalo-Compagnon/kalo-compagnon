@@ -3,6 +3,7 @@ import { useApp, Button, Field, Sheet, Confirm } from "./ui";
 import { supabase, accountSessions } from "./persistence";
 import { AccountLoginRequired } from "./account-sessions";
 import { Notifications } from "./Notifications";
+import { WeeklyRecap, WeeklyRecapCard } from "./WeeklyRecap";
 import { detachDevicePush, syncDevicePush } from "./notifications-client";
 import { useEffect } from "react";
 import { allDays, dayKey, type State } from "./domain";
@@ -393,6 +394,16 @@ export function Account() {
             >
               <RefreshCw size={18} /> Synchroniser
             </Button>
+            <WeeklyRecapCard
+              onOpen={(week) =>
+                modal(
+                  <WeeklyRecap
+                    initialWeek={week}
+                    onBack={() => modal(<Account />)}
+                  />,
+                )
+              }
+            />
             <details className="account-transfer">
               <summary>
                 <Upload size={16} />

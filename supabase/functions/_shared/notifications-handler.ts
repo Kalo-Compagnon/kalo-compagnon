@@ -23,6 +23,8 @@ export interface PushDevice {
   origin: string;
 }
 export interface PushBackend {
+  weeklyRequest?(user: string, body: Record<string, unknown>): Promise<unknown>;
+  weeklyDispatch?(): Promise<unknown>;
   user(token: string): Promise<string | null>;
   keys(): Promise<{ publicKey: string; privateKey: string }>;
   allowed(secret: string): Promise<boolean>;
@@ -192,7 +194,10 @@ export function createNotificationsHandler(b: PushBackend) {
             }
           }
         }
-        return json({ sent, failed });
+        const weekly = b.weeklyDispatch
+          ? await b.weeklyDispatch().catch(() => ({ failed: true }))
+          : undefined;
+        return json({ sent, failed, ...(weekly ? { weekly } : {}) });
       }
       const token =
         req.headers.get("authorization")?.replace(/^Bearer /i, "") ?? "";
@@ -202,6 +207,23 @@ export function createNotificationsHandler(b: PushBackend) {
           { error: "Connecte-toi pour régler tes notifications." },
           401,
         );
+      if (
+        typeof body.action === "string" &&
+        body.action.startsWith("weekly-") &&
+        b.weeklyRequest
+      ) {
+        try {
+          return json(await b.weeklyRequest(user, body));
+        } catch (error) {
+          return json(
+            {
+              error:
+                error instanceof Error ? error.message : "Récap indisponible.",
+            },
+            400,
+          );
+        }
+      }
       const p = (await b.preferences(user)) ?? defaultNotificationPreferences();
       const clock = localClock(now, p.timezone);
       if (body.action === "status") {
@@ -303,7 +325,7 @@ export function createNotificationsHandler(b: PushBackend) {
             key,
             kind: "weight",
             day: clock.day,
-              title: "Les notifications sont prêtes",
+            title: "Les notifications sont prêtes",
             body: "Tu recevras ici les rappels que tu as choisis.",
             ttl: 60,
           },

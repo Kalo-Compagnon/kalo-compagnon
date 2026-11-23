@@ -16,7 +16,7 @@ select cron.schedule('kalo-push-reminders','* * * * *',$cron$
   select net.http_post(
     url:='https://rlatjredsjvgjsbrqmtm.supabase.co/functions/v1/notifications',
     headers:=jsonb_build_object('Content-Type','application/json','x-kalo-dispatch',(select decrypted_secret from vault.decrypted_secrets where name='kalo_push_dispatch' limit 1)),
-    body:='{"action":"dispatch"}'::jsonb, timeout_milliseconds:=30000
+    body:='{"action":"dispatch"}'::jsonb, timeout_milliseconds:=60000
   );
 $cron$);
 -- Old delivery leases and snoozes are operational metadata, not journal entries.

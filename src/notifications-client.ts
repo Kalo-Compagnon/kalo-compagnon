@@ -64,7 +64,7 @@ export async function notificationApi<T>(
         import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || cloud.publishableKey,
     },
     body: JSON.stringify({ action, ...payload }),
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(action === "weekly-generate" ? 35_000 : 15_000),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok)

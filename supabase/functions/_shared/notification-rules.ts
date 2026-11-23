@@ -231,7 +231,7 @@ export interface Snooze {
 }
 export interface Reminder {
   key: string;
-  kind: MissingKind | `before:${MealSlot}`;
+  kind: MissingKind | `before:${MealSlot}` | "weekly";
   day: string;
   title: string;
   body: string;

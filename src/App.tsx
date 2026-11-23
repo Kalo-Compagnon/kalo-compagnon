@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type ReactElement,
 } from "react";
 import { createPortal } from "react-dom";
 import { useInlineActions } from "./inline-actions";
@@ -28,6 +29,7 @@ import { Duo } from "./Duo";
 import { Account, DataScreen } from "./Settings";
 import { Profile } from "./Profile";
 import { Notifications } from "./Notifications";
+import { WeeklyRecap } from "./WeeklyRecap";
 import { syncDevicePush } from "./notifications-client";
 import { Appearance, applyAppearance, defaultHaloColor } from "./Appearance";
 import { updateApplicationIcons } from "./app-icons";
@@ -38,6 +40,12 @@ const tabs = [
   ["body", "Corps", "ic_other"],
   ["duo", "Duo", "ic_heart"],
 ];
+const isAccountDialog = (node: ReactNode): node is ReactElement =>
+  isValidElement(node) &&
+  (node.type === Profile ||
+    node.type === Account ||
+    node.type === Notifications ||
+    node.type === WeeklyRecap);
 export default function App() {
   useEffect(() => enableHorizontalWheel(document.getElementById("root")!), []);
   const [, render] = useState(0),
@@ -61,11 +69,8 @@ export default function App() {
   const setSheet = useCallback(
     (node: ReactNode) => {
       if (
-        isValidElement(node) &&
-        (node.type === Kermit ||
-          node.type === Profile ||
-          node.type === Account ||
-          node.type === Notifications)
+        isAccountDialog(node) ||
+        (isValidElement(node) && node.type === Kermit)
       ) {
         clearInline();
         setFloatingSheet(node);
@@ -85,11 +90,7 @@ export default function App() {
     const dialog = floatingDialog.current;
     const opener = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
-    const accountPanel =
-      isValidElement(floatingSheet) &&
-      (floatingSheet.type === Profile ||
-        floatingSheet.type === Account ||
-        floatingSheet.type === Notifications);
+    const accountPanel = isAccountDialog(floatingSheet);
     if (dialog && accountPanel) {
       const avatar = document
         .querySelector(".account-avatar")
@@ -285,10 +286,17 @@ export default function App() {
         return;
       }
       setSheet(
-        <Notifications
-          initialReminder={kind}
-          onBack={() => setSheet(<Account />)}
-        />,
+        kind === "weekly" ? (
+          <WeeklyRecap
+            initialWeek={url.searchParams.get("reminderDay") ?? undefined}
+            onBack={() => setSheet(<Account />)}
+          />
+        ) : (
+          <Notifications
+            initialReminder={kind}
+            onBack={() => setSheet(<Account />)}
+          />
+        ),
       );
     };
     const current = new URL(location.href);
@@ -613,17 +621,16 @@ export default function App() {
         )}
       <dialog
         ref={floatingDialog}
-        className={`sheet kermit-dialog${isValidElement(floatingSheet) && (floatingSheet.type === Profile || floatingSheet.type === Account || floatingSheet.type === Notifications) ? " profile-dialog" : ""}`}
+        className={`sheet kermit-dialog${isAccountDialog(floatingSheet) ? " profile-dialog" : ""}`}
         aria-label={
-          isValidElement(floatingSheet) &&
-          (floatingSheet.type === Profile ||
-            floatingSheet.type === Account ||
-            floatingSheet.type === Notifications)
-            ? floatingSheet.type === Notifications
-              ? "Notifications"
-              : floatingSheet.type === Account
-                ? "Mon compte"
-                : "Mon profil et mes objectifs"
+          isAccountDialog(floatingSheet)
+            ? floatingSheet.type === WeeklyRecap
+              ? "Récap hebdomadaire"
+              : floatingSheet.type === Notifications
+                ? "Notifications"
+                : floatingSheet.type === Account
+                  ? "Mon compte"
+                  : "Mon profil et mes objectifs"
             : "Kermit Cuisto"
         }
         onCancel={(event) => {

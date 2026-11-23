@@ -1,0 +1,330 @@
+.profile-dialog .account-recap-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+  margin: 6px 0;
+}
+.account-recap-section p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.account-recap-section small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.recap-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 7px;
+  background: color-mix(in srgb, var(--brand) 10%, var(--card));
+}
+.account-section-heading .recap-ai-badge {
+  margin-left: auto;
+}
+.profile-dialog .account-recap-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 12px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand) 7%, var(--card));
+  font-size: 14px;
+}
+:root .sheet.profile-dialog:has(.weekly-recap) {
+  width: 620px;
+  height: auto;
+}
+.weekly-recap {
+  display: grid;
+  gap: 20px;
+}
+.recap-schedule {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 6%, var(--card));
+}
+.recap-schedule strong {
+  font-size: 15px;
+}
+.recap-schedule p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.recap-schedule label {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  min-height: 44px;
+}
+.recap-schedule input {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--brand);
+}
+.recap-schedule small {
+  grid-column: 1/-1;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.recap-week-select {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.recap-week-select select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.recap-intro {
+  padding: 18px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 7%, var(--card));
+  border: 1px solid var(--border);
+}
+.weekly-recap h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.recap-intro h3 {
+  margin-top: 12px;
+}
+.recap-intro p {
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+.recap-intro small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.recap-section {
+  display: grid;
+  gap: 13px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.recap-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.recap-stats > div {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+.recap-stats small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.recap-stats strong {
+  font-size: 21px;
+  white-space: nowrap;
+}
+.recap-stats strong span {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.recap-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+}
+.recap-chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+.recap-chart-day {
+  display: grid;
+  gap: 7px;
+  text-align: center;
+}
+.recap-chart-day small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.recap-chart-track {
+  display: flex;
+  align-items: end;
+  height: 80px;
+  width: 100%;
+  background: color-mix(in srgb, var(--muted) 8%, var(--card));
+  border-radius: 5px;
+  overflow: hidden;
+}
+.recap-chart-track > span {
+  width: 100%;
+  background: var(--brand);
+  border-radius: 5px 5px 0 0;
+}
+.recap-nutrients {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  overflow: hidden;
+}
+.recap-nutrients > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+.recap-nutrients > div + div {
+  border-top: 1px solid var(--border);
+}
+.recap-nutrients small {
+  grid-column: 1/-1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.recap-evolution {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.recap-evolution > div {
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+.recap-evolution span {
+  font-size: 14px;
+}
+.recap-evolution strong {
+  font-size: 23px;
+}
+.recap-evolution small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.recap-section ul,
+.recap-actions ol {
+  padding-left: 20px;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.recap-section li,
+.recap-actions li {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.recap-actions {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--brand) 7%, var(--card));
+}
+.recap-quality {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.recap-quality summary,
+.recap-section summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+.recap-measurements {
+  margin: 8px 0 0;
+}
+.recap-measurements > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  padding: 5px 0;
+}
+.recap-measurements dd {
+  margin: 0;
+}
+.recap-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 24px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+.recap-empty p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0;
+}
+.recap-empty button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.recap-error {
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+@media (max-width: 600px) {
+  .recap-stats {
+    grid-template-columns: 1fr;
+  }
+  .recap-stats > div {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .recap-stats > div > small:last-child {
+    grid-column: 1/-1;
+  }
+  .recap-evolution {
+    grid-template-columns: 1fr;
+  }
+}

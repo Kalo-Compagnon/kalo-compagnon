@@ -6,7 +6,8 @@ export default defineConfig({
     name: 'development-entry',
     configureServer(server) {
       server.middlewares.use((req, _res, next) => {
-        if (req.url === '/' || req.url === '/index.html') req.url = '/app.html';
+        const url = new URL(req.url || '/', 'http://localhost');
+        if (url.pathname === '/' || url.pathname === '/index.html') req.url = '/app.html' + url.search;
         next();
       });
     },
