@@ -1,0 +1,275 @@
+:root .sheet.profile-dialog:has(.notification-settings) {
+  height: auto;
+  width: 460px;
+}
+.notification-settings {
+  display: grid;
+  gap: 18px;
+}
+.notification-device {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  padding: 15px;
+  background: color-mix(in srgb, var(--brand) 7%, var(--card));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.notification-icon {
+  color: var(--text);
+}
+.notification-device strong {
+  font-size: 15px;
+}
+.notification-device p,
+.notification-help {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.notification-device > button {
+  grid-column: 1/-1;
+  min-height: 42px;
+  font-size: 14px;
+}
+.notification-settings form {
+  gap: 20px;
+}
+.notification-master {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.notification-master strong {
+  font-size: 16px;
+}
+.notification-master small {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.notification-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.notification-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 42px;
+  height: 44px;
+  margin: 0;
+  cursor: pointer;
+}
+.notification-switch > span {
+  width: 42px;
+  height: 25px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--muted) 20%, var(--card));
+  pointer-events: none;
+}
+.notification-switch > span::before {
+  content: "";
+  display: block;
+  width: 19px;
+  height: 19px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 1px 3px #0003;
+  transition: transform 150ms;
+}
+.notification-switch input:checked + span {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.notification-switch input:checked + span::before {
+  transform: translateX(17px);
+}
+.notification-switch input:focus-visible + span {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+.notification-group {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.notification-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 16px;
+  margin: 0;
+}
+.notification-rule {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.notification-rule strong {
+  font-size: 14px;
+}
+.notification-time {
+  grid-column: 2/-1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.notification-settings input[type="time"],
+.notification-settings select {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+}
+.notification-wide-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+.notification-rule > .notification-wide-label {
+  grid-column: 1/-1;
+}
+.notification-meal,
+.notification-meal-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 48px;
+  align-items: center;
+  gap: 12px;
+}
+.notification-meal-head {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.notification-meal {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.notification-meal > label:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+}
+.notification-meal strong {
+  font-size: 14px;
+  flex: 1 1 100%;
+}
+.notification-meal input[type="time"] {
+  width: 105px;
+}
+.notification-save {
+  position: sticky;
+  bottom: -20px;
+  background: var(--card);
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+.notification-save > button {
+  width: 100%;
+}
+.notification-error {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--brand) 12%, var(--card));
+}
+.notification-today {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+}
+.notification-today > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 36px;
+}
+.notification-today > summary span {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.notification-pending {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.notification-pending strong {
+  font-size: 14px;
+}
+.notification-pending small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.notification-pending > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.notification-pending .outline {
+  min-height: 40px;
+  padding: 8px;
+  font-size: 13px;
+}
+.notification-skip {
+  border: 0;
+  background: transparent;
+  padding: 6px 0;
+  text-align: left;
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 36px;
+}
+.notification-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.profile-dialog .account-shortcuts:has(> :nth-child(4)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+:root .sheet.profile-dialog .account-shortcuts-with-notifications {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (prefers-reduced-motion: reduce) {
+  .notification-switch > span::before {
+    transition: none;
+  }
+}

@@ -10,15 +10,15 @@ import App from "./App";
 import { installDisclosureMotion } from "./disclosure-motion";
 const stopDisclosureMotion = installDisclosureMotion();
 import.meta.hot?.dispose(stopDisclosureMotion);
-// Replace the previous prototype's cache-first worker, which otherwise serves stale HTML.
+// Replace the old cache-first worker with the notification worker at the same scope.
 if ("serviceWorker" in navigator)
   void navigator.serviceWorker
-    .getRegistrations()
-    .then((registrations) =>
-      Promise.all(
-        registrations
-          .filter((r) => new URL(r.scope).origin === location.origin)
-          .map((r) => r.unregister()),
-      ),
-    );
+    .register(
+      new URL("sw.js", new URL(import.meta.env.BASE_URL, document.baseURI))
+        .href,
+      { updateViaCache: "none" },
+    )
+    .catch(() => {
+      /* The journal remains usable without push support. */
+    });
 createRoot(document.getElementById("root")!).render(<App />);

@@ -134,6 +134,9 @@ export interface Meal {
   imagePath?: string;
 }
 export interface Day {
+  notificationMeals?: Partial<
+    Record<"breakfast" | "lunch" | "snack" | "dinner", "skipped">
+  >;
   isDeleted?: boolean;
   weightKg?: number;
   basal?: number;

@@ -16,7 +16,8 @@
     "format": "prettier --write src tests/*.ts server/*.mjs",
     "prepare:ciqual": "node scripts/prepare-ciqual.mjs",
     "test:browser:kermit": "node tests/kermit-browser.mjs",
-    "test:browser:accounts": "node tests/account-switch-browser.mjs"
+    "test:browser:accounts": "node tests/account-switch-browser.mjs",
+    "test:browser:notifications": "node tests/notifications-browser.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",

@@ -2,6 +2,8 @@
 import { useApp, Button, Field, Sheet, Confirm } from "./ui";
 import { supabase, accountSessions } from "./persistence";
 import { AccountLoginRequired } from "./account-sessions";
+import { Notifications } from "./Notifications";
+import { detachDevicePush, syncDevicePush } from "./notifications-client";
 import { useEffect } from "react";
 import { allDays, dayKey, type State } from "./domain";
 import {
@@ -30,6 +32,7 @@ import {
   Plus,
   Check,
   ArrowLeftRight,
+  Bell,
 } from "lucide-react";
 import "./account.css";
 export function DataScreen() {
@@ -192,7 +195,10 @@ export function Account() {
   const switchAccount = async (id: string) => {
     setBusy(true);
     try {
-      await repo.changeAccount(() => accountSessions.switchTo(id));
+      await repo.changeAccount(async () => {
+        await detachDevicePush();
+        await accountSessions.switchTo(id);
+      });
     } catch (error) {
       if (error instanceof AccountLoginRequired) {
         setEmail(error.email);
@@ -203,6 +209,7 @@ export function Account() {
       notify((error as Error).message);
     } finally {
       setBusy(false);
+      void syncDevicePush(repo.scope).catch(() => {});
     }
   };
   useEffect(() => {
@@ -314,7 +321,10 @@ export function Account() {
       )}
       {!addingAccount && (
         <>
-          <nav className="account-shortcuts" aria-label="Réglages du compte">
+          <nav
+            className="account-shortcuts account-shortcuts-with-notifications"
+            aria-label="Réglages du compte"
+          >
             <button
               onClick={() => modal(<Profile />)}
               aria-label="Mon profil et mes objectifs"
@@ -327,6 +337,15 @@ export function Account() {
               <Palette />
               <span>Apparence</span>
               <small>Thème et couleurs</small>
+            </button>
+            <button
+              onClick={() =>
+                modal(<Notifications onBack={() => modal(<Account />)} />)
+              }
+            >
+              <Bell />
+              <span>Notifications</span>
+              <small>Rappels et horaires</small>
             </button>
             {connected && (
               <button
@@ -427,6 +446,7 @@ export function Account() {
                 setBusy(true);
                 try {
                   await repo.changeAccount(async () => {
+                    await detachDevicePush();
                     const { error } = await supabase!.auth.signOut({
                       scope: "local",
                     });
@@ -460,6 +480,7 @@ export function Account() {
                     if (current.error) throw current.error;
                     if (current.data.session)
                       accountSessions.remember(current.data.session);
+                    await detachDevicePush();
                     return signup
                       ? await supabase!.auth.signUp({
                           email,
@@ -484,6 +505,7 @@ export function Account() {
                   notify((e as Error).message);
                 } finally {
                   setBusy(false);
+                  void syncDevicePush(repo.scope).catch(() => {});
                 }
               }}
             >

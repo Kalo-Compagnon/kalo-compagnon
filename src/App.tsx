@@ -27,6 +27,8 @@ import { Activity } from "./Activity";
 import { Duo } from "./Duo";
 import { Account, DataScreen } from "./Settings";
 import { Profile } from "./Profile";
+import { Notifications } from "./Notifications";
+import { syncDevicePush } from "./notifications-client";
 import { Appearance, applyAppearance, defaultHaloColor } from "./Appearance";
 import { updateApplicationIcons } from "./app-icons";
 import { enableHorizontalWheel } from "./horizontal-scroll";
@@ -58,7 +60,13 @@ export default function App() {
   const floatingDialog = useRef<HTMLDialogElement>(null);
   const setSheet = useCallback(
     (node: ReactNode) => {
-      if (isValidElement(node) && (node.type === Kermit || node.type === Profile || node.type === Account)) {
+      if (
+        isValidElement(node) &&
+        (node.type === Kermit ||
+          node.type === Profile ||
+          node.type === Account ||
+          node.type === Notifications)
+      ) {
         clearInline();
         setFloatingSheet(node);
       } else {
@@ -77,10 +85,15 @@ export default function App() {
     const dialog = floatingDialog.current;
     const opener = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
-    const accountPanel = isValidElement(floatingSheet) &&
-      (floatingSheet.type === Profile || floatingSheet.type === Account);
+    const accountPanel =
+      isValidElement(floatingSheet) &&
+      (floatingSheet.type === Profile ||
+        floatingSheet.type === Account ||
+        floatingSheet.type === Notifications);
     if (dialog && accountPanel) {
-      const avatar = document.querySelector(".account-avatar")?.getBoundingClientRect();
+      const avatar = document
+        .querySelector(".account-avatar")
+        ?.getBoundingClientRect();
       if (avatar) {
         const top = Math.max(12, avatar.top);
         dialog.style.top = top + "px";
@@ -89,11 +102,19 @@ export default function App() {
     }
     dialog?.showModal();
     if (dialog && accountPanel) {
-      const avatar = document.querySelector(".account-avatar")?.getBoundingClientRect();
+      const avatar = document
+        .querySelector(".account-avatar")
+        ?.getBoundingClientRect();
       const panel = dialog.getBoundingClientRect();
       if (avatar) {
-        dialog.style.setProperty("--kermit-origin-x", (avatar.left + avatar.width / 2 - panel.left) + "px");
-        dialog.style.setProperty("--kermit-origin-y", (avatar.top + avatar.height / 2 - panel.top) + "px");
+        dialog.style.setProperty(
+          "--kermit-origin-x",
+          avatar.left + avatar.width / 2 - panel.left + "px",
+        );
+        dialog.style.setProperty(
+          "--kermit-origin-y",
+          avatar.top + avatar.height / 2 - panel.top + "px",
+        );
       }
     }
     document.body.style.overflow = "hidden";
@@ -220,6 +241,80 @@ export default function App() {
       window.removeEventListener("focus", refresh);
     };
   }, []);
+  useEffect(() => {
+    if (!ready) return;
+    const scope = repository.scope;
+    const sync = () => {
+      void syncDevicePush(scope).catch(() => {});
+    };
+    sync();
+    window.addEventListener("focus", sync);
+    return () => window.removeEventListener("focus", sync);
+  }, [ready, repository.scope]);
+  useEffect(() => {
+    const complete = (event: Event) => {
+      const detail = (event as CustomEvent<{ kind: string; day: string }>)
+        .detail;
+      if (!detail || !/^\d{4}-\d{2}-\d{2}$/.test(detail.day)) return;
+      setSheet(null);
+      setEditing(detail.day === dayKey() ? null : detail.day);
+      if (detail.kind === "steps") {
+        setScreen("body");
+        setBodySection("activity");
+      } else if (detail.kind === "weight") {
+        setScreen("global");
+        requestAnimationFrame(() =>
+          document
+            .querySelector(".weight-tracking")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        );
+      } else setScreen("meals");
+    };
+    window.addEventListener("kalo:complete-reminder", complete);
+    return () => window.removeEventListener("kalo:complete-reminder", complete);
+  }, [setSheet]);
+  useEffect(() => {
+    if (!ready) return;
+    const openReminder = (url: URL) => {
+      const kind = url.searchParams.get("kaloReminder");
+      if (!kind || url.origin !== location.origin) return;
+      if (url.searchParams.get("account") !== repository.scope) {
+        setMessage(
+          "Ce rappel concerne un autre compte. Sélectionne ce compte dans « Mon compte ».",
+        );
+        return;
+      }
+      setSheet(
+        <Notifications
+          initialReminder={kind}
+          onBack={() => setSheet(<Account />)}
+        />,
+      );
+    };
+    const current = new URL(location.href);
+    if (current.searchParams.has("kaloReminder")) {
+      openReminder(current);
+      ["kaloReminder", "account", "reminderDay"].forEach((key) =>
+        current.searchParams.delete(key),
+      );
+      history.replaceState(null, "", current);
+    }
+    const message = (event: MessageEvent) => {
+      if (
+        event.data?.type !== "KALO_REMINDER" ||
+        typeof event.data.url !== "string"
+      )
+        return;
+      try {
+        openReminder(new URL(event.data.url));
+      } catch {
+        /* Ignore malformed messages. */
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", message);
+    return () =>
+      navigator.serviceWorker?.removeEventListener("message", message);
+  }, [ready, repository.scope, setSheet]);
   useEffect(() => {
     if (!ready) return;
     const missing = allDays(state).filter(
@@ -518,8 +613,19 @@ export default function App() {
         )}
       <dialog
         ref={floatingDialog}
-        className={`sheet kermit-dialog${isValidElement(floatingSheet) && (floatingSheet.type === Profile || floatingSheet.type === Account) ? " profile-dialog" : ""}`}
-        aria-label={isValidElement(floatingSheet) && (floatingSheet.type === Profile || floatingSheet.type === Account) ? (floatingSheet.type === Account ? "Mon compte" : "Mon profil et mes objectifs") : "Kermit Cuisto"}
+        className={`sheet kermit-dialog${isValidElement(floatingSheet) && (floatingSheet.type === Profile || floatingSheet.type === Account || floatingSheet.type === Notifications) ? " profile-dialog" : ""}`}
+        aria-label={
+          isValidElement(floatingSheet) &&
+          (floatingSheet.type === Profile ||
+            floatingSheet.type === Account ||
+            floatingSheet.type === Notifications)
+            ? floatingSheet.type === Notifications
+              ? "Notifications"
+              : floatingSheet.type === Account
+                ? "Mon compte"
+                : "Mon profil et mes objectifs"
+            : "Kermit Cuisto"
+        }
         onCancel={(event) => {
           event.preventDefault();
           requestSheetClose();

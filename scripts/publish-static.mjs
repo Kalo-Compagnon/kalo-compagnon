@@ -11,6 +11,7 @@ import { resolve, dirname, join } from "node:path";
 // Keep app.html as the development entry. index.html is ready for any static host.
 await copyFile("dist/app.html", "dist/index.html");
 await copyFile("dist/index.html", "index.html");
+await copyFile("dist/sw.js", "sw.js");
 const html = await readFile("dist/index.html", "utf8");
 const catalog = JSON.parse(
   await readFile("dist/assets/app-icons/v1/catalog.json", "utf8"),
