@@ -26,6 +26,9 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
     );
     await db.query("insert into auth.users values($1),($2)", [a, b]);
     await db.exec(readFileSync("supabase/weekly-recap-retries.sql", "utf8"));
+    await db.exec(
+      readFileSync("supabase/weekly-recap-model-fallback.sql", "utf8"),
+    );
     for (const [user, weight] of [
       [a, 70],
       [b, 80],
@@ -177,7 +180,7 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
         )
       ).rows[0].lease;
     assert.ok(await claim());
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 9; attempt++) {
       await db.query(
         "update logger_weekly_reports set status='failed',lease_until=now()+interval '5 minutes' where user_id=$1",
         [b],
@@ -188,13 +191,17 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
         "update logger_weekly_reports set lease_until=now()-interval '1 second' where user_id=$1",
         [b],
       );
-      if (attempt < 3) {
+      if (attempt < 9) {
         assert.equal(await claim(true), null);
         assert.ok(await claim());
       }
     }
-    assert.equal(await claim(), null, "no fourth automatic attempt");
-    assert.ok(await claim(true), "manual attempt allowed after three failures");
+    assert.equal(
+      await claim(),
+      null,
+      "no automatic attempt after the last model",
+    );
+    assert.ok(await claim(true), "manual attempt allowed after all models");
     assert.equal(await claim(true), null, "concurrent manual attempt refused");
     await db.query(
       "update logger_weekly_reports set status='failed',lease_until=now()+interval '15 minutes' where user_id=$1",
@@ -217,7 +224,7 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
           [b],
         )
       ).rows[0].attempts,
-      5,
+      11,
     );
   } finally {
     await db.close();

@@ -15,6 +15,10 @@ import {
   type WeeklyMetrics,
 } from "../supabase/functions/_shared/weekly-metrics";
 import type { WeeklyReport } from "../supabase/functions/_shared/weekly-service";
+import {
+  weeklyAutomaticAttempts,
+  weeklyModels,
+} from "../supabase/functions/_shared/weekly-service";
 import "./weekly-recap.css";
 
 interface WeeklyList {
@@ -308,7 +312,10 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (
       report?.status !== "generating" &&
-      !(report?.status === "failed" && (report.attempts ?? 0) < 3)
+      !(
+        report?.status === "failed" &&
+        (report.attempts ?? 0) < weeklyAutomaticAttempts
+      )
     )
       return;
     let active = true;
@@ -344,7 +351,9 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
   const inProgress =
     report?.status === "generating" &&
     (!report.lease_until || Date.parse(report.lease_until) > Date.now());
-  const exhausted = report?.status === "failed" && (report.attempts ?? 0) >= 3;
+  const exhausted =
+    report?.status === "failed" &&
+    (report.attempts ?? 0) >= weeklyAutomaticAttempts;
   const automaticRetry = report?.status === "failed" && !exhausted;
   const cooling =
     report?.status === "failed" &&
@@ -494,13 +503,15 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
             </p>
             {exhausted ? (
               <p>
-                Les trois tentatives automatiques ont échoué. Tu peux relancer
-                manuellement, avec un délai de 15 minutes entre les essais.
+                Tous les modèles ont été essayés. Tu peux relancer manuellement
+                sur le modèle de base, avec un délai de 15 minutes entre les
+                essais.
               </p>
             ) : automaticRetry ? (
               <p>
-                Tentative {report?.attempts ?? 1}/3 échouée. Nouvelle tentative
-                automatique après 5 minutes.
+                {(report?.attempts ?? 1) < 3
+                  ? `Tentative ${report?.attempts ?? 1}/3 sur le modèle de base échouée. Nouvelle tentative après 5 minutes.`
+                  : `Changement de modèle automatique après 15 minutes. Modèles de secours essayés : ${Math.min((report?.attempts ?? 3) - 3, weeklyModels.length - 1)}/${weeklyModels.length - 1}.`}
               </p>
             ) : null}
             {cooling && (

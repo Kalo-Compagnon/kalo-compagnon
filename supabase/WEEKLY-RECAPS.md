@@ -26,9 +26,9 @@ Schéma installé sur `rlatjredsjvgjsbrqmtm` le 23 novembre 2026 via la migratio
 
 Les tables `logger_weekly_preferences` et `logger_weekly_reports` sont sous RLS : lecture limitée à leur propriétaire, écritures exclusivement serveur. Les RPC `logger_weekly_claim` et `logger_weekly_source` sont réservées au rôle service et utilisent les droits de l’appelant.
 
-Le traitement s’intègre à la fonction Edge `notifications`, avec la clé Gemini existante et le modèle stable `gemini-3.1-flash-lite` (surcharge dédiée `WEEKLY_GEMINI_MODEL`, sans modifier le modèle du chat Kermit). Les quotas Kermit sont partagés. Un bail de deux minutes avec jeton exclusif empêche les générations concurrentes et les écritures d’un ancien traitement. Les trois tentatives automatiques sont espacées de cinq minutes ; les relances manuelles suivantes respectent quinze minutes. Un bilan déjà prêt ne peut pas être remplacé par ce mécanisme. Une semaine sans données n’appelle pas Gemini.
+Le traitement s’intègre à la fonction Edge `notifications`, avec la clé Gemini existante. Le modèle de base des récapitulatifs est `gemini-3.1-flash-lite`, sans modifier le modèle du chat Kermit. Les quotas Kermit sont partagés. Un bail de deux minutes avec jeton exclusif empêche les générations concurrentes et les écritures d’un ancien traitement. Un bilan déjà prêt ne peut pas être remplacé par ce mécanisme. Une semaine sans données n’appelle pas Gemini.
 
-Le cron existant traite au plus une génération par minute pour ne pas monopoliser l’envoi des rappels. Son délai HTTP est porté à 60 secondes. La notification « Ton bilan de la semaine est prêt » respecte l’activation des notifications, l’heure d’arrêt choisie et la fenêtre du dimanche soir. Les appareils expirés sont retirés et les envois dédupliqués.
+Le cron existant traite au plus une génération par minute pour ne pas monopoliser l’envoi des rappels. Son délai HTTP est porté à 60 secondes. La notification « Ton bilan de la semaine est prêt » respecte l’activation des notifications et l’heure d’arrêt choisie. Si le bilan arrive trop tard, l’alerte reste possible les jours suivants à partir de 9 h. Les appareils expirés sont retirés et les envois dédupliqués.
 
 Les préférences désactivées ne déclenchent aucune analyse automatique. L’activation des rappels sur l’iPhone reste nécessaire pour recevoir une notification ; le bilan est consultable même sans notification.
 
@@ -44,7 +44,9 @@ Le cron existant traite une demande pour la dernière semaine terminée uniqueme
 
 ## Relances après erreur
 
-`weekly-recap-retries.sql` limite le traitement automatique à trois tentatives au total, espacées de cinq minutes après un échec. Après le troisième échec, le lecteur propose une relance manuelle avec un délai de quinze minutes, affiché en heure de Paris. Chaque échec manuel impose à nouveau quinze minutes. Le compteur total est conservé et le cron ne reprend pas une nouvelle série après une relance manuelle. Les baux SQL bloquent les clics concurrents et les relances anticipées, même depuis plusieurs appareils. Les quotas Gemini restent vérifiés à chaque appel. Les demandes lancées manuellement bénéficient également des tentatives automatiques restantes.
+`weekly-recap-retries.sql`, puis `weekly-recap-model-fallback.sql` définissent la séquence : trois tentatives sur le modèle de base, espacées de cinq minutes après un échec, puis une tentative par modèle de secours toutes les quinze minutes. L’ordre est 3.1 Flash Lite (base), 3.5 Flash Lite, 3 Flash Preview, 3.6 Flash, 3.8 Flash, 4 Hydrogen et 2.5 Flash Lite. La version 2.5 Flash, dépréciée, et les modèles sans quota, audio, image et agents sont exclus. La liste correspond aux quotas fournis par le propriétaire et aux API de sortie structurée documentées.
+
+Après les neuf tentatives automatiques, le lecteur débloque la relance manuelle sur le modèle de base, avec quinze minutes d’attente affichées en heure de Paris. Chaque échec manuel impose à nouveau quinze minutes, sans nouvelle boucle automatique. Le compteur total est conservé. Les baux SQL bloquent les clics concurrents et les relances anticipées, même depuis plusieurs appareils. Les quotas Gemini restent vérifiés à chaque appel. Les demandes lancées manuellement bénéficient également des tentatives automatiques restantes. Les demandes déjà en échec reprennent au prochain modèle sans remettre leur compteur à zéro.
 
 ## Tests
 

@@ -5,6 +5,7 @@ import {
   latestRecapWeek,
   shiftWeekDay,
 } from "../supabase/functions/_shared/weekly-metrics.ts";
+import { weeklyAutomaticAttempts } from "../supabase/functions/_shared/weekly-service.ts";
 const user = "10000000-0000-4000-8000-000000000001",
   latest = latestRecapWeek(new Date()),
   older = shiftWeekDay(latest, -7);
@@ -211,7 +212,7 @@ try {
     reports.set(latest, {
       week_start: latest,
       status: "failed",
-      attempts: 3,
+      attempts: weeklyAutomaticAttempts,
       lease_until: new Date(Date.now() + 15 * 60_000).toISOString(),
       metrics: null,
       narrative: null,

@@ -2,6 +2,7 @@ import {
   computeWeeklyMetrics,
   latestRecapWeek,
   weekCutoff,
+  shiftWeekDay,
   type WeeklyMetrics,
   type WeeklySource,
 } from "./weekly-metrics.ts";
@@ -10,6 +11,23 @@ export interface WeeklyNarrative {
   observations: string[];
   actions: string[];
 }
+// Text models with nonzero quotas supplied by the account owner.
+// Deprecated Flash and image/audio/agent-only endpoints are excluded.
+export const weeklyModels = [
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-3.6-flash",
+  "gemini-3.8-flash",
+  "gemini-4-hydrogen",
+  "gemini-2.5-flash-lite",
+] as const;
+export const weeklyAutomaticAttempts = 3 + weeklyModels.length - 1;
+export const weeklyModelForAttempt = (attempt: number) =>
+  attempt <= 3 || attempt > weeklyAutomaticAttempts
+    ? weeklyModels[0]
+    : weeklyModels[attempt - 3];
+export const weeklyRetryMinutes = (attempt: number) => (attempt < 3 ? 5 : 15);
 export interface WeeklyReport {
   week_start: string;
   status: "generating" | "ready" | "empty" | "failed";
@@ -20,6 +38,14 @@ export interface WeeklyReport {
   attempts?: number;
   error_code?: string | null;
   notified_at?: string | null;
+}
+export function weeklyNotificationDue(
+  start: string,
+  day: string,
+  minute: number,
+) {
+  const end = shiftWeekDay(start, 6);
+  return day >= end && minute >= (day === end ? 1260 : 540);
 }
 export class WeeklyGenerationError extends Error {
   readonly reason: string;
@@ -38,7 +64,7 @@ export interface WeeklyBackend {
   claim(user: string, start: string, manual: boolean): Promise<string | null>;
   source(user: string, start: string): Promise<WeeklySource>;
   reserve(user: string, tokens: number): Promise<string>;
-  generate(metrics: WeeklyMetrics): Promise<WeeklyNarrative>;
+  generate(metrics: WeeklyMetrics, model: string): Promise<WeeklyNarrative>;
   finish(
     user: string,
     start: string,
@@ -123,7 +149,13 @@ export function createWeeklyService(b: WeeklyBackend) {
           return b.report(user, start);
         }
         stage = "generate";
-        narrative = validateWeeklyNarrative(await b.generate(metrics));
+        const claimed = await b.report(user, start);
+        narrative = validateWeeklyNarrative(
+          await b.generate(
+            metrics,
+            weeklyModelForAttempt(claimed?.attempts ?? 1),
+          ),
+        );
       }
       stage = "store";
       await b.finish(user, start, metrics, narrative, lease);
@@ -196,7 +228,7 @@ export function createWeeklyService(b: WeeklyBackend) {
           (!report ||
             (report.status !== "ready" &&
               report.status !== "empty" &&
-              (report.attempts ?? 0) < 3 &&
+              (report.attempts ?? 0) < weeklyAutomaticAttempts &&
               (!report.lease_until ||
                 Date.parse(report.lease_until) <= b.now().getTime())))
         ) {

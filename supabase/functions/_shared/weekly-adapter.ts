@@ -14,6 +14,9 @@ import {
   validateWeeklyNarrative,
   WeeklyGenerationError,
   googleFailureReason,
+  weeklyAutomaticAttempts,
+  weeklyRetryMinutes,
+  weeklyNotificationDue,
   type WeeklyBackend,
   type WeeklyReport,
 } from "./weekly-service.ts";
@@ -113,9 +116,8 @@ export function createWeeklyBackend(
         db.rpc("reserve_kermit_call", { p_user: user, p_tokens: tokens }),
       );
     },
-    generate: async (metrics: WeeklyMetrics) => {
-      const key = env("GEMINI_API_KEY"),
-        model = env("WEEKLY_GEMINI_MODEL") || "gemini-3.1-flash-lite";
+    generate: async (metrics: WeeklyMetrics, model: string) => {
+      const key = env("GEMINI_API_KEY");
       if (!key || !/^[a-z0-9.-]+$/.test(model))
         throw new Error("Gemini unavailable");
       let response: Response;
@@ -258,7 +260,7 @@ export function createWeeklyBackend(
     },
     fail: async (user, start, code, lease, detail) => {
       const current = await report(user, start);
-      const cooldown = (current?.attempts ?? 1) < 3 ? 5 : 15;
+      const cooldown = weeklyRetryMinutes(current?.attempts ?? 1);
       await result(
         db
           .from("logger_weekly_reports")
@@ -297,7 +299,7 @@ export function createWeeklyBackend(
             .select("user_id")
             .eq("week_start", latestRecapWeek(new Date()))
             .in("status", ["failed", "generating"])
-            .lt("attempts", 3),
+            .lt("attempts", weeklyAutomaticAttempts),
         ),
       ]);
       return [...preferences, ...jobs, ...retries]
@@ -317,7 +319,7 @@ export function createWeeklyBackend(
       );
       if (
         !job?.notify &&
-        (clock.day !== shiftWeekDay(start, 6) || clock.minute < 1260)
+        !weeklyNotificationDue(start, clock.day, clock.minute)
       )
         return;
       const p = await push.preferences(user);

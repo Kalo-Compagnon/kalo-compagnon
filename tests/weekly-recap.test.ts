@@ -11,10 +11,97 @@ import {
 import {
   createWeeklyService,
   googleFailureReason,
+  weeklyModels,
+  weeklyAutomaticAttempts,
+  weeklyModelForAttempt,
+  weeklyRetryMinutes,
+  weeklyNotificationDue,
   type WeeklyBackend,
   type WeeklyReport,
 } from "../supabase/functions/_shared/weekly-service";
 const start = "2026-11-16";
+test("récap : un bilan retardé peut notifier le lendemain à partir de 9 h", () => {
+  assert.equal(weeklyNotificationDue(start, "2026-11-22", 1259), false);
+  assert.equal(weeklyNotificationDue(start, "2026-11-22", 1260), true);
+  assert.equal(weeklyNotificationDue(start, "2026-11-23", 539), false);
+  assert.equal(weeklyNotificationDue(start, "2026-11-23", 540), true);
+  assert.equal(weeklyNotificationDue(start, "2026-11-21", 1300), false);
+});
+test("récap : trois essais de base, chaque secours une fois, puis manuel sur la base", async () => {
+  const s = serviceSetup();
+  let now = new Date("2026-11-23T10:00:00Z");
+  const models: string[] = [];
+  const key = `a:${start}`;
+  s.backend.now = () => now;
+  s.backend.users = async () => ["a"];
+  s.backend.claim = async (user, week, manual) => {
+    const old = s.reports.get(key);
+    if (
+      old &&
+      (Date.parse(old.lease_until!) > now.getTime() ||
+        (manual
+          ? old.attempts! < weeklyAutomaticAttempts
+          : old.attempts! >= weeklyAutomaticAttempts))
+    )
+      return null;
+    s.reports.set(key, {
+      week_start: week,
+      status: "generating",
+      attempts: (old?.attempts ?? 0) + 1,
+      metrics: null,
+      narrative: null,
+      generated_at: null,
+      lease_until: new Date(now.getTime() + 120000).toISOString(),
+    });
+    return "lease";
+  };
+  s.backend.generate = async (_, model) => {
+    models.push(model);
+    throw Error("provider unavailable");
+  };
+  s.backend.fail = async () => {
+    const old = s.reports.get(key)!;
+    s.reports.set(key, {
+      ...old,
+      status: "failed",
+      lease_until: new Date(
+        now.getTime() + weeklyRetryMinutes(old.attempts!) * 60000,
+      ).toISOString(),
+    });
+  };
+  for (let attempt = 1; attempt <= weeklyAutomaticAttempts; attempt++) {
+    await s.service.dispatch();
+    assert.equal(models.length, attempt);
+    assert.equal(models.at(-1), weeklyModelForAttempt(attempt));
+    await s.service.request("a", { action: "weekly-generate" });
+    assert.equal(
+      models.length,
+      attempt,
+      "manual cannot interrupt automatic sequence",
+    );
+    const wait = weeklyRetryMinutes(attempt) * 60000;
+    now = new Date(now.getTime() + wait - 1);
+    await s.service.dispatch();
+    assert.equal(models.length, attempt, "no early retry");
+    now = new Date(now.getTime() + 1);
+  }
+  assert.deepEqual(models, [weeklyModels[0], weeklyModels[0], ...weeklyModels]);
+  await s.service.dispatch();
+  assert.equal(
+    models.length,
+    weeklyAutomaticAttempts,
+    "automatic sequence ends",
+  );
+  await s.service.request("a", { action: "weekly-generate" });
+  assert.equal(models.at(-1), weeklyModels[0]);
+  assert.equal(models.length, weeklyAutomaticAttempts + 1);
+  await s.service.request("a", { action: "weekly-generate" });
+  assert.equal(
+    models.length,
+    weeklyAutomaticAttempts + 1,
+    "manual cooldown remains active",
+  );
+});
 test("diagnostic Google : catégorie fixe sans conserver la réponse du fournisseur", () => {
   assert.equal(
     googleFailureReason(
