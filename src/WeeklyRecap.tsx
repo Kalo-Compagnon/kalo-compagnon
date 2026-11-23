@@ -306,7 +306,11 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
     };
   }, [scope]);
   useEffect(() => {
-    if (report?.status !== "generating") return;
+    if (
+      report?.status !== "generating" &&
+      !(report?.status === "failed" && (report.attempts ?? 0) < 3)
+    )
+      return;
     let active = true;
     const timer = setInterval(() => {
       void notificationApi<{ report: WeeklyReport | null }>(
@@ -323,7 +327,7 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
       active = false;
       clearInterval(timer);
     };
-  }, [report?.status, scope]);
+  }, [report?.status, report?.attempts, scope]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -341,6 +345,7 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
     report?.status === "generating" &&
     (!report.lease_until || Date.parse(report.lease_until) > Date.now());
   const exhausted = report?.status === "failed" && (report.attempts ?? 0) >= 3;
+  const automaticRetry = report?.status === "failed" && !exhausted;
   const cooling =
     report?.status === "failed" &&
     !!report.lease_until &&
@@ -489,26 +494,34 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
             </p>
             {exhausted ? (
               <p>
-                Trois tentatives ont échoué pour cette semaine. Le bilan reste
-                indisponible pour le moment.
+                Les trois tentatives automatiques ont échoué. Tu peux relancer
+                manuellement, avec un délai de 15 minutes entre les essais.
               </p>
-            ) : (
-              cooling && (
-                <p>
-                  Nouvelle tentative possible à{" "}
-                  {new Date(report!.lease_until!).toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: "Europe/Paris",
-                  })}
-                  .
-                </p>
-              )
+            ) : automaticRetry ? (
+              <p>
+                Tentative {report?.attempts ?? 1}/3 échouée. Nouvelle tentative
+                automatique après 5 minutes.
+              </p>
+            ) : null}
+            {cooling && (
+              <p>
+                {automaticRetry
+                  ? "Prochaine tentative automatique à "
+                  : "Relance manuelle disponible à "}
+                {new Date(report!.lease_until!).toLocaleTimeString("fr-FR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: "Europe/Paris",
+                })}
+                .
+              </p>
             )}
             {report?.status !== "empty" && (
               <Button
                 primary
-                disabled={busy || loading || inProgress || cooling || exhausted}
+                disabled={
+                  busy || loading || inProgress || cooling || automaticRetry
+                }
                 onClick={generate}
               >
                 {busy || inProgress ? (
@@ -516,6 +529,8 @@ export function WeeklyRecap({ onBack }: { onBack: () => void }) {
                     <RefreshCw size={16} />
                     Génération en cours…
                   </>
+                ) : report?.status === "failed" ? (
+                  "Relancer mon récap"
                 ) : (
                   "Générer ce récap"
                 )}

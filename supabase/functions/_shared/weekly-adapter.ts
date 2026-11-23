@@ -95,9 +95,13 @@ export function createWeeklyBackend(
           .limit(53),
       ),
     report,
-    claim: (user, start) =>
+    claim: (user, start, manual) =>
       result<string | null>(
-        db.rpc("logger_weekly_claim", { p_user: user, p_week: start }),
+        db.rpc("logger_weekly_claim", {
+          p_user: user,
+          p_week: start,
+          p_manual: manual,
+        }),
       ),
     source: (user, start) =>
       result<WeeklySource>(
@@ -253,6 +257,8 @@ export function createWeeklyBackend(
       );
     },
     fail: async (user, start, code, lease, detail) => {
+      const current = await report(user, start);
+      const cooldown = (current?.attempts ?? 1) < 3 ? 5 : 15;
       await result(
         db
           .from("logger_weekly_reports")
@@ -260,7 +266,7 @@ export function createWeeklyBackend(
             status: "failed",
             error_code: code,
             error_detail: detail ?? null,
-            lease_until: new Date(Date.now() + 10 * 60_000).toISOString(),
+            lease_until: new Date(Date.now() + cooldown * 60_000).toISOString(),
           })
           .eq("user_id", user)
           .eq("week_start", start)
@@ -269,7 +275,7 @@ export function createWeeklyBackend(
       );
     },
     users: async () => {
-      const [preferences, allowed, jobs] = await Promise.all([
+      const [preferences, allowed, jobs, retries] = await Promise.all([
         result<{ user_id: string }[]>(
           db
             .from("logger_weekly_preferences")
@@ -285,8 +291,16 @@ export function createWeeklyBackend(
             .select("user_id")
             .eq("week_start", latestRecapWeek(new Date())),
         ),
+        result<{ user_id: string }[]>(
+          db
+            .from("logger_weekly_reports")
+            .select("user_id")
+            .eq("week_start", latestRecapWeek(new Date()))
+            .in("status", ["failed", "generating"])
+            .lt("attempts", 3),
+        ),
       ]);
-      return [...preferences, ...jobs]
+      return [...preferences, ...jobs, ...retries]
         .filter((p) => allowed.some((a) => a.user_id === p.user_id))
         .map((p) => p.user_id)
         .filter((id, index, all) => all.indexOf(id) === index);

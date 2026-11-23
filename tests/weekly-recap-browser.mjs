@@ -155,7 +155,9 @@ try {
       }),
     ).toBeVisible();
     assert.equal(calls.filter((c) => c.action === "weekly-generate").length, 0);
-    await expect(page.getByText("Le dimanche à 21 h 05", {exact:true})).toBeVisible();
+    await expect(
+      page.getByText("Le dimanche à 21 h 05", { exact: true }),
+    ).toBeVisible();
     await page
       .getByLabel("Activer mon récap automatique", { exact: true })
       .check();
@@ -205,6 +207,34 @@ try {
       calls.filter((c) => c.action === "weekly-generate")[0].week,
       undefined,
     );
+    await page.clock.install();
+    reports.set(latest, {
+      week_start: latest,
+      status: "failed",
+      attempts: 3,
+      lease_until: new Date(Date.now() + 15 * 60_000).toISOString(),
+      metrics: null,
+      narrative: null,
+      generated_at: null,
+    });
+    await page.goto(process.env.APP_URL || "http://127.0.0.1:5173/");
+    await page.locator(".account-access").click();
+    await page
+      .getByRole("region", { name: "Récap de la semaine" })
+      .getByRole("button")
+      .click();
+    const retry = page.getByRole("button", {
+      name: "Relancer mon récap",
+      exact: true,
+    });
+    await expect(retry).toBeDisabled();
+    await expect(page.getByText(/Relance manuelle disponible à/)).toBeVisible();
+    await page.clock.fastForward(15 * 60_000 + 1000);
+    await expect(retry).toBeEnabled();
+    await retry.click();
+    await expect(
+      page.getByText("Ton nouveau bilan est disponible.", { exact: true }),
+    ).toBeVisible();
     assert.deepEqual(errors, []);
     await context.close();
     console.log(

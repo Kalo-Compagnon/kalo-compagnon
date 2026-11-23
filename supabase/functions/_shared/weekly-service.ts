@@ -35,7 +35,7 @@ export interface WeeklyBackend {
   setEnabled(user: string, enabled: boolean): Promise<void>;
   list(user: string): Promise<WeeklyReport[]>;
   report(user: string, start: string): Promise<WeeklyReport | null>;
-  claim(user: string, start: string): Promise<string | null>;
+  claim(user: string, start: string, manual: boolean): Promise<string | null>;
   source(user: string, start: string): Promise<WeeklySource>;
   reserve(user: string, tokens: number): Promise<string>;
   generate(metrics: WeeklyMetrics): Promise<WeeklyNarrative>;
@@ -93,10 +93,10 @@ export function validateWeeklyNarrative(value: unknown): WeeklyNarrative {
   };
 }
 export function createWeeklyService(b: WeeklyBackend) {
-  const generate = async (user: string, start: string) => {
+  const generate = async (user: string, start: string, manual = false) => {
     const old = await b.report(user, start);
     if (old?.status === "ready" || old?.status === "empty") return old;
-    const lease = await b.claim(user, start);
+    const lease = await b.claim(user, start, manual);
     if (!lease) return b.report(user, start);
     let stage = "source";
     try {
@@ -142,6 +142,7 @@ export function createWeeklyService(b: WeeklyBackend) {
     return b.report(user, start);
   };
   const latestReport = async (user: string) =>
+    (await b.report(user, latestRecapWeek(b.now()))) ??
     (await b.list(user))
       .filter((r) => r.status === "ready")
       .sort((a, b) => b.week_start.localeCompare(a.week_start))[0] ??
@@ -175,7 +176,7 @@ export function createWeeklyService(b: WeeklyBackend) {
         const week = latestRecapWeek(b.now());
         if (body.week !== undefined && body.week !== week)
           throw new Error("Seul le dernier récap peut être généré.");
-        return { report: await generate(user, week) };
+        return { report: await generate(user, week, true) };
       }
       throw new Error("Action de récap inconnue.");
     },
