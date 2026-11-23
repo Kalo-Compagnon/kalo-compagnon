@@ -223,3 +223,35 @@ test("récap : activation explicite et un seul appel Gemini par passage du cron"
   await s.service.dispatch();
   assert.equal(s.calls(), 2);
 });
+
+test("récap : seul le dernier bilan prêt est accessible, même depuis un ancien lien", async () => {
+  const s = serviceSetup();
+  await s.service.request("a", { action: "weekly-generate" });
+  const current = s.reports.get(`a:${start}`)!;
+  s.reports.set("a:2026-11-09", { ...current, week_start: "2026-11-09" });
+  const response = (await s.service.request("a", {
+    action: "weekly-get",
+    week: "2026-11-09",
+  })) as { report: WeeklyReport };
+  assert.equal(response.report.week_start, start);
+  const list = (await s.service.request("a", { action: "weekly-list" })) as {
+    reports: Pick<WeeklyReport, "week_start" | "status" | "generated_at">[];
+  };
+  assert.deepEqual(
+    list.reports.map((r) => r.week_start),
+    [start],
+  );
+  await assert.rejects(
+    s.service.request("a", { action: "weekly-generate", week: "2026-11-09" }),
+  );
+  s.reports.delete(`a:${start}`);
+  assert.equal(
+    (
+      (await s.service.request("a", { action: "weekly-get" })) as {
+        report: WeeklyReport;
+      }
+    ).report.week_start,
+    "2026-11-09",
+  );
+  assert.equal(s.calls(), 1);
+});

@@ -32,11 +32,7 @@ export function recapPeriod(start: string) {
     });
   return `${format(start)} – ${format(shiftWeekDay(start, 6))}`;
 }
-export function WeeklyRecapCard({
-  onOpen,
-}: {
-  onOpen: (week?: string) => void;
-}) {
+export function WeeklyRecapCard({ onOpen }: { onOpen: () => void }) {
   const { repo } = useApp(),
     scope = repo.scope;
   const [latest, setLatest] = useState<string | null>(null);
@@ -67,12 +63,9 @@ export function WeeklyRecapCard({
           ? recapPeriod(latest)
           : "Chaque dimanche à 21 h, un bilan de tes sept derniers jours."}
       </p>
-      <button
-        className="account-recap-open"
-        onClick={() => onOpen(latest ?? undefined)}
-      >
+      <button className="account-recap-open" onClick={onOpen}>
         <BookOpen size={18} />
-        <span>{latest ? "Lire mon dernier récap" : "Ouvrir mes récaps"}</span>
+        <span>{latest ? "Lire mon dernier récap" : "Ouvrir mon récap"}</span>
       </button>
       <small>
         Calories, protéines, glucides, lipides, activité et évolution.
@@ -254,17 +247,10 @@ function WeeklyNumbers({ metrics: m }: { metrics: WeeklyMetrics }) {
     </>
   );
 }
-export function WeeklyRecap({
-  onBack,
-  initialWeek,
-}: {
-  onBack: () => void;
-  initialWeek?: string;
-}) {
+export function WeeklyRecap({ onBack }: { onBack: () => void }) {
   const { repo, notify } = useApp(),
     scope = repo.scope;
-  const [list, setList] = useState<WeeklyList | null>(null),
-    [week, setWeek] = useState(initialWeek ?? latestRecapWeek(new Date()));
+  const [list, setList] = useState<WeeklyList | null>(null);
   const [report, setReport] = useState<WeeklyReport | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -284,7 +270,6 @@ export function WeeklyRecap({
           if (!Array.isArray(result.reports))
             throw Error("Le service de récap est indisponible.");
           setList(result);
-          if (!initialWeek) setWeek(result.latestWeek);
         }
       })
       .catch((e) => {
@@ -293,7 +278,7 @@ export function WeeklyRecap({
     return () => {
       active = false;
     };
-  }, [scope, initialWeek]);
+  }, [scope]);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -301,7 +286,7 @@ export function WeeklyRecap({
     setError("");
     void notificationApi<{ report: WeeklyReport | null }>(
       "weekly-get",
-      { week },
+      {},
       scope,
     )
       .then((result) => {
@@ -316,14 +301,14 @@ export function WeeklyRecap({
     return () => {
       active = false;
     };
-  }, [scope, week]);
+  }, [scope]);
   useEffect(() => {
     if (report?.status !== "generating") return;
     let active = true;
     const timer = setInterval(() => {
       void notificationApi<{ report: WeeklyReport | null }>(
         "weekly-get",
-        { week },
+        {},
         scope,
       )
         .then((result) => {
@@ -335,7 +320,7 @@ export function WeeklyRecap({
       active = false;
       clearInterval(timer);
     };
-  }, [report?.status, scope, week]);
+  }, [report?.status, scope]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -348,14 +333,7 @@ export function WeeklyRecap({
     }
   };
   const latest = list?.latestWeek ?? latestRecapWeek(new Date());
-  const weeks = [
-    ...new Set([
-      week,
-      ...Array.from({ length: 53 }, (_, i) => shiftWeekDay(latest, -7 * i)),
-    ]),
-  ]
-    .sort()
-    .reverse();
+  const week = report?.week_start ?? latest;
   const inProgress =
     report?.status === "generating" &&
     (!report.lease_until || Date.parse(report.lease_until) > Date.now());
@@ -379,7 +357,7 @@ export function WeeklyRecap({
       await repo.sync();
       const result = await notificationApi<{ report: WeeklyReport | null }>(
         "weekly-generate",
-        { week },
+        {},
         scope,
       );
       setReport(result.report);
@@ -397,7 +375,10 @@ export function WeeklyRecap({
           <CalendarRange size={23} />
           <div>
             <strong>Le dimanche à 21 h</strong>
-            <p>Un nouveau bilan, les anciennes semaines conservées.</p>
+            <p>
+              Retrouve ici ton dernier bilan disponible, actualisé chaque
+              semaine.
+            </p>
           </div>
           <label>
             <input
@@ -431,26 +412,6 @@ export function WeeklyRecap({
             ton iPhone pour être prévenu.
           </small>
         </section>
-        <label className="recap-week-select">
-          Semaine
-          <select
-            aria-label="Semaine du récap"
-            value={week}
-            disabled={busy}
-            onChange={(e) => setWeek(e.target.value)}
-          >
-            {weeks.map((start) => (
-              <option key={start} value={start}>
-                {recapPeriod(start)}
-                {list?.reports.some(
-                  (r) => r.week_start === start && r.status === "ready",
-                )
-                  ? " · Disponible"
-                  : ""}
-              </option>
-            ))}
-          </select>
-        </label>
         {error && (
           <p className="recap-error" role="alert">
             {error}

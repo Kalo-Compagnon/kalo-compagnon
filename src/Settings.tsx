@@ -395,13 +395,8 @@ export function Account() {
               <RefreshCw size={18} /> Synchroniser
             </Button>
             <WeeklyRecapCard
-              onOpen={(week) =>
-                modal(
-                  <WeeklyRecap
-                    initialWeek={week}
-                    onBack={() => modal(<Account />)}
-                  />,
-                )
+              onOpen={() =>
+                modal(<WeeklyRecap onBack={() => modal(<Account />)} />)
               }
             />
             <details className="account-transfer">

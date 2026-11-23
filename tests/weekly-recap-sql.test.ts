@@ -14,7 +14,12 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
     await db.exec(readFileSync("supabase/schema.sql", "utf8"));
     await db.exec(readFileSync("supabase/weekly-recaps.sql", "utf8"));
     await db.exec(readFileSync("supabase/weekly-recap-jobs.sql", "utf8"));
-    await db.exec(readFileSync("supabase/weekly-recap-diagnostics.sql", "utf8"));
+    await db.exec(
+      readFileSync("supabase/weekly-recap-job-notifications.sql", "utf8"),
+    );
+    await db.exec(
+      readFileSync("supabase/weekly-recap-diagnostics.sql", "utf8"),
+    );
     await db.query("insert into auth.users values($1),($2)", [a, b]);
     for (const [user, weight] of [
       [a, 70],
@@ -155,7 +160,9 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
     await assert.rejects(
       db.query("select lease_token from public.logger_weekly_reports"),
     );
-    await assert.rejects(db.query("select error_detail from public.logger_weekly_reports"));
+    await assert.rejects(
+      db.query("select error_detail from public.logger_weekly_reports"),
+    );
   } finally {
     await db.close();
   }

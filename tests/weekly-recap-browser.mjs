@@ -97,23 +97,26 @@ try {
                   status,
                   generated_at,
                 }))
-                .sort((a, b) => b.week_start.localeCompare(a.week_start)),
+                .sort((a, b) => b.week_start.localeCompare(a.week_start))
+                .slice(0, 1),
             },
           });
         if (body.action === "weekly-get")
           return route.fulfill({
-            json: { report: reports.get(body.week) ?? null },
+            json: {
+              report:
+                [...reports.values()].sort((a, b) =>
+                  b.week_start.localeCompare(a.week_start),
+                )[0] ?? null,
+            },
           });
         if (body.action === "weekly-enable") {
           enabled = body.enabled;
           return route.fulfill({ json: { enabled } });
         }
         if (body.action === "weekly-generate") {
-          const report = fixture(
-            body.week,
-            "Un nouveau bilan archivé, sans modifier les autres.",
-          );
-          reports.set(body.week, report);
+          const report = fixture(latest, "Ton nouveau bilan est disponible.");
+          reports.set(latest, report);
           return route.fulfill({ json: { report } });
         }
         return route.fulfill({ json: {} });
@@ -170,50 +173,40 @@ try {
       await dialog.evaluate((el) => el.scrollWidth === el.clientWidth),
       true,
     );
-    await page
-      .getByLabel("Semaine du récap", { exact: true })
-      .selectOption(older);
-    await expect(
-      page.getByText("Voici le bilan de la semaine précédente.", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    const missing = shiftWeekDay(latest, -14);
-    await page
-      .getByLabel("Semaine du récap", { exact: true })
-      .selectOption(missing);
-    await page
-      .getByRole("button", { name: "Générer ce récap", exact: true })
-      .click();
-    await expect(
-      page.getByText("Un nouveau bilan archivé, sans modifier les autres.", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await page
-      .getByLabel("Semaine du récap", { exact: true })
-      .selectOption(latest);
-    await expect(
-      page.getByText("Le bilan le plus récent est disponible.", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    assert.equal(calls.filter((c) => c.action === "weekly-generate").length, 1);
+    await expect(page.getByRole("combobox")).toHaveCount(0);
+    assert.equal(calls.filter((c) => c.action === "weekly-generate").length, 0);
     await page.goto(
       (process.env.APP_URL || "http://127.0.0.1:5173/") +
         `?kaloReminder=weekly&account=${user}&reminderDay=${older}`,
     );
     await expect(
-      page.getByText("Voici le bilan de la semaine précédente.", {
+      page.getByText("Le bilan le plus récent est disponible.", {
         exact: true,
       }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Fermer", exact: true }).click();
     await expect(page.locator("dialog[open]")).toHaveCount(0);
+    reports.clear();
+    await page.locator(".account-access").click();
+    await page
+      .getByRole("region", { name: "Récap de la semaine" })
+      .getByRole("button")
+      .click();
+    await page
+      .getByRole("button", { name: "Générer ce récap", exact: true })
+      .click();
+    await expect(
+      page.getByText("Ton nouveau bilan est disponible.", { exact: true }),
+    ).toBeVisible();
+    assert.equal(calls.filter((c) => c.action === "weekly-generate").length, 1);
+    assert.equal(
+      calls.filter((c) => c.action === "weekly-generate")[0].week,
+      undefined,
+    );
     assert.deepEqual(errors, []);
     await context.close();
     console.log(
-      `Récap ${width}px : zone sous synchro, lecture, historique, activation, génération et notification OK`,
+      `Récap ${width}px : zone sous synchro, lecture du dernier uniquement, activation, génération et notification OK`,
     );
   }
 } finally {

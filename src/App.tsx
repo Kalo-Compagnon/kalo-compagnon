@@ -287,10 +287,7 @@ export default function App() {
       }
       setSheet(
         kind === "weekly" ? (
-          <WeeklyRecap
-            initialWeek={url.searchParams.get("reminderDay") ?? undefined}
-            onBack={() => setSheet(<Account />)}
-          />
+          <WeeklyRecap onBack={() => setSheet(<Account />)} />
         ) : (
           <Notifications
             initialReminder={kind}

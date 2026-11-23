@@ -1,7 +1,6 @@
 import {
   computeWeeklyMetrics,
   latestRecapWeek,
-  isRecapWeek,
   type WeeklyMetrics,
   type WeeklySource,
 } from "./weekly-metrics.ts";
@@ -126,19 +125,24 @@ export function createWeeklyService(b: WeeklyBackend) {
     }
     return b.report(user, start);
   };
+  const latestReport = async (user: string) =>
+    (await b.list(user))
+      .filter((r) => r.status === "ready")
+      .sort((a, b) => b.week_start.localeCompare(a.week_start))[0] ??
+    (await b.report(user, latestRecapWeek(b.now())));
   return {
     request: async (user: string, body: Record<string, unknown>) => {
       if (body.action === "weekly-list")
         return {
           enabled: await b.enabled(user),
           latestWeek: latestRecapWeek(b.now()),
-          reports: (await b.list(user)).map(
-            ({ week_start, status, generated_at }) => ({
+          reports: [await latestReport(user)]
+            .filter((r): r is WeeklyReport => r !== null)
+            .map(({ week_start, status, generated_at }) => ({
               week_start,
               status,
               generated_at,
-            }),
-          ),
+            })),
         };
       if (body.action === "weekly-enable") {
         if (typeof body.enabled !== "boolean")
@@ -148,14 +152,14 @@ export function createWeeklyService(b: WeeklyBackend) {
         await b.setEnabled(user, body.enabled);
         return { enabled: body.enabled };
       }
-      if (!isRecapWeek(body.week, b.now()))
-        throw new Error(
-          "Choisis une semaine terminée parmi les douze derniers mois.",
-        );
       if (body.action === "weekly-get")
-        return { report: await b.report(user, body.week) };
-      if (body.action === "weekly-generate")
-        return { report: await generate(user, body.week) };
+        return { report: await latestReport(user) };
+      if (body.action === "weekly-generate") {
+        const week = latestRecapWeek(b.now());
+        if (body.week !== undefined && body.week !== week)
+          throw new Error("Seul le dernier récap peut être généré.");
+        return { report: await generate(user, week) };
+      }
       throw new Error("Action de récap inconnue.");
     },
     dispatch: async () => {

@@ -100,7 +100,7 @@ export function createWeeklyBackend(
     },
     generate: async (metrics: WeeklyMetrics) => {
       const key = env("GEMINI_API_KEY"),
-        model = env("GEMINI_MODEL") || "gemini-3.5-flash-lite";
+        model = env("WEEKLY_GEMINI_MODEL") || "gemini-3.1-flash-lite";
       if (!key || !/^[a-z0-9.-]+$/.test(model))
         throw new Error("Gemini unavailable");
       let response: Response;
@@ -278,7 +278,19 @@ export function createWeeklyBackend(
     },
     notify: async (user, start) => {
       const clock = localClock(new Date(), weeklyTimezone);
-      if (clock.day !== shiftWeekDay(start, 6) || clock.minute < 1260) return;
+      const job = await result<{ notify: boolean } | null>(
+        db
+          .from("logger_weekly_jobs")
+          .select("notify")
+          .eq("user_id", user)
+          .eq("week_start", start)
+          .maybeSingle(),
+      );
+      if (
+        !job?.notify &&
+        (clock.day !== shiftWeekDay(start, 6) || clock.minute < 1260)
+      )
+        return;
       const p = await push.preferences(user);
       if (!p?.enabled || clock.minute >= stopMinute(p)) return;
       const devices = await push.devices(user);
