@@ -102,7 +102,7 @@ test("un push malformé reste affichable ; aucun clic ne redirige vers un autre 
       },
     },
   });
-  assert.equal(w.notifications[0].title, "Kalo · Rappel");
+  assert.equal(w.notifications[0].title, "Rappel");
   for (const url of [
     "https://evil.test/",
     "https://kalo-compagnon.github.io/another-app/",

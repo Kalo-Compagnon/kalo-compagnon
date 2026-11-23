@@ -270,8 +270,8 @@ export function dueReminders(
         key: `${clock.day}:${rule.kind}:later:${snooze.started_at}:${cycle}`,
         kind: rule.kind,
         day: clock.day,
-        title: `Kalo · ${kindLabel(rule.kind)} à compléter`,
-        body: "Tu avais choisi de compléter plus tard. Ton journal t’attend.",
+        title: `${kindLabel(rule.kind)} à compléter`,
+        body: "Tu avais choisi « Plus tard ». Pense à compléter ta saisie.",
         ttl: 300,
       });
     } else if (clock.minute >= rule.at) {
@@ -279,8 +279,8 @@ export function dueReminders(
         key: `${clock.day}:${rule.kind}:missing`,
         kind: rule.kind,
         day: clock.day,
-        title: `Kalo · ${kindLabel(rule.kind)} à compléter`,
-        body: "Une saisie manque encore. Ouvre Kalo pour la compléter ou choisir « Plus tard ».",
+        title: `${kindLabel(rule.kind)} à compléter`,
+        body: "Ouvre ton journal pour compléter ta saisie.",
         ttl: 300,
       });
     }
@@ -299,8 +299,8 @@ export function dueReminders(
         key: `${clock.day}:before:${slot}`,
         kind: `before:${slot}`,
         day: clock.day,
-        title: `Kalo · Bientôt le ${mealLabels[slot].toLocaleLowerCase("fr")}`,
-        body: "Pense à photographier ou peser ton repas avant de commencer, puis à le noter dans Kalo.",
+        title: `Bientôt le ${mealLabels[slot].toLocaleLowerCase("fr")}`,
+        body: "Pense à photographier ou peser ton repas avant de commencer.",
         ttl: Math.min(300, (at - clock.minute) * 60),
       });
   }

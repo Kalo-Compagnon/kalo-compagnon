@@ -17,12 +17,12 @@ self.addEventListener("push", (event) => {
   } catch {}
   event.waitUntil(
     self.registration.showNotification(
-      typeof payload.title === "string" ? payload.title : "Kalo · Rappel",
+      typeof payload.title === "string" ? payload.title : "Rappel",
       {
         body:
           typeof payload.body === "string"
             ? payload.body
-            : "Ton journal t’attend dans Kalo.",
+            : "Ton journal t’attend.",
         icon: new URL(
           "assets/app-icons/v1/a89ae5/icon-192.png",
           self.registration.scope,

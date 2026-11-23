@@ -303,7 +303,7 @@ export function createNotificationsHandler(b: PushBackend) {
             key,
             kind: "weight",
             day: clock.day,
-            title: "Kalo · Les notifications sont prêtes",
+              title: "Les notifications sont prêtes",
             body: "Tu recevras ici les rappels que tu as choisis.",
             ttl: 60,
           },
