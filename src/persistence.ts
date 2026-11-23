@@ -5,6 +5,7 @@ import { mergeImport } from "./transfer";
 import { initialState, type State, type Settings, seedFoods } from "./domain";
 import { sharedFood } from "./shared-food";
 import { sharedMeal, type SharedMeal } from "./shared-meal";
+import { AccountSessions } from "./account-sessions";
 export type Payload = unknown;
 export interface Doc {
   key: string;
@@ -22,6 +23,11 @@ const url = import.meta.env?.VITE_SUPABASE_URL || cloud.url,
   key = import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || cloud.publishableKey;
 export const supabase =
   typeof window !== "undefined" && url && key ? createClient(url, key) : null;
+export const accountSessions = new AccountSessions(
+  supabase,
+  typeof window !== "undefined" ? window.localStorage : null,
+  url,
+);
 export const docsToState = (docs: Doc[]): State => {
   const s = initialState();
   const prefs: Record<string, unknown> = {};
@@ -148,6 +154,13 @@ export class Repository {
   status = "Enregistré sur cet appareil";
   listeners = new Set<() => void>();
   private busy = false;
+  private changingAccount = false;
+  private activeSync: Promise<void> | null = null;
+  private sessionScope: string | null = null;
+  setSessionScope(scope: string) {
+    // Auth notifications happen before React has loaded the next journal.
+    this.sessionScope = scope;
+  }
   private queued: Promise<unknown> = Promise.resolve();
   subscribe = (fn: () => void) => {
     this.listeners.add(fn);
@@ -252,7 +265,32 @@ export class Repository {
       this.notify();
     });
   }
-  async sync() {
+  sync(): Promise<void> {
+    if (
+      this.changingAccount ||
+      (this.sessionScope !== null && this.sessionScope !== this.scope)
+    )
+      return Promise.resolve();
+    if (this.activeSync) return this.activeSync;
+    this.activeSync = this.performSync().finally(() => {
+      this.activeSync = null;
+    });
+    return this.activeSync;
+  }
+  async changeAccount<T>(action: () => Promise<T>): Promise<T> {
+    if (this.changingAccount)
+      throw new Error("Un changement de compte est déjà en cours.");
+    this.changingAccount = true;
+    try {
+      // Finish requests using the old identity before installing a new session.
+      await this.activeSync;
+      await this.queued;
+      return await action();
+    } finally {
+      this.changingAccount = false;
+    }
+  }
+  private async performSync() {
     const client = this.client;
     if (
       !client ||
@@ -456,7 +494,11 @@ export class Repository {
           (!catalogueError || !d.key.startsWith("catalog/")) &&
           (!recipeError || !d.key.startsWith("recipe/")),
       )) {
-        if (this.scope !== scope) break;
+        if (
+          this.scope !== scope ||
+          (this.sessionScope !== null && this.sessionScope !== scope)
+        )
+          break;
         const shared = snapshot.key.startsWith("catalog/");
         const recipe = snapshot.key.startsWith("recipe/");
         const { data, error } = await client.rpc(

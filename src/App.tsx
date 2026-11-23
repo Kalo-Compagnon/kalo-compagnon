@@ -8,7 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useInlineActions } from "./inline-actions";
-import { repository, supabase } from "./persistence";
+import { repository, supabase, accountSessions } from "./persistence";
 import {
   dayKey,
   titleDay,
@@ -54,15 +54,15 @@ export default function App() {
     open: openInline,
     clear: clearInline,
   } = useInlineActions();
-  const [kermit, setKermit] = useState<ReactNode>(null);
-  const kermitDialog = useRef<HTMLDialogElement>(null);
+  const [floatingSheet, setFloatingSheet] = useState<ReactNode>(null);
+  const floatingDialog = useRef<HTMLDialogElement>(null);
   const setSheet = useCallback(
     (node: ReactNode) => {
-      if (isValidElement(node) && node.type === Kermit) {
+      if (isValidElement(node) && (node.type === Kermit || node.type === Profile || node.type === Account)) {
         clearInline();
-        setKermit(node);
+        setFloatingSheet(node);
       } else {
-        setKermit(null);
+        setFloatingSheet(null);
         openInline(node);
       }
     },
@@ -70,21 +70,40 @@ export default function App() {
   );
   const clearAction = useCallback(() => {
     clearInline();
-    setKermit(null);
+    setFloatingSheet(null);
   }, [clearInline]);
   useEffect(() => {
-    if (!kermit) return;
-    const dialog = kermitDialog.current;
+    if (!floatingSheet) return;
+    const dialog = floatingDialog.current;
     const opener = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
+    const accountPanel = isValidElement(floatingSheet) &&
+      (floatingSheet.type === Profile || floatingSheet.type === Account);
+    if (dialog && accountPanel) {
+      const avatar = document.querySelector(".account-avatar")?.getBoundingClientRect();
+      if (avatar) {
+        const top = Math.max(12, avatar.top);
+        dialog.style.top = top + "px";
+        dialog.style.maxHeight = "calc(100dvh - " + (top + 12) + "px)";
+      }
+    }
     dialog?.showModal();
+    if (dialog && accountPanel) {
+      const avatar = document.querySelector(".account-avatar")?.getBoundingClientRect();
+      const panel = dialog.getBoundingClientRect();
+      if (avatar) {
+        dialog.style.setProperty("--kermit-origin-x", (avatar.left + avatar.width / 2 - panel.left) + "px");
+        dialog.style.setProperty("--kermit-origin-y", (avatar.top + avatar.height / 2 - panel.top) + "px");
+      }
+    }
     document.body.style.overflow = "hidden";
     return () => {
       dialog?.close();
+      dialog?.removeAttribute("style");
       document.body.style.overflow = previousOverflow;
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-  }, [!!kermit]);
+  }, [!!floatingSheet]);
   const [desktopBody, setDesktopBody] = useState(
     () => window.matchMedia("(min-width: 1200px)").matches,
   );
@@ -159,19 +178,19 @@ export default function App() {
       if (channel && supabase) void supabase.removeChannel(channel);
       try {
         await repository.load(id);
+        if (cancelled || scope !== id) return;
         if (id !== "guest") await repository.sync();
-        if (!cancelled) setReady(true);
+        if (!cancelled && scope === id) setReady(true);
       } catch (e) {
         setFatal(`Impossible de charger les données : ${(e as Error).message}`);
       }
     };
     if (supabase) {
-      supabase.auth
-        .getSession()
-        .then(({ data }) => void switchScope(data.session?.user.id ?? "guest"));
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        repository.setSessionScope(session?.user.id ?? "guest");
+        accountSessions.handleAuth(event, session);
         setTimeout(() => void switchScope(session?.user.id ?? "guest"), 0);
       });
       return () => {
@@ -498,15 +517,15 @@ export default function App() {
           inlineHost,
         )}
       <dialog
-        ref={kermitDialog}
-        className="sheet kermit-dialog"
-        aria-label="Kermit Cuisto"
+        ref={floatingDialog}
+        className={`sheet kermit-dialog${isValidElement(floatingSheet) && (floatingSheet.type === Profile || floatingSheet.type === Account) ? " profile-dialog" : ""}`}
+        aria-label={isValidElement(floatingSheet) && (floatingSheet.type === Profile || floatingSheet.type === Account) ? (floatingSheet.type === Account ? "Mon compte" : "Mon profil et mes objectifs") : "Kermit Cuisto"}
         onCancel={(event) => {
           event.preventDefault();
           requestSheetClose();
         }}
         onClick={(event) => {
-          if (event.target !== kermitDialog.current) return;
+          if (event.target !== floatingDialog.current) return;
           const rect = event.currentTarget.getBoundingClientRect();
           if (
             event.clientX < rect.left ||
@@ -517,7 +536,7 @@ export default function App() {
             requestSheetClose();
         }}
       >
-        {kermit}
+        {floatingSheet}
       </dialog>
       {message && (
         <div className="toast" role="status" onClick={() => setMessage("")}>

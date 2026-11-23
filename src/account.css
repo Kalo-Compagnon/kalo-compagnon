@@ -1,0 +1,312 @@
+:root .sheet.profile-dialog:has(.account-panel) {
+  height: auto;
+  width: 440px;
+}
+.profile-dialog .account-panel {
+  display: grid;
+  gap: 22px;
+}
+.profile-dialog .account-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.profile-dialog .account-portrait {
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(
+    --brand-soft,
+    color-mix(in srgb, var(--brand) 12%, var(--card))
+  );
+  color: var(--brand);
+  font-weight: 750;
+}
+.profile-dialog .account-panel-header > div {
+  min-width: 0;
+  flex: 1;
+}
+.profile-dialog .account-panel-header h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.3;
+}
+.profile-dialog .account-panel-header p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.profile-dialog .account-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--muted);
+}
+.profile-dialog .account-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.profile-dialog .account-shortcuts:has(> :nth-child(3)) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.profile-dialog .account-shortcuts button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 12px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 4%, var(--card));
+  color: var(--text);
+  text-align: left;
+}
+.profile-dialog .account-shortcuts svg {
+  width: 22px;
+  height: 22px;
+  color: var(--brand);
+  margin-bottom: 6px;
+  stroke-width: 1.7;
+}
+.profile-dialog .account-shortcuts span {
+  font-size: 14px;
+  font-weight: 700;
+}
+.profile-dialog .account-shortcuts small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.profile-dialog .account-shortcuts button:hover {
+  background: color-mix(in srgb, var(--brand) 10%, var(--card));
+  border-color: var(--brand);
+}
+.profile-dialog .account-connection {
+  display: grid;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.profile-dialog .account-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+}
+.profile-dialog .account-section-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text);
+}
+.profile-dialog .account-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.profile-dialog .account-email {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.profile-dialog .account-email small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.profile-dialog .account-sync,
+.profile-dialog .account-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+.profile-dialog .account-signout {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  min-height: 40px;
+  font-size: 14px;
+}
+.profile-dialog .account-transfer summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  padding: 10px 0;
+}
+.profile-dialog .account-transfer summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--muted);
+}
+.profile-dialog .account-transfer[open] summary::after {
+  content: "?";
+}
+.profile-dialog .account-intro {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.profile-dialog .account-login {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.profile-dialog .account-login > .field {
+  grid-column: 1 / -1;
+  font-size: 14px;
+}
+.profile-dialog .account-login .field input {
+  min-height: 48px;
+}
+.profile-dialog .account-login > button {
+  min-height: 44px;
+  padding: 10px 8px;
+  font-size: 14px;
+}
+.profile-dialog .account-privacy {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.profile-dialog .account-privacy summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+}
+.profile-dialog .account-privacy p {
+  line-height: 1.6;
+}
+.profile-dialog .account-panel button:focus-visible,
+.profile-dialog .account-panel summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+@media (max-width: 360px) {
+  .profile-dialog .account-shortcuts:has(> :nth-child(3)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .profile-dialog .account-shortcuts > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+.profile-dialog .account-switcher {
+  display: grid;
+  gap: 10px;
+}
+.profile-dialog .account-switcher-list {
+  display: grid;
+  gap: 6px;
+  max-height: 210px;
+  overflow-y: auto;
+}
+.profile-dialog .account-switcher-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 4px;
+}
+.profile-dialog .account-switcher-row:has([aria-pressed="true"]) {
+  background: color-mix(in srgb, var(--brand) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
+}
+.profile-dialog .account-switch-target {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  padding: 7px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.profile-dialog .account-switch-target:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.profile-dialog .account-switch-target:not(:disabled):hover {
+  background: color-mix(in srgb, var(--brand) 10%, var(--card));
+}
+.profile-dialog .account-mini-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--brand) 14%, var(--card));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.profile-dialog .account-switch-label {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.profile-dialog .account-switch-label strong {
+  font-size: 14px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-dialog .account-switch-label small {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-dialog .account-remove {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 36px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+}
+.profile-dialog .account-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+}
+.profile-dialog .account-device-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}

@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { useApp, Button, Field, Sheet, Confirm } from "./ui";
-import { supabase } from "./persistence";
+import { supabase, accountSessions } from "./persistence";
+import { AccountLoginRequired } from "./account-sessions";
 import { useEffect } from "react";
 import { allDays, dayKey, type State } from "./domain";
 import {
@@ -16,6 +17,21 @@ import { LegacyMenu } from "./LegacyMeals";
 import { Profile } from "./Profile";
 import { Appearance } from "./Appearance";
 import { Duo } from "./Duo";
+import {
+  UserRound,
+  Palette,
+  HeartHandshake,
+  RefreshCw,
+  Upload,
+  LogOut,
+  X,
+  Cloud,
+  HardDrive,
+  Plus,
+  Check,
+  ArrowLeftRight,
+} from "lucide-react";
+import "./account.css";
 export function DataScreen() {
   const { state, modal, update, notify } = useApp();
   const [preview, setPreview] = useState<{
@@ -155,13 +171,40 @@ export function DataScreen() {
   );
 }
 export function Account() {
-  const { repo, notify, modal } = useApp(),
+  const { repo, state, close, notify, modal } = useApp(),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [signup, setSignup] = useState(false),
+    [addingAccount, setAddingAccount] = useState(false),
+    [savedAccounts, setSavedAccounts] = useState(accountSessions.list),
     [accountEmail, setAccountEmail] = useState("");
   const connected = repo.scope !== "guest";
+  useEffect(
+    () =>
+      accountSessions.subscribe(() => setSavedAccounts(accountSessions.list())),
+    [],
+  );
+  useEffect(() => {
+    if (connected)
+      accountSessions.label(repo.scope, state.settings.displayName ?? "");
+  }, [repo.scope, state.settings.displayName, connected]);
+  const switchAccount = async (id: string) => {
+    setBusy(true);
+    try {
+      await repo.changeAccount(() => accountSessions.switchTo(id));
+    } catch (error) {
+      if (error instanceof AccountLoginRequired) {
+        setEmail(error.email);
+        setPassword("");
+        setSignup(false);
+        setAddingAccount(true);
+      }
+      notify((error as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
   useEffect(() => {
     let active = true;
     void supabase?.auth.getSession().then(({ data }) => {
@@ -172,150 +215,333 @@ export function Account() {
     };
   }, [repo.scope]);
   return (
-    <Sheet title="Mon compte" subtitle={repo.status}>
-      <Button onClick={() => modal(<Appearance />)}>Apparence</Button>
-      {connected && (
-        <Button onClick={() => modal(<Duo settings />)}>Partage Duo</Button>
-      )}
-      {!supabase ? (
-        <p>
-          La synchronisation distante n’est pas configurée. Tes données sont
-          enregistrées sur cet appareil. Renseigne le projet Supabase dans la
-          configuration pour retrouver tes données sur iPhone et PC.
-        </p>
-      ) : connected ? (
-        <>
+    <section className="account-panel">
+      <header className="account-panel-header">
+        <span className="account-portrait" aria-hidden="true">
+          {state.settings.displayName?.slice(0, 2).toLocaleUpperCase("fr") || (
+            <UserRound />
+          )}
+        </span>
+        <div>
+          <h2>Mon compte</h2>
           <p>
-            Compte personnel connecté{accountEmail ? ` : ${accountEmail}` : ""}.
-            Les changements sont synchronisés automatiquement.
+            {connected
+              ? state.settings.displayName || "Ton espace personnel"
+              : "Ton espace personnel"}
           </p>
-          <Button onClick={() => modal(<Profile />)}>
-            Mon profil et mes objectifs
-          </Button>
-          <Button primary onClick={() => void repo.sync()}>
-            Synchroniser maintenant
-          </Button>
-          <Button
-            onClick={() =>
-              modal(
-                <Confirm
-                  title="Transférer l’historique de cet appareil ?"
-                  action={() => repo.mergeGuest()}
+        </div>
+        <button className="account-close" aria-label="Fermer" onClick={close}>
+          <X size={20} />
+        </button>
+      </header>
+      {supabase && (connected || savedAccounts.length > 0) && (
+        <section
+          className="account-switcher"
+          aria-label="Changer de compte"
+          aria-busy={busy}
+        >
+          <div className="account-section-heading">
+            <ArrowLeftRight size={18} />
+            <h3>Mes comptes</h3>
+          </div>
+          <div className="account-switcher-list">
+            {savedAccounts.map((account) => (
+              <div className="account-switcher-row" key={account.id}>
+                <button
+                  className="account-switch-target"
+                  disabled={busy || account.id === repo.scope}
+                  aria-label={`Utiliser ${account.email || account.name}`}
+                  aria-pressed={account.id === repo.scope}
+                  onClick={() => void switchAccount(account.id)}
                 >
-                  Les données locales seront ajoutées à ton compte. Les réglages
-                  et les enregistrements de même identifiant seront remplacés
-                  par ceux de cet appareil ; les autres données du compte seront
-                  conservées.
-                </Confirm>,
-              )
-            }
-          >
-            Importer les données locales de cet appareil
-          </Button>
-          {repo.docs
-            .filter((d) => d.conflict)
-            .map((d) => (
-              <section className="card padded" key={d.key}>
-                <strong>Modification simultanée : {d.key}</strong>
-                <details>
-                  <summary>Comparer les versions</summary>
-                  <p>Version de cet appareil</p>
-                  <pre>{JSON.stringify(d.value, null, 2)}</pre>
-                  <p>Version distante</p>
-                  <pre>{JSON.stringify(d.conflict?.value, null, 2)}</pre>
-                </details>
-                <Button onClick={() => void repo.resolve(d.key, false)}>
-                  Conserver cet appareil
-                </Button>
-                <Button onClick={() => void repo.resolve(d.key, true)}>
-                  Conserver la version distante
-                </Button>
-              </section>
+                  <span className="account-mini-avatar" aria-hidden="true">
+                    {(account.name || account.email)
+                      .slice(0, 2)
+                      .toLocaleUpperCase("fr") || <UserRound size={18} />}
+                  </span>
+                  <span className="account-switch-label">
+                    <strong>{account.name || account.email}</strong>
+                    <small>
+                      {account.id === repo.scope
+                        ? "Compte actif"
+                        : account.needsLogin
+                          ? "À reconnecter"
+                          : account.email}
+                    </small>
+                  </span>
+                  {account.id === repo.scope && (
+                    <Check size={18} aria-hidden="true" />
+                  )}
+                </button>
+                {account.id !== repo.scope && (
+                  <button
+                    className="account-remove"
+                    disabled={busy}
+                    aria-label={`Retirer ${account.email || account.name} de cet appareil`}
+                    onClick={() => {
+                      try {
+                        accountSessions.forget(account.id);
+                      } catch {
+                        notify("Impossible de retirer ce compte.");
+                      }
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
             ))}
-          <Button
-            onClick={() =>
-              void supabase!.auth.signOut().then(({ error }) => {
-                if (error) notify(error.message);
-              })
-            }
-          >
-            Se déconnecter
-          </Button>
-        </>
-      ) : (
-        <>
-          <p>
-            Un compte chacun pour garder vos journaux séparés. Utilise le même
-            compte sur tes propres appareils. Un nouveau compte démarre avec un
-            journal vide.
+          </div>
+          {!addingAccount && (
+            <button
+              className="account-add"
+              disabled={busy}
+              onClick={() => {
+                setEmail("");
+                setPassword("");
+                setSignup(false);
+                setAddingAccount(true);
+              }}
+            >
+              <Plus size={18} />
+              Ajouter un compte
+            </button>
+          )}
+          <p className="account-device-note">
+            Ces comptes restent accessibles sur cet appareil.
           </p>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setBusy(true);
-              try {
-                const result = signup
-                  ? await supabase!.auth.signUp({
-                      email,
-                      password,
-                      options: {
-                        emailRedirectTo: new URL(".", location.href).href,
-                      },
-                    })
-                  : await supabase!.auth.signInWithPassword({
-                      email,
-                      password,
-                    });
-                if (result.error) throw result.error;
-                notify(
-                  signup
-                    ? "Compte créé. Vérifie tes e-mails si une confirmation est demandée."
-                    : "Connexion réussie",
-                );
-              } catch (e) {
-                notify((e as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <Field
-              label="Adresse e-mail"
-              type="email"
-              name="username"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Field
-              label="Mot de passe"
-              type="password"
-              name="password"
-              autoComplete={signup ? "new-password" : "current-password"}
-              minLength={8}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <Button primary type="submit" disabled={busy}>
-              {busy
-                ? "Connexion…"
-                : signup
-                  ? "Créer un compte"
-                  : "Se connecter"}
-            </Button>
-            <Button onClick={() => setSignup(!signup)}>
-              {signup ? "J’ai déjà un compte" : "Créer un compte"}
-            </Button>
-          </form>
+        </section>
+      )}
+      {!addingAccount && (
+        <>
+          <nav className="account-shortcuts" aria-label="Réglages du compte">
+            <button
+              onClick={() => modal(<Profile />)}
+              aria-label="Mon profil et mes objectifs"
+            >
+              <UserRound />
+              <span>Profil</span>
+              <small>Infos et objectifs</small>
+            </button>
+            <button onClick={() => modal(<Appearance />)}>
+              <Palette />
+              <span>Apparence</span>
+              <small>Thème et couleurs</small>
+            </button>
+            {connected && (
+              <button
+                onClick={() => modal(<Duo settings />)}
+                aria-label="Partage Duo"
+              >
+                <HeartHandshake />
+                <span>Duo</span>
+                <small>Partage à deux</small>
+              </button>
+            )}
+          </nav>
         </>
       )}
-      <p className="note">
-        Les données de chaque compte et celles du mode local sont séparées. Les
-        modifications simultanées d’un même enregistrement sont conservées
-        jusqu’à résolution du conflit.
-      </p>
-    </Sheet>
+      <section className="account-connection">
+        <div className="account-section-heading">
+          {connected ? <Cloud size={19} /> : <HardDrive size={19} />}
+          <h3>
+            {addingAccount
+              ? "Ajouter un compte"
+              : connected
+                ? "Synchronisation"
+                : "Connexion"}
+          </h3>
+        </div>
+        <p className="account-status" role="status">
+          {repo.status}
+        </p>
+        {!supabase ? (
+          <p>
+            La synchronisation distante n’est pas configurée. Tes données sont
+            enregistrées sur cet appareil. Renseigne le projet Supabase dans la
+            configuration pour retrouver tes données sur iPhone et PC.
+          </p>
+        ) : connected && !addingAccount ? (
+          <>
+            <p className="account-email">
+              {accountEmail || "Compte personnel connecté"}
+              <small>Ton journal se synchronise automatiquement.</small>
+            </p>
+            <Button
+              primary
+              className="account-sync"
+              onClick={() => void repo.sync()}
+            >
+              <RefreshCw size={18} /> Synchroniser
+            </Button>
+            <details className="account-transfer">
+              <summary>
+                <Upload size={16} />
+                Importer depuis cet appareil
+              </summary>
+              <p className="note">
+                Ajoute le journal enregistré en mode local à ton compte.
+              </p>
+              <Button
+                onClick={() =>
+                  modal(
+                    <Confirm
+                      title="Transférer l’historique de cet appareil ?"
+                      action={() => repo.mergeGuest()}
+                    >
+                      Les données locales seront ajoutées à ton compte. Les
+                      réglages et les enregistrements de même identifiant seront
+                      remplacés par ceux de cet appareil ; les autres données du
+                      compte seront conservées.
+                    </Confirm>,
+                  )
+                }
+              >
+                Importer les données locales
+              </Button>
+            </details>
+            {repo.docs
+              .filter((d) => d.conflict)
+              .map((d) => (
+                <section className="card padded" key={d.key}>
+                  <strong>Modification simultanée : {d.key}</strong>
+                  <details>
+                    <summary>Comparer les versions</summary>
+                    <p>Version de cet appareil</p>
+                    <pre>{JSON.stringify(d.value, null, 2)}</pre>
+                    <p>Version distante</p>
+                    <pre>{JSON.stringify(d.conflict?.value, null, 2)}</pre>
+                  </details>
+                  <Button onClick={() => void repo.resolve(d.key, false)}>
+                    Conserver cet appareil
+                  </Button>
+                  <Button onClick={() => void repo.resolve(d.key, true)}>
+                    Conserver la version distante
+                  </Button>
+                </section>
+              ))}
+            <Button
+              className="account-signout"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await repo.changeAccount(async () => {
+                    const { error } = await supabase!.auth.signOut({
+                      scope: "local",
+                    });
+                    if (error) throw error;
+                  });
+                } catch (error) {
+                  notify((error as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <LogOut size={17} /> Se déconnecter
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="account-intro">
+              Un compte chacun pour garder vos journaux séparés. Utilise le même
+              compte sur tes propres appareils. Un nouveau compte démarre avec
+              un journal vide.
+            </p>
+            <form
+              className="account-login"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setBusy(true);
+                try {
+                  const result = await repo.changeAccount(async () => {
+                    const current = await supabase!.auth.getSession();
+                    if (current.error) throw current.error;
+                    if (current.data.session)
+                      accountSessions.remember(current.data.session);
+                    return signup
+                      ? await supabase!.auth.signUp({
+                          email,
+                          password,
+                          options: {
+                            emailRedirectTo: new URL(".", location.href).href,
+                          },
+                        })
+                      : await supabase!.auth.signInWithPassword({
+                          email,
+                          password,
+                        });
+                  });
+                  if (result.error) throw result.error;
+                  setPassword("");
+                  notify(
+                    signup
+                      ? "Compte créé. Vérifie tes e-mails si une confirmation est demandée."
+                      : "Connexion réussie",
+                  );
+                } catch (e) {
+                  notify((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <Field
+                label="Adresse e-mail"
+                type="email"
+                name="username"
+                autoComplete="username"
+                required
+                disabled={busy}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Field
+                label="Mot de passe"
+                type="password"
+                name="password"
+                autoComplete={signup ? "new-password" : "current-password"}
+                minLength={8}
+                required
+                disabled={busy}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button primary type="submit" disabled={busy}>
+                {busy
+                  ? "Connexion…"
+                  : signup
+                    ? "Créer un compte"
+                    : "Se connecter"}
+              </Button>
+              <Button disabled={busy} onClick={() => setSignup(!signup)}>
+                {signup ? "J’ai déjà un compte" : "Créer un compte"}
+              </Button>
+            </form>
+            {addingAccount && (
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  setAddingAccount(false);
+                  setPassword("");
+                  setSignup(false);
+                }}
+              >
+                Annuler
+              </Button>
+            )}
+          </>
+        )}
+      </section>
+      <details className="account-privacy">
+        <summary>Confidentialité et données</summary>
+        <p className="note">
+          Les données de chaque compte et celles du mode local sont séparées.
+          Les modifications simultanées d’un même enregistrement sont conservées
+          jusqu’à résolution du conflit.
+        </p>
+      </details>
+    </section>
   );
 }
