@@ -21,6 +21,13 @@ export interface WeeklyReport {
   error_code?: string | null;
   notified_at?: string | null;
 }
+export class WeeklyGenerationError extends Error {
+  readonly reason: string;
+  constructor(reason: string) {
+    super("Weekly generation failed");
+    this.reason = reason;
+  }
+}
 export interface WeeklyBackend {
   now(): Date;
   enabled(user: string): Promise<boolean>;
@@ -38,7 +45,13 @@ export interface WeeklyBackend {
     narrative: WeeklyNarrative | null,
     lease: string,
   ): Promise<void>;
-  fail(user: string, start: string, code: string, lease: string): Promise<void>;
+  fail(
+    user: string,
+    start: string,
+    code: string,
+    lease: string,
+    detail?: string | null,
+  ): Promise<void>;
   users(): Promise<string[]>;
   notify(user: string, start: string): Promise<void>;
 }
@@ -70,6 +83,7 @@ export function createWeeklyService(b: WeeklyBackend) {
     if (old?.status === "ready" || old?.status === "empty") return old;
     const lease = await b.claim(user, start);
     if (!lease) return b.report(user, start);
+    let stage = "source";
     try {
       const metrics = computeWeeklyMetrics(await b.source(user, start), start);
       let narrative: WeeklyNarrative | null = null;
@@ -77,6 +91,7 @@ export function createWeeklyService(b: WeeklyBackend) {
         // Bound aggregate-only context. No food names, notes, emails or photos leave the backend.
         const tokens =
           new TextEncoder().encode(JSON.stringify(metrics)).length + 6000;
+        stage = "quota";
         const allowed = await b.reserve(user, tokens);
         if (allowed !== "ok") {
           await b.fail(
@@ -88,14 +103,26 @@ export function createWeeklyService(b: WeeklyBackend) {
                 ? "unavailable"
                 : "quota",
             lease,
+            allowed === "unavailable" ? "configuration" : null,
           );
           return b.report(user, start);
         }
+        stage = "generate";
         narrative = validateWeeklyNarrative(await b.generate(metrics));
       }
+      stage = "store";
       await b.finish(user, start, metrics, narrative, lease);
-    } catch {
-      await b.fail(user, start, "unavailable", lease);
+    } catch (error) {
+      console.warn(JSON.stringify({ event: "weekly_report_error", stage }));
+      await b.fail(
+        user,
+        start,
+        "unavailable",
+        lease,
+        error instanceof WeeklyGenerationError
+          ? error.reason
+          : `${stage}_error`,
+      );
     }
     return b.report(user, start);
   };
@@ -160,11 +187,25 @@ export const weeklySystemPrompt = `Tu rédiges un bref récap hebdomadaire de jo
 export const weeklyResponseSchema = {
   type: "object",
   properties: {
-    summary: { type: "string" },
-    observations: { type: "array", items: { type: "string" }, maxItems: 4 },
+    summary: {
+      type: "string",
+      description: "Un paragraphe concis, maximum 1200 caractères.",
+    },
+    observations: {
+      type: "array",
+      items: {
+        type: "string",
+        description: "Une phrase courte, maximum 400 caractères.",
+      },
+      maxItems: 4,
+    },
     actions: {
       type: "array",
-      items: { type: "string" },
+      items: {
+        type: "string",
+        description:
+          "Une piste concrète en une phrase, maximum 400 caractères.",
+      },
       minItems: 2,
       maxItems: 3,
     },

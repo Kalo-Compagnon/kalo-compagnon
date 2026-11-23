@@ -3,6 +3,7 @@ import type { PushBackend } from "./notifications-handler.ts";
 import { localClock, stopMinute } from "./notification-rules.ts";
 import {
   shiftWeekDay,
+  latestRecapWeek,
   weeklyTimezone,
   type WeeklyMetrics,
   type WeeklySource,
@@ -11,6 +12,7 @@ import {
   weeklySystemPrompt,
   weeklyResponseSchema,
   validateWeeklyNarrative,
+  WeeklyGenerationError,
   type WeeklyBackend,
   type WeeklyReport,
 } from "./weekly-service.ts";
@@ -65,13 +67,11 @@ export function createWeeklyBackend(
       )
         throw new Error("Le récap IA n’est pas activé pour ce compte.");
       await result(
-        db
-          .from("logger_weekly_preferences")
-          .upsert({
-            user_id: user,
-            enabled,
-            updated_at: new Date().toISOString(),
-          }),
+        db.from("logger_weekly_preferences").upsert({
+          user_id: user,
+          enabled,
+          updated_at: new Date().toISOString(),
+        }),
       );
     },
     list: (user) =>
@@ -103,41 +103,120 @@ export function createWeeklyBackend(
         model = env("GEMINI_MODEL") || "gemini-3.5-flash-lite";
       if (!key || !/^[a-z0-9.-]+$/.test(model))
         throw new Error("Gemini unavailable");
-      const response = await fetcher(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": key,
-          },
-          signal: AbortSignal.timeout(20_000),
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: weeklySystemPrompt }] },
-            contents: [
-              { role: "user", parts: [{ text: JSON.stringify(metrics) }] },
-            ],
-            generationConfig: {
-              responseMimeType: "application/json",
-              responseJsonSchema: weeklyResponseSchema,
-              maxOutputTokens: 4096,
+      let response: Response;
+      try {
+        response = await fetcher(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": key,
             },
+            signal: AbortSignal.timeout(20_000),
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: weeklySystemPrompt }] },
+              contents: [
+                { role: "user", parts: [{ text: JSON.stringify(metrics) }] },
+              ],
+              generationConfig: {
+                responseMimeType: "application/json",
+                responseJsonSchema: weeklyResponseSchema,
+                maxOutputTokens: 4096,
+              },
+            }),
+          },
+        );
+      } catch (error) {
+        throw new WeeklyGenerationError(
+          error instanceof Error &&
+            ["TimeoutError", "AbortError"].includes(error.name)
+            ? "timeout"
+            : "network",
+        );
+      }
+      if (!response.ok) {
+        let code = "UNKNOWN";
+        try {
+          const body = await response.json();
+          if (
+            [
+              "INVALID_ARGUMENT",
+              "UNAUTHENTICATED",
+              "PERMISSION_DENIED",
+              "NOT_FOUND",
+              "RESOURCE_EXHAUSTED",
+              "INTERNAL",
+              "UNAVAILABLE",
+            ].includes(body.error?.status)
+          )
+            code = body.error.status;
+        } catch {}
+        console.warn(
+          JSON.stringify({
+            event: "weekly_google_error",
+            status: response.status,
+            code,
           }),
-        },
-      );
-      if (!response.ok) throw new Error("Gemini unavailable");
+        );
+        throw new WeeklyGenerationError(`google_${response.status}`);
+      }
       const payload = await response.json(),
         candidate = payload.candidates?.[0];
-      if (candidate?.finishReason !== "STOP")
-        throw new Error("Incomplete narrative");
-      return validateWeeklyNarrative(
-        JSON.parse(
+      if (candidate?.finishReason !== "STOP") {
+        console.warn(
+          JSON.stringify({
+            event: "weekly_response_incomplete",
+            reason: ["MAX_TOKENS", "SAFETY", "RECITATION"].includes(
+              candidate?.finishReason,
+            )
+              ? candidate.finishReason
+              : "UNKNOWN",
+          }),
+        );
+        throw new WeeklyGenerationError(
+          candidate?.finishReason === "MAX_TOKENS"
+            ? "response_max_tokens"
+            : candidate?.finishReason === "SAFETY"
+              ? "response_safety"
+              : "response_incomplete",
+        );
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(
           candidate.content.parts
             .filter((p: { thought?: boolean }) => !p.thought)
             .map((p: { text?: string }) => p.text ?? "")
             .join(""),
-        ),
-      );
+        );
+      } catch {
+        throw new WeeklyGenerationError("response_json");
+      }
+      try {
+        return validateWeeklyNarrative(parsed);
+      } catch (error) {
+        console.warn(
+          JSON.stringify({
+            event: "weekly_response_invalid",
+            summary_length:
+              typeof parsed?.summary === "string"
+                ? parsed.summary.length
+                : null,
+            observations: Array.isArray(parsed?.observations)
+              ? parsed.observations.map((s: unknown) =>
+                  typeof s === "string" ? s.length : null,
+                )
+              : null,
+            actions: Array.isArray(parsed?.actions)
+              ? parsed.actions.map((s: unknown) =>
+                  typeof s === "string" ? s.length : null,
+                )
+              : null,
+          }),
+        );
+        throw new WeeklyGenerationError("response_invalid");
+      }
     },
     finish: async (user, start, metrics, narrative, lease) => {
       await result(
@@ -149,6 +228,7 @@ export function createWeeklyBackend(
             narrative,
             generated_at: new Date().toISOString(),
             error_code: null,
+            error_detail: null,
             lease_until: new Date().toISOString(),
           })
           .eq("user_id", user)
@@ -157,13 +237,14 @@ export function createWeeklyBackend(
           .eq("status", "generating"),
       );
     },
-    fail: async (user, start, code, lease) => {
+    fail: async (user, start, code, lease, detail) => {
       await result(
         db
           .from("logger_weekly_reports")
           .update({
             status: "failed",
             error_code: code,
+            error_detail: detail ?? null,
             lease_until: new Date(Date.now() + 10 * 60_000).toISOString(),
           })
           .eq("user_id", user)
@@ -173,7 +254,7 @@ export function createWeeklyBackend(
       );
     },
     users: async () => {
-      const [preferences, allowed] = await Promise.all([
+      const [preferences, allowed, jobs] = await Promise.all([
         result<{ user_id: string }[]>(
           db
             .from("logger_weekly_preferences")
@@ -183,10 +264,17 @@ export function createWeeklyBackend(
         result<{ user_id: string }[]>(
           db.from("kermit_users").select("user_id"),
         ),
+        result<{ user_id: string }[]>(
+          db
+            .from("logger_weekly_jobs")
+            .select("user_id")
+            .eq("week_start", latestRecapWeek(new Date())),
+        ),
       ]);
-      return preferences
+      return [...preferences, ...jobs]
         .filter((p) => allowed.some((a) => a.user_id === p.user_id))
-        .map((p) => p.user_id);
+        .map((p) => p.user_id)
+        .filter((id, index, all) => all.indexOf(id) === index);
     },
     notify: async (user, start) => {
       const clock = localClock(new Date(), weeklyTimezone);

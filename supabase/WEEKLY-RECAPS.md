@@ -30,6 +30,14 @@ Le cron existant traite au plus une génération par minute pour ne pas monopoli
 
 Les préférences désactivées ne déclenchent aucune analyse automatique. L’activation des rappels sur l’iPhone reste nécessaire pour recevoir une notification ; le bilan est consultable même sans notification.
 
+## Génération ponctuelle interne
+
+`weekly-recap-jobs.sql` ajoute une file interne de demandes ponctuelles, sous RLS et sans accès utilisateur. Le rôle service ne peut que lire ces demandes ; leur insertion et leur retrait passent par l’administrateur. Aucun point d’entrée HTTP d’administration n’est ajouté.
+
+Le cron existant traite une demande pour la dernière semaine terminée uniquement si son compte figure aussi dans `kermit_users`. Les quotas et baux habituels s’appliquent. Une fois le rapport prêt, l’administrateur retire la demande. Cela ne crée ni ne modifie la préférence de génération automatique et ne peut pas déclencher de génération pour les semaines suivantes.
+
+`weekly-recap-diagnostics.sql` ajoute un diagnostic réservé au serveur : codes HTTP Google, dépassement de délai ou réponse structurée invalide. Les codes proviennent d’une liste contrôlée et ne contiennent aucun texte du modèle, secret ou donnée du journal. Le navigateur conserve un message d’indisponibilité sans exposer ces détails.
+
 ## Tests
 
 `npm test` vérifie les périodes (dont les changements d’heure), calculs, données absentes, immutabilité, baux et droits SQL. `npm run test:browser:recap` vérifie à 390 et 1440 px la zone sous la synchronisation, l’ouverture, l’historique, l’activation, la génération et l’ouverture depuis une notification, avec des données fictives. Aucun test automatisé n’envoie de données réelles à Gemini ni de notification à un téléphone.

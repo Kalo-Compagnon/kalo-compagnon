@@ -13,6 +13,8 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
       create table public.kermit_users(user_id uuid primary key references auth.users(id));`);
     await db.exec(readFileSync("supabase/schema.sql", "utf8"));
     await db.exec(readFileSync("supabase/weekly-recaps.sql", "utf8"));
+    await db.exec(readFileSync("supabase/weekly-recap-jobs.sql", "utf8"));
+    await db.exec(readFileSync("supabase/weekly-recap-diagnostics.sql", "utf8"));
     await db.query("insert into auth.users values($1),($2)", [a, b]);
     for (const [user, weight] of [
       [a, 70],
@@ -56,6 +58,13 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
     );
     await assert.rejects(
       db.query("update public.logger_weekly_preferences set enabled=true"),
+    );
+    await assert.rejects(db.query("select * from public.logger_weekly_jobs"));
+    await assert.rejects(
+      db.query(
+        "insert into public.logger_weekly_jobs(user_id,week_start) values($1,'2026-11-16')",
+        [a],
+      ),
     );
     await db.exec("reset role;set role service_role");
     const first = (
@@ -146,6 +155,7 @@ test("récap SQL : données privées, source minimale, bail exclusif et archive 
     await assert.rejects(
       db.query("select lease_token from public.logger_weekly_reports"),
     );
+    await assert.rejects(db.query("select error_detail from public.logger_weekly_reports"));
   } finally {
     await db.close();
   }
